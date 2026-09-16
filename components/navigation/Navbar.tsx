@@ -6,10 +6,7 @@ import Image from "next/image";
 import { ShoppingBag, Menu, X, User } from "lucide-react";
 import { useCart } from "@/lib/cart";
 
-const leftLinks = [
-  { label: "Shop", href: "/" },
-  { label: "Try It On", href: "/try-on" },
-];
+const leftLinks = [{ label: "Shop", href: "/" }];
 
 const rightLinks = [{ label: "About", href: "/about" }];
 
