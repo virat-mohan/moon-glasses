@@ -29,6 +29,11 @@ export default function AboutPage() {
               ₹1,999. UV400 protected, spring-hinged for all-day comfort, designed to be the piece
               that finishes the outfit, not an afterthought.
             </p>
+            <p>
+              Every lens is tinted, not just tinted-looking — built to shift what the night feels
+              like, not just how bright it is. Put them on after dark and the mood changes with the
+              color.
+            </p>
           </div>
         </div>
 
