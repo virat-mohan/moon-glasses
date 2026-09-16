@@ -29,7 +29,7 @@ export function NewsletterBlock() {
         Keep Exploring.
       </p>
       <p className="mx-auto mt-3 max-w-md font-sans text-body-s text-secondary-text">
-        Receive new Chapters, travel stories and exclusive drops before everyone else.
+        Receive new designs and exclusive drops.
       </p>
 
       {status === "done" ? (
@@ -49,7 +49,7 @@ export function NewsletterBlock() {
           <button
             type="submit"
             disabled={status === "loading"}
-            className="whitespace-nowrap border border-ink bg-ink px-6 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink disabled:opacity-60"
+            className="whitespace-nowrap font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
           >
             {status === "loading" ? "..." : "Join"}
           </button>

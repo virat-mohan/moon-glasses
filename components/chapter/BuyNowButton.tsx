@@ -10,11 +10,14 @@ export function BuyNowButton({
   image,
   disabled = false,
   quantity = 1,
+  variant = "outline",
 }: {
   chapter: Chapter;
   image: string;
   disabled?: boolean;
   quantity?: number;
+  /** "outline" is the bordered PDP button; "minimal" is a plain text link (no box) for tight tile overlays. */
+  variant?: "outline" | "minimal";
 }) {
   const { clear, addItem } = useCart();
   const router = useRouter();
@@ -33,7 +36,11 @@ export function BuyNowButton({
     <button
       onClick={handleClick}
       disabled={loading}
-      className="border border-ink px-6 py-2.5 font-sans text-caption font-medium uppercase tracking-[0.12em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream disabled:opacity-60"
+      className={
+        variant === "minimal"
+          ? "font-sans text-caption font-medium uppercase tracking-[0.12em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
+          : "font-sans text-caption font-medium uppercase tracking-[0.12em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
+      }
     >
       {loading ? "..." : "Buy Now"}
     </button>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Chapter } from "@/types/chapter";
-import { chapterImageSrc } from "@/lib/chapters";
+import { chapterImageSrc, shortProductName } from "@/lib/chapters";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import type { StockLabel } from "@/lib/inventory";
 
@@ -12,10 +12,10 @@ import type { StockLabel } from "@/lib/inventory";
  * Collage-style tile: product shot and lifestyle shot stacked, whichever
  * is "front" on load flips to the other on hover — alternated by index so
  * a grid reads as product/model/product/model rather than uniform rows.
- * Name, price and Buy Now sit as an overlay caption at the bottom of the
- * tile itself (no separate white space below), so a full grid reads as one
- * tight collage. Silently stays product-only if no lifestyle shot exists
- * yet at public/images/chapters/<folder>/lifestyle.jpg (see IMAGE_PROMPTS.md).
+ * Name/price and Buy Now share one flex row at the bottom of the tile (not
+ * two independently-positioned absolute elements) so they can never
+ * overlap regardless of name length. Silently stays product-only if no
+ * lifestyle shot exists yet at public/images/chapters/<folder>/lifestyle.jpg.
  */
 export function CollectionItem({
   chapter,
@@ -60,27 +60,29 @@ export function CollectionItem({
           />
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
 
         {stockLabel && (
           <span className="absolute left-2 top-2 border border-white/40 bg-black px-2 py-1 text-micro uppercase tracking-[0.05em] text-white">
             {stockLabel === "out-of-stock" ? "Sold Out" : "Selling Fast"}
           </span>
         )}
+      </Link>
 
-        <div className="absolute inset-x-0 bottom-0 p-3">
-          <p className="font-sans text-caption text-white">{chapter.name}</p>
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
+        <Link href={`/chapter/${chapter.slug}`} className="min-w-0">
+          <p className="truncate font-sans text-caption text-white">{shortProductName(chapter.name)}</p>
           <p className="mt-0.5 font-sans text-caption text-white/70">
             ₹{chapter.price.toLocaleString("en-IN")}
           </p>
-        </div>
-      </Link>
+        </Link>
 
-      {!disabled && (
-        <div className="absolute bottom-3 right-3">
-          <BuyNowButton chapter={chapter} image={productImage} disabled={disabled} quantity={1} />
-        </div>
-      )}
+        {!disabled && (
+          <div className="flex-none">
+            <BuyNowButton chapter={chapter} image={productImage} disabled={disabled} quantity={1} variant="minimal" />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -36,8 +36,6 @@ export async function PATCH(request: Request) {
     // them — revalidatePath forces Next to regenerate them on next visit.
     revalidatePath("/");
     revalidatePath(`/chapter/${body.chapterSlug}`);
-    revalidatePath("/series");
-    revalidatePath("/series/[slug]", "page");
 
     return NextResponse.json({ ok: true });
   } catch (err) {

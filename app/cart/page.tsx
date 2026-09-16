@@ -63,8 +63,8 @@ export default function CartPage() {
               Nothing in your cart yet — every Chapter starts somewhere.
             </p>
             <Link
-              href="/series"
-              className="mt-6 inline-block border border-ink px-8 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream"
+              href="/"
+              className="mt-6 inline-block font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
             >
               Browse The Series
             </Link>
@@ -155,7 +155,7 @@ export default function CartPage() {
 
             <Link
               href="/checkout"
-              className="mt-8 block w-full border border-ink bg-ink px-8 py-4 text-center font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink"
+              className="mt-8 block w-full py-4 text-center font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
             >
               Proceed to Checkout
             </Link>

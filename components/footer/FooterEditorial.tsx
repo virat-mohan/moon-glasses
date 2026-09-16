@@ -5,15 +5,14 @@ const columns = [
   {
     title: "Shop",
     links: [
-      { label: "Plastic", href: "/series/plastic" },
-      { label: "Metal", href: "/series/metal" },
+      { label: "Shop All", href: "/" },
       { label: "New In", href: "/#shop" },
     ],
   },
   {
     title: "About",
     links: [
-      { label: "Our Story", href: "/about" },
+      { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },
     ],
   },

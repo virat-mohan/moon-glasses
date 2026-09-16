@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { chapters } from "@/lib/chapters";
-import { seriesOrder } from "@/lib/series";
 import { getBrandProfile } from "@/lib/brand";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -10,7 +9,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages = [
     "",
-    "/series",
     "/about",
     "/preorder",
     "/privacy",
@@ -31,12 +29,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
-  const seriesPages = seriesOrder.map((s) => ({
-    url: `${base}/series/${s.slug}`,
-    lastModified: now,
-    changeFrequency: "weekly" as const,
-    priority: 0.8,
-  }));
-
-  return [...staticPages, ...chapterPages, ...seriesPages];
+  return [...staticPages, ...chapterPages];
 }

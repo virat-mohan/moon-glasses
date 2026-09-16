@@ -217,6 +217,15 @@ export const SHARED_SPECS = [
 ];
 
 /**
+ * Drops the "MOON P01"/"MOON M05"-style SKU code for display — customers
+ * see "Wayfarer — Pale Blue", the code stays in `name`/`slug` for admin
+ * and internal reference only.
+ */
+export function shortProductName(name: string) {
+  return name.replace(/^MOON\s+[A-Z]\d+\s*/, "");
+}
+
+/**
  * Real photography lives as "<original stem>_no_bg.png" per product folder.
  */
 export function chapterImageSrc(folder: string, file: string) {

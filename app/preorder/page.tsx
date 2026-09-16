@@ -143,7 +143,7 @@ export default function PreorderPage() {
             <button
               type="submit"
               disabled={status === "paying"}
-              className="mt-2 border border-white bg-white px-10 py-4 font-sans text-body-s uppercase tracking-[0.15em] text-black transition-colors hover:bg-black hover:text-white disabled:opacity-60"
+              className="mt-2 py-4 font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
             >
               {status === "paying" ? "Opening payment…" : `Pay ₹${amountRupees.toLocaleString("en-IN")} & Reserve`}
             </button>

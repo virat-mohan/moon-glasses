@@ -185,7 +185,7 @@ export default function OrderConfirmedPage() {
         )}
 
         <Link
-          href="/series"
+          href="/"
           className="mt-8 inline-block border border-ink px-8 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream"
         >
           Keep Exploring

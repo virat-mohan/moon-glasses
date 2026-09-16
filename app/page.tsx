@@ -110,20 +110,20 @@ export default async function Home() {
         </section>
 
         <EditorialSplit
-          index={1}
+          image="/images/brand/editorial-01.jpg"
           eyebrow="Made For After Dark"
           title="Fashion First"
           copy="Frames built to be seen — bold shapes, real lens colour, designed for a night out."
           ctaLabel="Explore Moon"
-          ctaHref="/series"
+          ctaHref="/#shop"
         />
         <EditorialSplit
-          index={2}
+          image="/images/brand/editorial-02.jpg"
           eyebrow="New In"
           title="Light Tints"
-          copy="Four shapes, four moods. Pale blue, pink, green and peach lenses across the plastic edit."
+          copy="Sixteen shapes, four lens moods. Pale blue, pink, green and peach across plastic and metal."
           ctaLabel="Discover The Collection"
-          ctaHref="/series/plastic"
+          ctaHref="/#shop"
           reverse
         />
 

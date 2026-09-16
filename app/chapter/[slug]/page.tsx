@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { chapters as staticChapters, chapterImageSrc, SHARED_SPECS } from "@/lib/chapters";
+import { chapters as staticChapters, chapterImageSrc, shortProductName, SHARED_SPECS } from "@/lib/chapters";
 import { getAllChapters } from "@/lib/chapters-dynamic";
 import { getExplorerPostsForChapter } from "@/lib/community";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
@@ -17,7 +17,6 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
 import { RestockNotifyForm } from "@/components/chapter/RestockNotifyForm";
 import { getApprovedReviews, getReviewSummary } from "@/lib/reviews";
-import { seriesOrder } from "@/lib/series";
 
 export function generateStaticParams() {
   return staticChapters.map((c) => ({ slug: c.slug }));
@@ -54,7 +53,6 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
   const inventory = await getInventoryMap();
   const stock = inventory[chapter.slug];
   const stockLabel = stockLabelFor(stock);
-  const series = seriesOrder.find((s) => s.name === chapter.series);
   const brand = await getBrandProfile();
   const siteUrl = brand.siteUrl.replace(/\/$/, "");
   const productImage = `${siteUrl}${chapterImageSrc(chapter.folder, chapter.sideImage)}`;
@@ -98,19 +96,9 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Collection", item: siteUrl },
-      ...(series
-        ? [
-            {
-              "@type": "ListItem",
-              position: 2,
-              name: chapter.series,
-              item: `${siteUrl}/series/${series.slug}`,
-            },
-          ]
-        : []),
       {
         "@type": "ListItem",
-        position: series ? 3 : 2,
+        position: 2,
         name: chapter.name,
         item: `${siteUrl}/chapter/${chapter.slug}`,
       },
@@ -132,15 +120,15 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
         <Breadcrumb
           items={[
             { label: "Collection", href: "/" },
-            { label: chapter.series, href: series ? `/series/${series.slug}` : undefined },
-            { label: chapter.name },
+            { label: chapter.series },
+            { label: shortProductName(chapter.name) },
           ]}
         />
         <div className="mt-6 grid grid-cols-1 gap-12 md:grid-cols-2">
           <Product360Viewer folder={chapter.folder} images={chapter.images} name={chapter.name} />
 
           <div className="md:pt-4">
-            <h1 className="font-display text-heading-xl uppercase text-ink">{chapter.name}</h1>
+            <h1 className="font-display text-heading-xl uppercase text-ink">{shortProductName(chapter.name)}</h1>
             <p className="mt-3 font-sans text-body-l text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
             {reviewSummary && (
               <a href="#reviews" className="mt-2 inline-block font-sans text-caption text-secondary-text">
@@ -224,7 +212,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
         {explorerPosts.length > 0 && (
           <section className="mt-24 border-t border-divider pt-16 md:mt-32">
             <p className="mb-6 text-caption uppercase tracking-[0.08em] text-secondary-text">
-              Explorers Wearing {chapter.name}
+              Explorers Wearing {shortProductName(chapter.name)}
             </p>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {explorerPosts.map((post) => (

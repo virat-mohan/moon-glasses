@@ -14,8 +14,7 @@ export default function AboutPage() {
     <>
       <main className="mx-auto w-full max-w-[1440px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
         <div className="max-w-2xl">
-          <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Our Story</p>
-          <h1 className="mt-3 font-display text-heading-xl uppercase leading-[0.95] text-ink md:text-display-m">
+          <h1 className="font-display text-heading-xl uppercase leading-[0.95] text-ink md:text-display-m">
             See A Brighter You.
           </h1>
 

@@ -1,16 +1,15 @@
-import fs from "node:fs";
-import path from "node:path";
 import Image from "next/image";
 import Link from "next/link";
 
 /**
- * Big image + short copy, alternating sides — section 27 of the design
- * spec. Renders nothing if the numbered editorial image doesn't exist yet
- * (see IMAGE_PROMPTS.md section 2), so this is safe to leave in the tree
- * before the photos are ready.
+ * Big image + short copy, alternating sides. Takes the image path directly
+ * rather than fs-checking for a numbered file first — that check was
+ * unreliable on Vercel's serverless functions (public/ assets aren't
+ * always traced into the function bundle), silently hiding these sections
+ * in production even though the image was genuinely deployed.
  */
 export function EditorialSplit({
-  index,
+  image: imageSrc,
   eyebrow,
   title,
   copy,
@@ -18,7 +17,7 @@ export function EditorialSplit({
   ctaHref,
   reverse = false,
 }: {
-  index: number;
+  image: string;
   eyebrow: string;
   title: string;
   copy: string;
@@ -26,13 +25,9 @@ export function EditorialSplit({
   ctaHref: string;
   reverse?: boolean;
 }) {
-  const relPath = `images/brand/editorial-${String(index).padStart(2, "0")}.jpg`;
-  const exists = fs.existsSync(path.join(process.cwd(), "public", relPath));
-  if (!exists) return null;
-
   const image = (
     <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#111]">
-      <Image src={`/${relPath}`} alt={title} fill sizes="50vw" className="object-cover" />
+      <Image src={imageSrc} alt={title} fill sizes="50vw" className="object-cover" />
     </div>
   );
 
@@ -43,7 +38,7 @@ export function EditorialSplit({
       <p className="mt-4 max-w-sm font-sans text-body-s text-secondary-text">{copy}</p>
       <Link
         href={ctaHref}
-        className="mt-6 inline-block w-fit border border-white px-8 py-3 font-sans text-body-s uppercase tracking-[0.1em] text-white transition-colors hover:bg-white hover:text-black"
+        className="mt-6 inline-block w-fit font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)]"
       >
         {ctaLabel}
       </Link>

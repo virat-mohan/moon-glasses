@@ -52,7 +52,7 @@ export function AddToCartButton({
         addItem(chapter, image, quantity);
         setAdded(true);
       }}
-      className="border border-ink bg-ink px-6 py-3.5 font-sans text-caption font-medium uppercase tracking-[0.1em] text-cream transition-colors duration-200 hover:bg-cream hover:text-ink"
+      className="font-sans text-caption font-medium uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
     >
       Add to Cart
     </button>

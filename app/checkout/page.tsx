@@ -518,8 +518,8 @@ export default function CheckoutPage() {
       <main className="mx-auto w-full max-w-[700px] px-6 pt-32 pb-24 text-center md:px-12 md:pt-40">
         <p className="font-display text-heading-l uppercase text-ink">Your Cart Is Empty.</p>
         <Link
-          href="/series"
-          className="mt-6 inline-block border border-ink px-8 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream"
+          href="/"
+          className="mt-6 inline-block font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
         >
           Browse The Series
         </Link>
@@ -608,7 +608,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setIdentityStep("guest")}
-                  className="w-full border border-ink px-8 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream"
+                  className="w-full py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
                 >
                   Continue As Guest
                 </button>
@@ -640,7 +640,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={identityLoading}
-                    className="w-full border border-ink bg-ink px-8 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink disabled:opacity-60"
+                    className="w-full py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
                   >
                     {identityLoading ? "Sending..." : "Continue"}
                   </button>
@@ -662,7 +662,7 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   disabled={identityLoading}
-                  className="w-full border border-ink bg-ink px-8 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink disabled:opacity-60"
+                  className="w-full py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
                 >
                   {identityLoading ? "Verifying..." : "Verify & Continue"}
                 </button>
@@ -959,7 +959,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={paying || shippingBlocking || !configLoaded}
-                className="w-full border border-ink bg-ink px-8 py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink disabled:opacity-60"
+                className="w-full py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
               >
                 {!configLoaded
                   ? "Loading..."
