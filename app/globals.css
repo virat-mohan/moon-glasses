@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+/*
+  MOON GLASSES Design Tokens — per MOON_CLAUDE_CODE_PROMPT.md section 21.
+  Dark editorial fashion-eyewear system: near-black chrome, champagne-gold
+  accent (brand only, never on product metal), light-tint lens colours used
+  sparingly as UI accents to echo the product line.
+*/
+
+:root {
+  --moon-black: #050505;
+  --moon-ink: #111111;
+  --moon-white: #f7f7f4;
+  --moon-paper: #f3f1ec;
+  --moon-muted: #8b8b86;
+  --moon-line: #292929;
+
+  --moon-gold: #e7c77a;
+  --moon-gold-soft: #d7ba73;
+
+  --lens-blue: #c9e2f5;
+  --lens-pink: #f2cdd5;
+  --lens-green: #d0e1cb;
+  --lens-peach: #f2d5bd;
+
+  /* Token aliases — kept so existing components (bg-cream/text-ink etc.) resolve without a full rename pass */
+  --color-cream: var(--moon-black);
+  --color-ink: var(--moon-white);
+  --color-near-black: var(--moon-black);
+  --color-tan-gold: var(--moon-gold);
+  --color-divider: rgba(247, 247, 244, 0.12);
+  --color-surface: var(--moon-ink);
+  --color-surface-alt: #232323;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-secondary-text: var(--moon-muted);
+
+  --color-forest: var(--lens-green);
+  --color-ocean: var(--lens-blue);
+  --color-clay: var(--lens-peach);
+  --color-stone: var(--moon-muted);
+  --color-sand: var(--moon-paper);
+  --color-olive: var(--lens-green);
+  --color-mist: var(--moon-muted);
+
+  --color-paint-red: var(--lens-pink);
+  --color-paint-amber: var(--moon-gold);
+  --color-paint-teal: var(--lens-blue);
+  --color-paint-indigo: #1d3557;
+  --color-paint-violet: #8e44ad;
+  --color-paint-orange: var(--lens-peach);
+  --color-paint-plum: #6a4c93;
+  --color-parchment: var(--moon-paper);
+
+  --duration-default: 220ms;
+  --duration-large: 350ms;
+  --duration-hero: 450ms;
+  --duration-page: 350ms;
+  --ease-premium: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@theme inline {
+  --color-background: var(--color-cream);
+  --color-foreground: var(--color-ink);
+
+  --color-cream: var(--color-cream);
+  --color-ink: var(--color-ink);
+  --color-near-black: var(--color-near-black);
+  --color-tan-gold: var(--color-tan-gold);
+  --color-secondary-text: var(--color-secondary-text);
+  --color-divider: var(--color-divider);
+  --color-surface: var(--color-surface);
+  --color-surface-alt: var(--color-surface-alt);
+  --color-overlay: var(--color-overlay);
+
+  --color-warm-white: var(--color-cream);
+  --color-charcoal: var(--color-ink);
+
+  --color-forest: var(--color-forest);
+  --color-ocean: var(--color-ocean);
+  --color-clay: var(--color-clay);
+  --color-stone: var(--color-stone);
+  --color-sand: var(--color-sand);
+  --color-olive: var(--color-olive);
+  --color-mist: var(--color-mist);
+
+  --color-paint-red: var(--color-paint-red);
+  --color-paint-amber: var(--color-paint-amber);
+  --color-paint-teal: var(--color-paint-teal);
+  --color-paint-indigo: var(--color-paint-indigo);
+  --color-paint-violet: var(--color-paint-violet);
+  --color-paint-orange: var(--color-paint-orange);
+  --color-paint-plum: var(--color-paint-plum);
+  --color-parchment: var(--color-parchment);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+
+  --text-display-xl: 4rem;
+  --text-display-xl--line-height: 1.05;
+  --text-display-l: 3.25rem;
+  --text-display-l--line-height: 1.08;
+  --text-display-m: 2.5rem;
+  --text-display-m--line-height: 1.1;
+
+  --text-heading-xl: 2rem;
+  --text-heading-xl--line-height: 1.15;
+  --text-heading-l: 1.75rem;
+  --text-heading-l--line-height: 1.15;
+  --text-heading-m: 1.5rem;
+  --text-heading-m--line-height: 1.2;
+  --text-heading-s: 1.25rem;
+  --text-heading-s--line-height: 1.25;
+
+  --text-body-l: 1.125rem;
+  --text-body-l--line-height: 1.5;
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-body-s: 0.9375rem;
+  --text-body-s--line-height: 1.6;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.5;
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1.4;
+
+  /* Section 12/16: no rounded product cards, 0-2px radius on CTAs */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-hero: 0px;
+  --radius-pill: 2px;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+@keyframes pin-bounce {
+  0%, 100% { transform: scale(1.4) translateY(-2px); }
+  50% { transform: scale(1.4) translateY(-8px); }
+}
+
+.pin-bouncing {
+  animation: pin-bounce 0.6s ease-in-out infinite;
+}
+
+/* Section 20: Space Grotesk display type, wide-tracked uppercase nav */
+.font-display {
+  letter-spacing: -0.01em;
+}
+
+.wordmark {
+  font-weight: 500;
+  letter-spacing: 0.2em;
+}
+
+.nav-link {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+}
