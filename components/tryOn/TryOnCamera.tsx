@@ -19,9 +19,39 @@ const LEFT_EYE_OUTER = 263;
 
 // Tuning knobs for the overlay fit — adjust these first if the glasses look
 // too big/small or sit too high/low, rather than touching the draw logic.
-const WIDTH_FACTOR = 2.55; // glasses width as a multiple of iris-to-iris distance
-const VERTICAL_ANCHOR_RATIO = 0.42; // fraction down the glasses image that should land on the eye line
-const VERTICAL_NUDGE = 0.06; // extra downward nudge, as a fraction of eye distance
+// Bumped up from 2.55: on real faces the glasses were reading noticeably
+// narrower than the actual face width.
+const WIDTH_FACTOR = 3.1; // glasses width as a multiple of iris-to-iris distance
+const VERTICAL_ANCHOR_RATIO = 0.4; // fraction down the glasses image that should land on the eye line
+const VERTICAL_NUDGE = 0.05; // extra downward nudge, as a fraction of eye distance
+
+function Thumbnail({
+  product,
+  active,
+  onSelect,
+}: {
+  product: Chapter;
+  active: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      onClick={onSelect}
+      className={`relative aspect-square w-full overflow-hidden bg-surface-alt transition-opacity ${
+        active ? "opacity-100 ring-1 ring-[var(--moon-gold)]" : "opacity-60 hover:opacity-100"
+      }`}
+      aria-label={`Try ${shortProductName(product.name)}`}
+    >
+      {/* Plain <img> — small thumbnail grid, not worth Next/Image's overhead. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={chapterImageSrc(product.folder, product.sideImage)}
+        alt={shortProductName(product.name)}
+        className="h-full w-full object-contain p-1"
+      />
+    </button>
+  );
+}
 
 /**
  * Real-time try-on: MediaPipe FaceLandmarker (loaded client-side from CDN,
@@ -45,6 +75,10 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
   const [status, setStatus] = useState<Status>("idle");
   const [selected, setSelected] = useState<Chapter>(products[0]);
   const [faceFound, setFaceFound] = useState(false);
+
+  const half = Math.ceil(products.length / 2);
+  const leftProducts = products.slice(0, half);
+  const rightProducts = products.slice(half);
 
   // Swap the overlay image whenever the selection changes.
   useEffect(() => {
@@ -166,66 +200,69 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative aspect-[4/3] w-full max-w-2xl overflow-hidden bg-black">
-        {/* Mirrored container: draw logic assumes raw (unmirrored) video coords,
-            CSS flips the whole thing for a natural selfie-view. Every filter
-            layer here is CSS/canvas-composite only on the displayed video —
-            MediaPipe reads the raw frame buffer underneath, so none of this
-            touches tracking accuracy. */}
-        <div className="absolute inset-0 [transform:scaleX(-1)]">
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            className="h-full w-full object-cover [filter:brightness(1.14)_contrast(1.1)_saturate(1.25)_blur(0.6px)]"
-          />
-          {/* Warm key-light glow centered on the face, like a softbox. */}
-          <div
-            className="pointer-events-none absolute inset-0 mix-blend-soft-light"
-            style={{
-              background:
-                "radial-gradient(90% 80% at 50% 38%, rgba(255,240,220,0.55) 0%, rgba(255,235,210,0.18) 40%, transparent 72%)",
-            }}
-          />
-          {/* Gentle screen-blend lift so shadows never go flat/muddy. */}
-          <div
-            className="pointer-events-none absolute inset-0 mix-blend-screen"
-            style={{ background: "rgba(255,255,255,0.05)" }}
-          />
-          {/* Subtle edge vignette — pulls the eye back to the face/glasses. */}
-          <div
-            className="pointer-events-none absolute inset-0 mix-blend-multiply"
-            style={{
-              background:
-                "radial-gradient(120% 100% at 50% 45%, transparent 55%, rgba(0,0,0,0.32) 100%)",
-            }}
-          />
-          <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
+    <div className="flex w-full max-w-5xl flex-col items-center">
+      <div className="flex w-full flex-col items-start gap-4 md:flex-row md:justify-center">
+        {/* Left thumbnail rail — hidden on narrow screens, shown as a row below instead. */}
+        <div className="hidden w-24 flex-none flex-col gap-2 md:flex">
+          {leftProducts.map((p) => (
+            <Thumbnail key={p.slug} product={p} active={selected.slug === p.slug} onSelect={() => setSelected(p)} />
+          ))}
         </div>
 
-        {status !== "running" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80 px-6 text-center">
-            <p className="font-sans text-body-s uppercase tracking-[0.1em] text-white">
-              {status === "idle" || status === "loading-model"
-                ? "Loading face tracking…"
-                : status === "requesting-camera"
-                  ? "Allow camera access to try MOON on"
-                  : status === "denied"
-                    ? "Camera access denied — enable it in your browser settings and reload."
-                    : "Couldn't start the camera. Try reloading, or use a device with a front camera."}
-            </p>
+        <div className="relative aspect-[4/3] w-full max-w-2xl flex-none overflow-hidden bg-black">
+          {/* Mirrored container: draw logic assumes raw (unmirrored) video coords,
+              CSS flips the whole thing for a natural selfie-view. The filter on
+              the video is display-only — MediaPipe reads the raw frame buffer
+              underneath, so this never touches tracking accuracy. Kept
+              deliberately light: a heavier glow/vignette combo washed out
+              badly in dim/backlit rooms instead of flattering anyone. */}
+          <div className="absolute inset-0 [transform:scaleX(-1)]">
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              className="h-full w-full object-cover [filter:brightness(1.05)_contrast(1.04)_saturate(1.08)]"
+            />
+            <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
           </div>
-        )}
 
-        {status === "running" && !faceFound && (
-          <p className="absolute bottom-3 left-1/2 -translate-x-1/2 font-sans text-caption uppercase tracking-[0.1em] text-white/70">
-            Center your face in frame
-          </p>
-        )}
+          {status !== "running" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 px-6 text-center">
+              <p className="font-sans text-body-s uppercase tracking-[0.1em] text-white">
+                {status === "idle" || status === "loading-model"
+                  ? "Loading face tracking…"
+                  : status === "requesting-camera"
+                    ? "Allow camera access to try MOON on"
+                    : status === "denied"
+                      ? "Camera access denied — enable it in your browser settings and reload."
+                      : "Couldn't start the camera. Try reloading, or use a device with a front camera."}
+              </p>
+            </div>
+          )}
+
+          {status === "running" && !faceFound && (
+            <p className="absolute bottom-3 left-1/2 -translate-x-1/2 font-sans text-caption uppercase tracking-[0.1em] text-white/70">
+              Center your face in frame
+            </p>
+          )}
+        </div>
+
+        {/* Right thumbnail rail. */}
+        <div className="hidden w-24 flex-none flex-col gap-2 md:flex">
+          {rightProducts.map((p) => (
+            <Thumbnail key={p.slug} product={p} active={selected.slug === p.slug} onSelect={() => setSelected(p)} />
+          ))}
+        </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-4">
+      {/* Mobile fallback: both rails as one row under the camera, since there's no side space. */}
+      <div className="mt-4 grid w-full max-w-2xl grid-cols-8 gap-2 md:hidden">
+        {products.map((p) => (
+          <Thumbnail key={p.slug} product={p} active={selected.slug === p.slug} onSelect={() => setSelected(p)} />
+        ))}
+      </div>
+
+      <div className="mt-6 flex items-center gap-4">
         <p className="font-sans text-body-s text-white">{shortProductName(selected.name)}</p>
         <p className="font-sans text-body-s text-white/70">₹{selected.price.toLocaleString("en-IN")}</p>
       </div>
@@ -235,27 +272,6 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
           image={chapterImageSrc(selected.folder, selected.sideImage)}
           variant="minimal"
         />
-      </div>
-
-      <div className="mt-8 flex w-full max-w-2xl gap-3 overflow-x-auto pb-2">
-        {products.map((p) => (
-          <button
-            key={p.slug}
-            onClick={() => setSelected(p)}
-            className={`relative aspect-square w-20 flex-none overflow-hidden bg-surface-alt transition-opacity ${
-              selected.slug === p.slug ? "opacity-100 ring-1 ring-[var(--moon-gold)]" : "opacity-60 hover:opacity-100"
-            }`}
-            aria-label={`Try ${shortProductName(p.name)}`}
-          >
-            {/* Plain <img> — this is a rotating strip of small thumbnails, not worth Next/Image's overhead. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={chapterImageSrc(p.folder, p.sideImage)}
-              alt={shortProductName(p.name)}
-              className="h-full w-full object-contain p-1"
-            />
-          </button>
-        ))}
       </div>
     </div>
   );
