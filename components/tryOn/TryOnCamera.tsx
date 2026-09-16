@@ -19,11 +19,12 @@ const LEFT_EYE_OUTER = 263;
 
 // Tuning knobs for the overlay fit — adjust these first if the glasses look
 // too big/small or sit too high/low, rather than touching the draw logic.
-// Bumped up from 2.55: on real faces the glasses were reading noticeably
-// narrower than the actual face width.
-const WIDTH_FACTOR = 3.1; // glasses width as a multiple of iris-to-iris distance
-const VERTICAL_ANCHOR_RATIO = 0.4; // fraction down the glasses image that should land on the eye line
-const VERTICAL_NUDGE = 0.05; // extra downward nudge, as a fraction of eye distance
+// Real-device testing showed eyes/eyebrows visible above the lens frame —
+// the glasses were riding too low — so ANCHOR moved up substantially and
+// NUDGE flipped to a small upward pull.
+const WIDTH_FACTOR = 3.2; // glasses width as a multiple of iris-to-iris distance
+const VERTICAL_ANCHOR_RATIO = 0.62; // fraction down the glasses image that should land on the eye line
+const VERTICAL_NUDGE = -0.03; // extra vertical nudge, as a fraction of eye distance (negative = up)
 
 function Thumbnail({
   product,
@@ -211,17 +212,16 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
 
         <div className="relative aspect-[4/3] w-full max-w-2xl flex-none overflow-hidden bg-black">
           {/* Mirrored container: draw logic assumes raw (unmirrored) video coords,
-              CSS flips the whole thing for a natural selfie-view. The filter on
-              the video is display-only — MediaPipe reads the raw frame buffer
-              underneath, so this never touches tracking accuracy. Kept
-              deliberately light: a heavier glow/vignette combo washed out
-              badly in dim/backlit rooms instead of flattering anyone. */}
+              CSS flips the whole thing for a natural selfie-view. No display
+              filter on the video — a glow/vignette/saturation "beauty" pass
+              was tried and washed out badly in real dim/backlit rooms, so
+              the feed is shown as the camera actually sees it for now. */}
           <div className="absolute inset-0 [transform:scaleX(-1)]">
             <video
               ref={videoRef}
               muted
               playsInline
-              className="h-full w-full object-cover [filter:brightness(1.05)_contrast(1.04)_saturate(1.08)]"
+              className="h-full w-full object-cover"
             />
             <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
           </div>
