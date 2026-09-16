@@ -31,8 +31,7 @@ export default function AboutPage() {
             </p>
             <p>
               Every lens is tinted, not just tinted-looking — built to shift what the night feels
-              like, not just how bright it is. Put them on after dark and the mood changes with the
-              color.
+              like, not just how bright it is. The mood changes with the color. Elevate your trip.
             </p>
           </div>
         </div>
