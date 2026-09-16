@@ -21,8 +21,8 @@ export function EditorialSplit({
   eyebrow: string;
   title: string;
   copy: string;
-  ctaLabel: string;
-  ctaHref: string;
+  ctaLabel?: string;
+  ctaHref?: string;
   reverse?: boolean;
 }) {
   const image = (
@@ -36,12 +36,14 @@ export function EditorialSplit({
       <p className="font-sans text-micro uppercase tracking-[0.3em] text-secondary-text">{eyebrow}</p>
       <h3 className="mt-4 font-display text-display-m uppercase text-ink">{title}</h3>
       <p className="mt-4 max-w-sm font-sans text-body-s text-secondary-text">{copy}</p>
-      <Link
-        href={ctaHref}
-        className="mt-6 inline-block w-fit font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)]"
-      >
-        {ctaLabel}
-      </Link>
+      {ctaLabel && ctaHref && (
+        <Link
+          href={ctaHref}
+          className="mt-6 inline-block w-fit font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)]"
+        >
+          {ctaLabel}
+        </Link>
+      )}
     </div>
   );
 

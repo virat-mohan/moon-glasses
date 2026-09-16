@@ -114,8 +114,6 @@ export default async function Home() {
           eyebrow="Made For After Dark"
           title="Fashion First"
           copy="Frames built to be seen — bold shapes, real lens colour, designed for a night out."
-          ctaLabel="Explore Moon"
-          ctaHref="/#shop"
         />
         <EditorialSplit
           image="/images/brand/editorial-02.jpg"

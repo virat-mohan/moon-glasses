@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Chapter } from "@/types/chapter";
@@ -8,14 +8,19 @@ import { chapterImageSrc, shortProductName } from "@/lib/chapters";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import type { StockLabel } from "@/lib/inventory";
 
+const FLIP_INTERVAL_MS = 3500;
+
 /**
- * Collage-style tile: product shot and lifestyle shot stacked, whichever
- * is "front" on load flips to the other on hover — alternated by index so
- * a grid reads as product/model/product/model rather than uniform rows.
- * Name/price and Buy Now share one flex row at the bottom of the tile (not
- * two independently-positioned absolute elements) so they can never
- * overlap regardless of name length. Silently stays product-only if no
- * lifestyle shot exists yet at public/images/chapters/<folder>/lifestyle.jpg.
+ * Collage-style tile: product shot and lifestyle shot stacked, auto-flipping
+ * back and forth on their own timer — each tile starts on a randomized
+ * offset so a grid never flips in unison. Tapping/clicking a tile stops its
+ * own auto-flip permanently (the visitor is interacting with it, not just
+ * browsing past). Alternated starting side by index so a grid reads as
+ * product/model/product/model rather than uniform rows. Name/price and Buy
+ * Now share one flex row at the bottom (not two independently-positioned
+ * absolute elements) so they can never overlap regardless of name length.
+ * Silently stays product-only if no lifestyle shot exists yet at
+ * public/images/chapters/<folder>/lifestyle.jpg.
  */
 export function CollectionItem({
   chapter,
@@ -27,23 +32,71 @@ export function CollectionItem({
   index?: number;
 }) {
   const [hasLifestyle, setHasLifestyle] = useState(true);
+  const [flipped, setFlipped] = useState(index % 2 === 1);
+  const pausedRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tappedOnceRef = useRef(false);
+
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
   const lifestyleImage = `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;
   const disabled = stockLabel === "out-of-stock";
 
-  // Alternate which image shows by default; hover always reveals the other.
-  const modelFirst = hasLifestyle && index % 2 === 1;
+  useEffect(() => {
+    if (!hasLifestyle) return;
+
+    function schedule(delay: number) {
+      timeoutRef.current = setTimeout(() => {
+        if (pausedRef.current) return;
+        setFlipped((f) => !f);
+        schedule(FLIP_INTERVAL_MS);
+      }, delay);
+    }
+
+    // Randomized initial offset (plus a per-index stagger) so tiles in the
+    // same grid never flip in lockstep.
+    schedule(300 + ((index * 137) % 1200) + Math.random() * 1500);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [hasLifestyle, index]);
+
+  const lastPointerTypeRef = useRef<string>("mouse");
+
+  function stopAutoFlip() {
+    pausedRef.current = true;
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  }
+
+  // On touch, the first tap just stops the auto-flip and shows whichever
+  // image was current (a "preview"); a second tap actually navigates. Mouse
+  // clicks navigate immediately — there's no hover-preview step to consume.
+  function handleImageClick(e: React.MouseEvent) {
+    stopAutoFlip();
+    if (lastPointerTypeRef.current === "touch" && !tappedOnceRef.current) {
+      tappedOnceRef.current = true;
+      e.preventDefault();
+    }
+  }
+
+  const modelShowing = hasLifestyle && flipped;
 
   return (
-    <div className="group relative aspect-square overflow-hidden bg-surface-alt">
-      <Link href={`/chapter/${chapter.slug}`} className="absolute inset-0 block">
+    <div
+      className="group relative aspect-square overflow-hidden bg-surface-alt"
+      onPointerDown={(e) => {
+        lastPointerTypeRef.current = e.pointerType;
+        stopAutoFlip();
+      }}
+    >
+      <Link href={`/chapter/${chapter.slug}`} className="absolute inset-0 block" onClick={handleImageClick}>
         <Image
           src={productImage}
           alt={chapter.name}
           fill
           sizes="(min-width: 1024px) 25vw, 50vw"
-          className={`object-contain p-[8%] transition-opacity duration-300 ease-[cubic-bezier(.22,.61,.36,1)] ${
-            modelFirst ? "opacity-0 group-hover:opacity-100" : "opacity-100 group-hover:opacity-0"
+          className={`object-contain p-[8%] transition-opacity duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
+            modelShowing ? "opacity-0" : "opacity-100"
           }`}
         />
         {hasLifestyle && (
@@ -54,8 +107,8 @@ export function CollectionItem({
             fill
             sizes="(min-width: 1024px) 25vw, 50vw"
             onError={() => setHasLifestyle(false)}
-            className={`absolute inset-0 object-cover transition-opacity duration-300 ease-[cubic-bezier(.22,.61,.36,1)] ${
-              modelFirst ? "opacity-100 group-hover:opacity-0" : "opacity-0 group-hover:opacity-100"
+            className={`absolute inset-0 object-cover transition-opacity duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
+              modelShowing ? "opacity-100" : "opacity-0"
             }`}
           />
         )}
