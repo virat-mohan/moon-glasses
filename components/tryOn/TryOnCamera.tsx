@@ -7,22 +7,33 @@ import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 
 type Status = "idle" | "loading-model" | "requesting-camera" | "running" | "denied" | "error";
 
-// Landmark indices from MediaPipe's 478-point face mesh.
-const LEFT_EYE_OUTER = 263;
+// Landmark indices from MediaPipe's 478-point face mesh. Iris centers
+// (468/473) track much more stably than eye-corner points — they don't
+// shift as eyelids/eyebrows move, so scale/angle stop jittering frame to
+// frame. Falls back to outer eye corners if a model build ever returns the
+// 468-point mesh without iris refinement.
+const RIGHT_IRIS = 468;
+const LEFT_IRIS = 473;
 const RIGHT_EYE_OUTER = 33;
-const NOSE_BRIDGE = 168;
+const LEFT_EYE_OUTER = 263;
+
+// Tuning knobs for the overlay fit — adjust these first if the glasses look
+// too big/small or sit too high/low, rather than touching the draw logic.
+const WIDTH_FACTOR = 2.55; // glasses width as a multiple of iris-to-iris distance
+const VERTICAL_ANCHOR_RATIO = 0.42; // fraction down the glasses image that should land on the eye line
+const VERTICAL_NUDGE = 0.06; // extra downward nudge, as a fraction of eye distance
 
 /**
  * Real-time try-on: MediaPipe FaceLandmarker (loaded client-side from CDN,
  * nothing sent to a server) tracks the face every frame, and the selected
  * product image is scaled/rotated/positioned onto a canvas over the eyes
- * based on actual detected eye-corner distance and head tilt — this is
- * genuine face tracking, not a fixed overlay.
+ * based on actual detected iris distance and head tilt — this is genuine
+ * face tracking, not a fixed overlay.
  *
  * Honest limitation: our product photography is a three-quarter studio
  * angle (built for the ecommerce grid), not a flat frontal cutout — so the
- * fit is approximate, not pixel-perfect like a dedicated AR try-on shot
- * would give. Swap in frontal transparent cutouts per SKU for a tighter fit.
+ * fit is close but not pixel-perfect like a dedicated AR try-on shot would
+ * give. Swap in frontal transparent cutouts per SKU for a tighter fit.
  */
 export function TryOnCamera({ products }: { products: Chapter[] }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -63,6 +74,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
           },
           runningMode: "VIDEO",
           numFaces: 1,
+          outputFaceBlendshapes: false,
         });
         if (cancelled) return;
         landmarkerRef.current = landmarker;
@@ -113,22 +125,28 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
       if (landmarks && glasses) {
         setFaceFound(true);
         const toPx = (i: number) => ({ x: landmarks[i].x * canvas.width, y: landmarks[i].y * canvas.height });
-        const left = toPx(LEFT_EYE_OUTER);
-        const right = toPx(RIGHT_EYE_OUTER);
-        const bridge = toPx(NOSE_BRIDGE);
+
+        const hasIris = landmarks.length > 473;
+        const left = toPx(hasIris ? LEFT_IRIS : LEFT_EYE_OUTER);
+        const right = toPx(hasIris ? RIGHT_IRIS : RIGHT_EYE_OUTER);
+        const eyeCenter = { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2 };
 
         const eyeDist = Math.hypot(left.x - right.x, left.y - right.y);
         const angle = Math.atan2(left.y - right.y, left.x - right.x);
 
-        // Outer-corner-to-outer-corner is narrower than full frame width —
-        // scale up, and size height off the image's own aspect ratio.
-        const glassesWidth = eyeDist * 2.3;
+        const glassesWidth = eyeDist * WIDTH_FACTOR;
         const glassesHeight = glassesWidth * (glasses.height / glasses.width);
 
         ctx.save();
-        ctx.translate(bridge.x, bridge.y);
+        ctx.translate(eyeCenter.x, eyeCenter.y + eyeDist * VERTICAL_NUDGE);
         ctx.rotate(angle);
-        ctx.drawImage(glasses, -glassesWidth / 2, -glassesHeight / 2.4, glassesWidth, glassesHeight);
+        ctx.drawImage(
+          glasses,
+          -glassesWidth / 2,
+          -glassesHeight * VERTICAL_ANCHOR_RATIO,
+          glassesWidth,
+          glassesHeight
+        );
         ctx.restore();
       } else {
         setFaceFound(false);
@@ -151,23 +169,36 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
     <div className="flex flex-col items-center">
       <div className="relative aspect-[4/3] w-full max-w-2xl overflow-hidden bg-black">
         {/* Mirrored container: draw logic assumes raw (unmirrored) video coords,
-            CSS flips the whole thing for a natural selfie-view. The beauty
-            filter is CSS-only on the <video> element — it changes what's
-            displayed, not the underlying frame buffer MediaPipe reads, so
-            face tracking accuracy is completely unaffected by it. */}
+            CSS flips the whole thing for a natural selfie-view. Every filter
+            layer here is CSS/canvas-composite only on the displayed video —
+            MediaPipe reads the raw frame buffer underneath, so none of this
+            touches tracking accuracy. */}
         <div className="absolute inset-0 [transform:scaleX(-1)]">
           <video
             ref={videoRef}
             muted
             playsInline
-            className="h-full w-full object-cover [filter:brightness(1.1)_contrast(1.05)_saturate(1.15)_blur(0.5px)]"
+            className="h-full w-full object-cover [filter:brightness(1.14)_contrast(1.1)_saturate(1.25)_blur(0.6px)]"
           />
-          {/* Soft warm glow, blended so it lifts skin tones without washing out the image. */}
+          {/* Warm key-light glow centered on the face, like a softbox. */}
           <div
             className="pointer-events-none absolute inset-0 mix-blend-soft-light"
             style={{
               background:
-                "radial-gradient(120% 100% at 50% 35%, rgba(255,235,215,0.35) 0%, rgba(255,235,215,0.08) 45%, transparent 75%)",
+                "radial-gradient(90% 80% at 50% 38%, rgba(255,240,220,0.55) 0%, rgba(255,235,210,0.18) 40%, transparent 72%)",
+            }}
+          />
+          {/* Gentle screen-blend lift so shadows never go flat/muddy. */}
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-screen"
+            style={{ background: "rgba(255,255,255,0.05)" }}
+          />
+          {/* Subtle edge vignette — pulls the eye back to the face/glasses. */}
+          <div
+            className="pointer-events-none absolute inset-0 mix-blend-multiply"
+            style={{
+              background:
+                "radial-gradient(120% 100% at 50% 45%, transparent 55%, rgba(0,0,0,0.32) 100%)",
             }}
           />
           <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />
