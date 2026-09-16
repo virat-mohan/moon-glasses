@@ -23,8 +23,10 @@ const LEFT_EYE_OUTER = 263;
 // the glasses were riding too low — so ANCHOR moved up substantially and
 // NUDGE flipped to a small upward pull.
 const WIDTH_FACTOR = 3.2; // glasses width as a multiple of iris-to-iris distance
-const VERTICAL_ANCHOR_RATIO = 0.62; // fraction down the glasses image that should land on the eye line
-const VERTICAL_NUDGE = -0.03; // extra vertical nudge, as a fraction of eye distance (negative = up)
+const VERTICAL_ANCHOR_RATIO = 0.55; // fraction down the glasses image that should land on the eye line
+const VERTICAL_NUDGE = -0.02; // extra vertical nudge, as a fraction of eye distance (negative = up)
+const MAX_ROTATION_RAD = (18 * Math.PI) / 180; // clamp — a single noisy frame shouldn't be able to tilt this far
+const SMOOTHING = 0.3; // 0 = no smoothing (raw per-frame), 1 = frozen — blend factor toward each new reading
 
 function Thumbnail({
   product,
@@ -77,6 +79,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
   const glassesImgRef = useRef<HTMLImageElement | null>(null);
   const rafRef = useRef<number | null>(null);
   const landmarkerRef = useRef<import("@mediapipe/tasks-vision").FaceLandmarker | null>(null);
+  const smoothedRef = useRef<{ x: number; y: number; dist: number; angle: number } | null>(null);
 
   const [status, setStatus] = useState<Status>("idle");
   const [selected, setSelected] = useState<Chapter>(products[0]);
@@ -169,17 +172,36 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
         const hasIris = landmarks.length > 473;
         const left = toPx(hasIris ? LEFT_IRIS : LEFT_EYE_OUTER);
         const right = toPx(hasIris ? RIGHT_IRIS : RIGHT_EYE_OUTER);
-        const eyeCenter = { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2 };
 
-        const eyeDist = Math.hypot(left.x - right.x, left.y - right.y);
-        const angle = Math.atan2(left.y - right.y, left.x - right.x);
+        const rawX = (left.x + right.x) / 2;
+        const rawY = (left.y + right.y) / 2;
+        const rawDist = Math.hypot(left.x - right.x, left.y - right.y);
+        const rawAngle = Math.max(
+          -MAX_ROTATION_RAD,
+          Math.min(MAX_ROTATION_RAD, Math.atan2(left.y - right.y, left.x - right.x))
+        );
 
-        const glassesWidth = eyeDist * WIDTH_FACTOR;
+        // A single noisy frame (common with iris landmarks at close range or
+        // low light) used to show up directly as a visible wobble/tilt.
+        // Blending toward each new reading instead of snapping to it
+        // smooths that out without meaningfully lagging real movement.
+        const prev = smoothedRef.current;
+        const smoothed = prev
+          ? {
+              x: prev.x + (rawX - prev.x) * SMOOTHING,
+              y: prev.y + (rawY - prev.y) * SMOOTHING,
+              dist: prev.dist + (rawDist - prev.dist) * SMOOTHING,
+              angle: prev.angle + (rawAngle - prev.angle) * SMOOTHING,
+            }
+          : { x: rawX, y: rawY, dist: rawDist, angle: rawAngle };
+        smoothedRef.current = smoothed;
+
+        const glassesWidth = smoothed.dist * WIDTH_FACTOR;
         const glassesHeight = glassesWidth * (glasses.height / glasses.width);
 
         ctx.save();
-        ctx.translate(eyeCenter.x, eyeCenter.y + eyeDist * VERTICAL_NUDGE);
-        ctx.rotate(angle);
+        ctx.translate(smoothed.x, smoothed.y + smoothed.dist * VERTICAL_NUDGE);
+        ctx.rotate(smoothed.angle);
         ctx.drawImage(
           glasses,
           -glassesWidth / 2,
@@ -190,6 +212,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
         ctx.restore();
       } else {
         setFaceFound(false);
+        smoothedRef.current = null;
       }
 
       rafRef.current = requestAnimationFrame(loop);
