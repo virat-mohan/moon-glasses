@@ -38,9 +38,14 @@ function Thumbnail({
   return (
     <button
       onClick={onSelect}
-      className={`relative aspect-square w-full overflow-hidden bg-surface-alt transition-opacity ${
-        active ? "opacity-100 ring-1 ring-[var(--moon-gold)]" : "opacity-60 hover:opacity-100"
+      className={`relative aspect-square w-full overflow-hidden border transition-all ${
+        active
+          ? "border-[var(--moon-gold)] opacity-100"
+          : "border-white/10 opacity-70 hover:border-white/30 hover:opacity-100"
       }`}
+      style={{
+        background: "radial-gradient(120% 120% at 50% 20%, #2a2a2a 0%, #111 70%)",
+      }}
       aria-label={`Try ${shortProductName(product.name)}`}
     >
       {/* Plain <img> — small thumbnail grid, not worth Next/Image's overhead. */}
@@ -204,7 +209,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
     <div className="flex w-full max-w-5xl flex-col items-center">
       <div className="flex w-full flex-col items-start gap-4 md:flex-row md:justify-center">
         {/* Left thumbnail rail — hidden on narrow screens, shown as a row below instead. */}
-        <div className="hidden w-24 flex-none flex-col gap-2 md:flex">
+        <div className="hidden w-40 flex-none grid-cols-2 gap-2 md:grid">
           {leftProducts.map((p) => (
             <Thumbnail key={p.slug} product={p} active={selected.slug === p.slug} onSelect={() => setSelected(p)} />
           ))}
@@ -248,7 +253,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
         </div>
 
         {/* Right thumbnail rail. */}
-        <div className="hidden w-24 flex-none flex-col gap-2 md:flex">
+        <div className="hidden w-40 flex-none grid-cols-2 gap-2 md:grid">
           {rightProducts.map((p) => (
             <Thumbnail key={p.slug} product={p} active={selected.slug === p.slug} onSelect={() => setSelected(p)} />
           ))}
