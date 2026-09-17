@@ -53,7 +53,7 @@ function Thumbnail({
       {/* Plain <img> — small thumbnail grid, not worth Next/Image's overhead. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={chapterImageSrc(product.folder, product.sideImage)}
+        src={chapterImageSrc(product.folder, "front.jpg")}
         alt={shortProductName(product.name)}
         className="h-full w-full object-contain p-1"
       />
@@ -68,10 +68,10 @@ function Thumbnail({
  * based on actual detected iris distance and head tilt — this is genuine
  * face tracking, not a fixed overlay.
  *
- * Honest limitation: our product photography is a three-quarter studio
- * angle (built for the ecommerce grid), not a flat frontal cutout — so the
- * fit is close but not pixel-perfect like a dedicated AR try-on shot would
- * give. Swap in frontal transparent cutouts per SKU for a tighter fit.
+ * Uses each product's dedicated frontal (straight-on) cutout —
+ * "front.jpg" — rather than the angled shop-grid photo, since a flat
+ * photo's own perspective needs to roughly match a face looking straight
+ * at the camera for the overlay to read as actually worn.
  */
 export function TryOnCamera({ products }: { products: Chapter[] }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -92,7 +92,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
   // Swap the overlay image whenever the selection changes.
   useEffect(() => {
     const img = new Image();
-    img.src = chapterImageSrc(selected.folder, selected.sideImage);
+    img.src = chapterImageSrc(selected.folder, "front.jpg");
     img.onload = () => {
       glassesImgRef.current = img;
     };
@@ -297,7 +297,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
       <div className="mt-3">
         <BuyNowButton
           chapter={selected}
-          image={chapterImageSrc(selected.folder, selected.sideImage)}
+          image={chapterImageSrc(selected.folder, "front.jpg")}
           variant="minimal"
         />
       </div>
