@@ -66,6 +66,7 @@ const NAV_SECTIONS = [
       { href: "/admin/inventory", label: "Inventory" },
       { href: "/admin/edit-chapter", label: "Edit Chapters" },
       { href: "/admin/add-chapter", label: "Add Chapter" },
+      { href: "/admin/product-images", label: "Product Images" },
       { href: "/admin/marketing-assets", label: "Marketing Assets" },
       { href: "/admin/brand-profile", label: "Brand Profile" },
       { href: "/admin/settings", label: "API Keys & Settings" },

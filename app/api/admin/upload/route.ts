@@ -20,12 +20,12 @@ export async function POST(request: Request) {
       const path = `${slug}/${crypto.randomUUID()}.${ext}`;
 
       const { error } = await supabase.storage
-        .from("chapter-images")
+        .from("product-images")
         .upload(path, bytes, { contentType: file.type, upsert: false });
 
       if (error) throw error;
 
-      const { data } = supabase.storage.from("chapter-images").getPublicUrl(path);
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
       urls.push(data.publicUrl);
     }
 

@@ -2,7 +2,13 @@ import { chapters as staticChapters } from "@/lib/chapters";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import type { Chapter } from "@/types/chapter";
 
-type Override = { primary_image: string | null; price: number | null; story: string | null; images: string[] | null };
+type Override = {
+  primary_image: string | null;
+  price: number | null;
+  story: string | null;
+  images: string[] | null;
+  model_image: string | null;
+};
 
 /**
  * Static 16 + anything added from /admin/add-chapter, with per-field edits
@@ -18,7 +24,9 @@ export async function getAllChapters(): Promise<Chapter[]> {
 
     const [{ data: dynamicRows }, { data: overrideRows }] = await Promise.all([
       supabase.from("dynamic_chapters").select("*"),
-      supabase.from("chapter_hero_overrides").select("chapter_slug, primary_image, price, story, images"),
+      supabase
+        .from("chapter_hero_overrides")
+        .select("chapter_slug, primary_image, price, story, images, model_image"),
     ]);
 
     dynamicChapters = (dynamicRows ?? []).map((row) => ({
@@ -39,7 +47,13 @@ export async function getAllChapters(): Promise<Chapter[]> {
     overrides = Object.fromEntries(
       (overrideRows ?? []).map((r) => [
         r.chapter_slug,
-        { primary_image: r.primary_image, price: r.price, story: r.story, images: r.images },
+        {
+          primary_image: r.primary_image,
+          price: r.price,
+          story: r.story,
+          images: r.images,
+          model_image: r.model_image,
+        },
       ])
     );
   } catch (err) {
@@ -62,6 +76,7 @@ export async function getAllChapters(): Promise<Chapter[]> {
       price: o.price ?? c.price,
       story: o.story ?? c.story,
       images: o.images && o.images.length > 0 ? o.images : c.images,
+      modelImage: o.model_image ?? c.modelImage,
     };
   });
 }

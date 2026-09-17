@@ -12,6 +12,8 @@ export type Chapter = {
   primary: string;
   /** Filename of the side-profile shot used everywhere a product is browsed (homepage, series grids, explore globe) — fixed per Chapter, independent of `primary`. */
   sideImage: string;
+  /** Full Storage URL for the homepage tile's hover-flip lifestyle/model shot — admin-uploaded via /admin/product-images. Undefined falls back to the static lifestyle.jpg convention. */
+  modelImage?: string;
   /** Short editorial line for this product. */
   story: string;
   /** Price in INR — Plastic ₹1,499 flat, Metal ₹1,999 flat. No frame-material selector: material is fixed per SKU. */

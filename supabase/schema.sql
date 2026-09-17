@@ -331,6 +331,10 @@ create table if not exists whatsapp_conversations (
 -- code. Null/empty means "use the static default order from lib/chapters.ts".
 alter table chapter_hero_overrides add column if not exists images text[];
 
+-- Admin-uploaded lifestyle/model shot for a Chapter's homepage tile hover-flip
+-- (see CollectionItem). Null means "use the static lifestyle.jpg convention".
+alter table chapter_hero_overrides add column if not exists model_image text;
+
 create table if not exists whatsapp_conversation_messages (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references whatsapp_conversations (id),

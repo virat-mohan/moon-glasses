@@ -38,7 +38,8 @@ export function CollectionItem({
   const tappedOnceRef = useRef(false);
 
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
-  const lifestyleImage = `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;
+  const lifestyleImage =
+    chapter.modelImage ?? `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;
   const disabled = stockLabel === "out-of-stock";
 
   useEffect(() => {
