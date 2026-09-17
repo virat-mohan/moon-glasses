@@ -20,6 +20,12 @@ async function expectedToken(password: string) {
  * not a multi-admin product.
  */
 export async function proxy(request: NextRequest) {
+  // Temporarily disabled at the user's explicit request — /admin is open
+  // with no password for now. Delete this early return to re-enable the
+  // gate below (customer/lead PII and API key config are unprotected while
+  // this is in place).
+  return NextResponse.next();
+
   const { pathname } = request.nextUrl;
   const isAdminPage = pathname.startsWith("/admin") && pathname !== "/admin/login";
   const isAdminApi = pathname.startsWith("/api/admin") && pathname !== "/api/admin/login";
