@@ -97,7 +97,7 @@ export default async function Home() {
             Sixteen shapes across two materials. Plastic ₹1,499, metal ₹1,999.
           </p>
 
-          <div className="mt-10 grid grid-cols-2 gap-0.5 md:grid-cols-4">
+          <div className="mt-10 grid grid-cols-2 gap-1 md:grid-cols-3">
             {collection.map((chapter, i) => (
               <CollectionItem
                 key={chapter.slug}
