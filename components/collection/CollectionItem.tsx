@@ -83,7 +83,7 @@ export function CollectionItem({
 
   return (
     <div
-      className="group relative aspect-square overflow-hidden bg-surface-alt"
+      className="group relative aspect-square overflow-hidden product-tile-bg"
       onPointerDown={(e) => {
         lastPointerTypeRef.current = e.pointerType;
         stopAutoFlip();
