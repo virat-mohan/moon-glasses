@@ -15,7 +15,7 @@ export async function PATCH(request: Request) {
     // picker doesn't wipe out a price/story edit made separately (and vice versa).
     const { data: existing } = await supabase
       .from("chapter_hero_overrides")
-      .select("primary_image, price, story, images, model_image")
+      .select("primary_image, price, story, images, model_image, name")
       .eq("chapter_slug", body.chapterSlug)
       .maybeSingle();
 
@@ -26,6 +26,7 @@ export async function PATCH(request: Request) {
       story: body.story ?? existing?.story ?? null,
       images: body.images ?? existing?.images ?? null,
       model_image: body.modelImage ?? existing?.model_image ?? null,
+      name: body.name ?? existing?.name ?? null,
       updated_at: new Date().toISOString(),
     });
 

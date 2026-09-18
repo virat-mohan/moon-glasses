@@ -30,7 +30,7 @@ export default function AddChapterPage() {
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
     if (!name.trim()) {
-      setError("Enter a Chapter name first — image uploads are filed under it.");
+      setError("Enter a Product name first — image uploads are filed under it.");
       return;
     }
     setError(null);
@@ -88,7 +88,7 @@ export default function AddChapterPage() {
       if (data.error) throw new Error(data.error);
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save Chapter");
+      setError(err instanceof Error ? err.message : "Could not save Product");
     } finally {
       setSaving(false);
     }
@@ -97,7 +97,7 @@ export default function AddChapterPage() {
   if (result) {
     return (
       <main className="mx-auto w-full max-w-[700px] px-6 pt-28 pb-24 text-center md:px-12">
-        <p className="font-display text-heading-l uppercase text-ink">Chapter Added.</p>
+        <p className="font-display text-heading-l uppercase text-ink">Product Added.</p>
         <p className="mt-3 text-body-s text-secondary-text">
           <strong>{name}</strong> is live at{" "}
           <a href={`/chapter/${result.slug}`} className="underline">
@@ -117,7 +117,7 @@ export default function AddChapterPage() {
 
   return (
     <main className="mx-auto w-full max-w-[800px] px-6 pt-28 pb-24 md:px-12">
-      <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Add A New Chapter</h1>
+      <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Add A New Product</h1>
       <p className="mt-2 max-w-lg text-body-s text-secondary-text">
         Images upload straight to cloud storage, so this works the same in production as it does
         here. It'll show up on the homepage, its Series page, and get its own /chapter/&lt;slug&gt;
@@ -127,7 +127,7 @@ export default function AddChapterPage() {
       <form onSubmit={handleSubmit} className="mt-10 space-y-6">
         <div>
           <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-            Chapter Name
+            Product Name (include the code, e.g. "MOON P01 Wayfarer — Pale Blue")
           </label>
           <input
             required
@@ -242,7 +242,7 @@ export default function AddChapterPage() {
           disabled={saving || uploading}
           className="w-full border border-ink bg-ink px-8 py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink disabled:opacity-50"
         >
-          {saving ? "Saving..." : "Publish Chapter"}
+          {saving ? "Saving..." : "Publish Product"}
         </button>
       </form>
     </main>

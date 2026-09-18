@@ -948,7 +948,7 @@ export default function CheckoutPage() {
                     className="h-4 w-4 accent-ink"
                   />
                   <span className="font-sans text-body-s text-ink">
-                    Send me new Chapters, travel stories and Journal updates
+                    Send me new drops, restocks and offers
                   </span>
                 </label>
 

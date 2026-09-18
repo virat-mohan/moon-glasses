@@ -11,6 +11,7 @@ export default function EditChapterPage() {
   const [slug, setSlug] = useState<string | null>(null);
   const [images, setImages] = useState<ImageOption[]>([]);
   const [currentPrimary, setCurrentPrimary] = useState<string | null>(null);
+  const [name, setName] = useState("");
   const [price, setPrice] = useState(0);
   const [story, setStory] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,6 +40,7 @@ export default function EditChapterPage() {
       .then((data) => {
         setImages(data.images ?? []);
         setCurrentPrimary(data.currentPrimary ?? null);
+        setName(data.name ?? "");
         setPrice(data.price ?? 0);
         setStory(data.story ?? "");
       })
@@ -88,7 +90,7 @@ export default function EditChapterPage() {
       await fetch("/api/admin/hero-override", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chapterSlug: slug, price, story }),
+        body: JSON.stringify({ chapterSlug: slug, name, price, story }),
       });
       setSaved(true);
     } finally {
@@ -98,10 +100,10 @@ export default function EditChapterPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
-      <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Edit A Chapter</h1>
+      <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Edit A Product</h1>
       <p className="mt-2 max-w-lg text-body-s text-secondary-text">
-        Change the price, story, or hero image (the first photo people see) for any Chapter —
-        the original 16 or ones added from /admin/add-chapter. Takes effect immediately.
+        Change the name/code, price, story, or hero image (the first photo people see) for any
+        product — the original 16 or ones added from /admin/add-chapter. Takes effect immediately.
       </p>
 
       <select
@@ -121,6 +123,17 @@ export default function EditChapterPage() {
       ) : (
         <>
           <form onSubmit={saveDetails} className="mt-8 max-w-lg space-y-6">
+            <div>
+              <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
+                Product Name (include the code, e.g. &quot;MOON P01 Wayfarer — Pale Blue&quot;)
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-3 w-full border border-ink/30 bg-surface px-5 py-3 font-sans text-body-s text-ink outline-none focus:border-ink"
+              />
+            </div>
             <div>
               <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
                 Price (INR)
@@ -148,13 +161,13 @@ export default function EditChapterPage() {
               disabled={saving}
               className="border border-ink bg-ink px-8 py-3 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink disabled:opacity-50"
             >
-              {saved ? "Saved ✓" : saving ? "Saving..." : "Save Price & Story"}
+              {saved ? "Saved ✓" : saving ? "Saving..." : "Save Name, Price & Story"}
             </button>
           </form>
 
           <div className="mt-12">
             <p className="font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-              Hero Image — the first photo shown on cards, the homepage, and this Chapter&apos;s page
+              Hero Image — the first photo shown on cards, the homepage, and this product&apos;s page
             </p>
             <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
               {images.map((img) => {
@@ -186,7 +199,7 @@ export default function EditChapterPage() {
           <div className="mt-12">
             <div className="flex items-center justify-between gap-4">
               <p className="font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                Gallery Order — the order photos cycle through on this Chapter&apos;s page
+                Gallery Order — the order photos cycle through on this product&apos;s page
               </p>
               <button
                 onClick={saveOrder}

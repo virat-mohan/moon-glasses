@@ -9,8 +9,11 @@ const VOLUME = 0.15;
 
 /**
  * Procedurally-generated four-on-the-floor techno loop via Web Audio API —
- * no audio file needed. Browsers block autoplay-with-sound, so it only
- * starts after the visitor taps the speaker toggle; muted by default.
+ * no audio file needed. On by default: browsers block audio before any user
+ * gesture, so this arms a one-time listener for the visitor's first
+ * click/tap/keypress anywhere on the page and starts the loop right then,
+ * rather than requiring them to find and press the speaker toggle. The
+ * toggle still works normally for muting/unmuting afterward.
  */
 export function AmbientTechno() {
   const [playing, setPlaying] = useState(false);
@@ -19,6 +22,7 @@ export function AmbientTechno() {
   const schedulerRef = useRef<number | null>(null);
   const stepRef = useRef(0);
   const nextTimeRef = useRef(0);
+  const mutedByUserRef = useRef(false);
 
   function kick(ctx: AudioContext, dest: AudioNode, time: number) {
     const osc = ctx.createOscillator();
@@ -77,10 +81,25 @@ export function AmbientTechno() {
   }
 
   useEffect(() => {
+    function armStart() {
+      if (mutedByUserRef.current || ctxRef.current) return;
+      start();
+    }
+    // "click"/"keydown" alone satisfy every major browser's user-gesture
+    // requirement for starting audio; touchstart covers mobile Safari, which
+    // is stricter about needing the gesture on the same tick.
+    window.addEventListener("pointerdown", armStart, { once: true });
+    window.addEventListener("keydown", armStart, { once: true });
+    window.addEventListener("touchstart", armStart, { once: true });
+
     return () => {
+      window.removeEventListener("pointerdown", armStart);
+      window.removeEventListener("keydown", armStart);
+      window.removeEventListener("touchstart", armStart);
       if (schedulerRef.current) window.clearInterval(schedulerRef.current);
       ctxRef.current?.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function start() {
@@ -114,10 +133,19 @@ export function AmbientTechno() {
     <button
       type="button"
       aria-label={playing ? "Mute background music" : "Play background music"}
-      onClick={() => (playing ? stop() : start())}
-      className="fixed bottom-6 left-6 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-surface)] text-cream neon-border transition-transform hover:scale-105"
+      onPointerDownCapture={(e) => e.stopPropagation()}
+      onClick={() => {
+        if (playing) {
+          mutedByUserRef.current = true;
+          stop();
+        } else {
+          mutedByUserRef.current = false;
+          start();
+        }
+      }}
+      className="fixed bottom-6 left-6 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-[var(--color-surface)] text-white transition-transform hover:scale-105 hover:border-white"
     >
-      {playing ? <Volume2 size={18} /> : <VolumeX size={18} />}
+      {playing ? <Volume2 size={18} strokeWidth={2} /> : <VolumeX size={18} strokeWidth={2} />}
     </button>
   );
 }

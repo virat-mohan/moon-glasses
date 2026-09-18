@@ -28,7 +28,7 @@ export default async function ReviewPage({ params }: { params: Promise<{ orderId
       </p>
       <h1 className="mt-2 font-display text-heading-xl uppercase text-ink">How Was It?</h1>
       <p className="mt-3 max-w-md text-body-s text-secondary-text">
-        A quick rating helps other travellers pick the right Chapter.
+        A quick rating helps other shoppers pick the right pair.
       </p>
 
       {uniqueItems.length === 0 ? (

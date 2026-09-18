@@ -14,7 +14,7 @@ export default function RefundPolicyPage() {
 
         <div className="mt-10 space-y-8 font-sans text-body-s leading-relaxed text-ink">
           <p>
-            We want you to love your Chapter. If something&apos;s not right, here&apos;s how cancellations,
+            We want you to love your MOON GLASSES. If something&apos;s not right, here&apos;s how cancellations,
             returns, and refunds work.
           </p>
 

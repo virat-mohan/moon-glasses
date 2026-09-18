@@ -60,7 +60,7 @@ export default function CartPage() {
         {items.length === 0 ? (
           <div className="mt-16 border-t border-divider py-24 text-center">
             <p className="text-body text-secondary-text">
-              Nothing in your cart yet — every Chapter starts somewhere.
+              Nothing in your cart yet — every pair starts somewhere.
             </p>
             <Link
               href="/"

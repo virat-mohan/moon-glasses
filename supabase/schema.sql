@@ -68,6 +68,36 @@ on conflict (chapter_slug) do update set stock_on_hand = excluded.stock_on_hand;
 --   'Travaholic White' — 31 units
 -- Also missing entirely from the stock sheet: 'city-slicker' (City Slicker Black/Grey).
 
+-- The rows above are leftover Travaholic Caps demo stock — none of them match
+-- a real MOON GLASSES slug, so every real SKU had no inventory row at all,
+-- silently disabling stock decrement/low-stock alerts/badges for the entire
+-- live catalogue (see lib/inventory.ts, app/api/orders/route.ts). Remove the
+-- stale demo rows and seed real starting stock for all 16 launch SKUs.
+delete from inventory where chapter_slug in (
+  'travaholic-black', 'travaholic-ocean', 'travaholic-sky', 'sunshine', 'tropical-blue',
+  'tropical-pink', 'dunes-maroon', 'dunes-yellow', 'beachn', 'travaholic-orange',
+  'peaking', 'wildling', 'junglee', 'city-slicker-black'
+);
+
+insert into inventory (chapter_slug, stock_on_hand) values
+  ('moon-p01-wayfarer-pale-blue', 25),
+  ('moon-p02-wayfarer-pale-pink', 25),
+  ('moon-p03-wayfarer-pale-green', 25),
+  ('moon-p04-wayfarer-pale-peach', 25),
+  ('moon-m01-round-pale-blue', 25),
+  ('moon-m02-round-pale-pink', 25),
+  ('moon-m03-round-pale-green', 25),
+  ('moon-m04-round-pale-peach', 25),
+  ('moon-m05-aviator-pale-blue', 25),
+  ('moon-m06-aviator-pale-pink', 25),
+  ('moon-m07-aviator-pale-green', 25),
+  ('moon-m08-aviator-pale-peach', 25),
+  ('moon-m09-broad-pale-blue', 25),
+  ('moon-m10-broad-pale-pink', 25),
+  ('moon-m11-broad-pale-green', 25),
+  ('moon-m12-broad-pale-peach', 25)
+on conflict (chapter_slug) do nothing;
+
 -- Discount rules: simple "buy N, cheapest one at X% off" promos (e.g. buy 2 get
 -- 3rd at half price = buy_quantity 3, discount_percent 50). Only one should be
 -- active at a time — the app just takes the first active row it finds.
@@ -334,6 +364,11 @@ alter table chapter_hero_overrides add column if not exists images text[];
 -- Admin-uploaded lifestyle/model shot for a Chapter's homepage tile hover-flip
 -- (see CollectionItem). Null means "use the static lifestyle.jpg convention".
 alter table chapter_hero_overrides add column if not exists model_image text;
+
+-- Lets /admin/edit-chapter rename a product (including its SKU code, e.g.
+-- "MOON P01 Wayfarer — Pale Blue") without a redeploy. Null means "use the
+-- static name from lib/chapters.ts".
+alter table chapter_hero_overrides add column if not exists name text;
 
 create table if not exists whatsapp_conversation_messages (
   id uuid primary key default gen_random_uuid(),

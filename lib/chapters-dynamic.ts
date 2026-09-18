@@ -8,6 +8,7 @@ type Override = {
   story: string | null;
   images: string[] | null;
   model_image: string | null;
+  name: string | null;
 };
 
 /**
@@ -26,7 +27,7 @@ export async function getAllChapters(): Promise<Chapter[]> {
       supabase.from("dynamic_chapters").select("*"),
       supabase
         .from("chapter_hero_overrides")
-        .select("chapter_slug, primary_image, price, story, images, model_image"),
+        .select("chapter_slug, primary_image, price, story, images, model_image, name"),
     ]);
 
     dynamicChapters = (dynamicRows ?? []).map((row) => ({
@@ -53,6 +54,7 @@ export async function getAllChapters(): Promise<Chapter[]> {
           story: r.story,
           images: r.images,
           model_image: r.model_image,
+          name: r.name,
         },
       ])
     );
@@ -66,6 +68,7 @@ export async function getAllChapters(): Promise<Chapter[]> {
     if (!o) return c;
     return {
       ...c,
+      name: o.name ?? c.name,
       primary: o.primary_image ?? c.primary,
       // sideImage is what the homepage card and the product page's own
       // og:image/thumbnail actually render (see CollectionItem and
