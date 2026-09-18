@@ -4,17 +4,18 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 
 export const metadata = { title: "Try It On" };
 
-// One of each plastic wayfarer plus one of each metal shape — 8 total,
-// enough variety in the rotating strip without overwhelming it.
+// All 10 launch shapes in the rotating strip.
 const TRY_ON_SLUGS = [
-  "moon-p01-wayfarer-pale-blue",
-  "moon-p02-wayfarer-pale-pink",
-  "moon-p03-wayfarer-pale-green",
-  "moon-p04-wayfarer-pale-peach",
-  "moon-m01-round-pale-blue",
-  "moon-m05-aviator-pale-blue",
-  "moon-m09-broad-pale-blue",
-  "moon-m06-aviator-pale-pink",
+  "moon-01-hexagonal",
+  "moon-02-rectangular",
+  "moon-03-aviator",
+  "moon-04-wayfarer",
+  "moon-05-round",
+  "moon-06-wide-wayfarer",
+  "moon-07-hexagonal-ii",
+  "moon-08-cateye-oval",
+  "moon-09-oval",
+  "moon-10-wide-rectangular",
 ];
 
 export default function TryOnPage() {

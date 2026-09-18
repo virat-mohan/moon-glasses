@@ -103,7 +103,7 @@ export default function EditChapterPage() {
       <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Edit A Product</h1>
       <p className="mt-2 max-w-lg text-body-s text-secondary-text">
         Change the name/code, price, story, or hero image (the first photo people see) for any
-        product — the original 16 or ones added from /admin/add-chapter. Takes effect immediately.
+        product — the original 10 or ones added from /admin/add-chapter. Takes effect immediately.
       </p>
 
       <select

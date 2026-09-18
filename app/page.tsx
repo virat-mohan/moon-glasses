@@ -22,7 +22,7 @@ const pillars = [
   { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
   { title: "Plastic Or Metal", copy: "Acetate or metal — same flat ₹1,499 either way." },
   { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
-  { title: "Small-Batch", copy: "16 SKUs at launch. When a colourway sells out, it's gone." },
+  { title: "Small-Batch", copy: "10 SKUs at launch. When a colourway sells out, it's gone." },
 ];
 
 export default async function Home() {
@@ -36,10 +36,10 @@ export default async function Home() {
   const grouped = [...bySeries.values()].flat();
 
   const featuredSlugs = [
-    "moon-m05-aviator-pale-blue",
-    "moon-p01-wayfarer-pale-blue",
-    "moon-m09-broad-pale-peach",
-    "moon-m01-round-pale-pink",
+    "moon-03-aviator",
+    "moon-01-hexagonal",
+    "moon-09-oval",
+    "moon-08-cateye-oval",
   ];
   const featured = featuredSlugs
     .map((slug) => grouped.find((c) => c.slug === slug))
@@ -94,7 +94,7 @@ export default async function Home() {
           <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">New In</p>
           <h2 className="font-display text-display-m uppercase text-ink">The Collection</h2>
           <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
-            Sixteen shapes across two materials. Every pair, flat ₹1,499.
+            Ten shapes across two materials. Every pair, flat ₹1,499.
           </p>
 
           <div className="mt-10 grid grid-cols-2 gap-0.5 md:grid-cols-4">
@@ -119,7 +119,7 @@ export default async function Home() {
           image="/images/brand/editorial-02.jpg"
           eyebrow="New In"
           title="Light Tints"
-          copy="Sixteen shapes, four lens moods. Pale blue, pink, green and peach across plastic and metal."
+          copy="Ten shapes, ten distinct lens tints — hexagonal, aviator, round, cat-eye and more, across plastic and metal."
           ctaLabel="Discover The Collection"
           ctaHref="/#shop"
           reverse
