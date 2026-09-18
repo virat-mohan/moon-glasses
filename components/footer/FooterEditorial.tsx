@@ -36,7 +36,7 @@ export function FooterEditorial() {
     <footer className="border-t border-[var(--moon-line)] bg-[var(--moon-black)] py-16">
       <div className="mx-auto grid w-full max-w-[1440px] grid-cols-2 gap-10 px-6 font-sans md:grid-cols-6 md:px-12">
         <div className="col-span-2">
-          <p className="max-w-xs text-caption text-secondary-text">Get into the MOON.</p>
+          <p className="max-w-xs text-caption text-secondary-text">Get into the vibe.</p>
           <form className="mt-4 flex max-w-xs border-b border-white/25 pb-2">
             <input
               type="email"

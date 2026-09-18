@@ -20,7 +20,7 @@ export const revalidate = 3600;
 
 const pillars = [
   { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
-  { title: "Plastic Or Metal", copy: "₹1,499 acetate frames, ₹1,999 metal frames." },
+  { title: "Plastic Or Metal", copy: "Acetate or metal — same flat ₹1,499 either way." },
   { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
   { title: "Small-Batch", copy: "16 SKUs at launch. When a colourway sells out, it's gone." },
 ];
@@ -94,7 +94,7 @@ export default async function Home() {
           <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">New In</p>
           <h2 className="font-display text-display-m uppercase text-ink">The Collection</h2>
           <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
-            Sixteen shapes across two materials. Plastic ₹1,499, metal ₹1,999.
+            Sixteen shapes across two materials. Every pair, flat ₹1,499.
           </p>
 
           <div className="mt-10 grid grid-cols-2 gap-0.5 md:grid-cols-4">

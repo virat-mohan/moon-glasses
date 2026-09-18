@@ -2,9 +2,9 @@ import type { Chapter } from "@/types/chapter";
 
 /**
  * MOON GLASSES launch catalogue — 16 SKUs from the supplied transparent
- * product cutouts (MOON_GLASSES_16_PRODUCT_IMAGES pack). Plastic wayfarers
- * flat ₹1,499, metal frames (round/aviator/broad) flat ₹1,999. Metal frame
- * colour is silver/black only per brand rule — lens tint is the variant axis.
+ * product cutouts (MOON_GLASSES_16_PRODUCT_IMAGES pack). Every SKU is flat
+ * ₹1,499 regardless of frame material. Metal frame colour is silver/black
+ * only per brand rule — lens tint is the variant axis.
  *
  * Note: the supplied cutouts have visible AI background-removal fringing
  * (speckled edges) — usable for launch, but flagged for a reshoot/clean
@@ -68,7 +68,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Round metal frame, silver or black, with a pale blue lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -80,7 +80,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Round metal frame, silver or black, with a pale pink lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -92,7 +92,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Round metal frame, silver or black, with a pale green lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -104,7 +104,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Round metal frame, silver or black, with a pale peach lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -116,7 +116,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Classic aviator geometry, silver or black, with a pale blue lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -128,7 +128,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Classic aviator geometry, silver or black, with a pale pink lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -140,7 +140,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Classic aviator geometry, silver or black, with a pale green lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -152,7 +152,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Classic aviator geometry, silver or black, with a pale peach lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -164,7 +164,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Broad metal frame, silver or black, with a pale blue lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -176,7 +176,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Broad metal frame, silver or black, with a pale pink lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -188,7 +188,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Broad metal frame, silver or black, with a pale green lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
   {
@@ -200,7 +200,7 @@ export const chapters: Chapter[] = [
     primary: "hero.jpg",
     sideImage: "hero.jpg",
     story: "Broad metal frame, silver or black, with a pale peach lens.",
-    price: 1999,
+    price: 1499,
     verifiedOnSite: true,
   },
 ];

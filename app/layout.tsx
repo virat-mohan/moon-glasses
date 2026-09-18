@@ -26,7 +26,7 @@ const spaceGrotesk = Space_Grotesk({
 
 const SITE_URL = "https://moon-glasses.store";
 const DESCRIPTION =
-  "MOON GLASSES™ — fashion eyewear for after dark. Plastic frames ₹1,499, metal frames ₹1,999. Ships across India.";
+  "MOON GLASSES™ — fashion eyewear for after dark. Every pair, flat ₹1,499. Ships across India.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

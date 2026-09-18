@@ -2,13 +2,6 @@ import Image from "next/image";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 
-const pillars = [
-  { title: "Music Always" },
-  { title: "Places Further" },
-  { title: "Better People" },
-  { title: "A Clearer You" },
-];
-
 export default function AboutPage() {
   return (
     <>
@@ -25,9 +18,9 @@ export default function AboutPage() {
               a night out rather than a beach chair.
             </p>
             <p>
-              Sixteen shapes across two materials at launch — acetate frames at ₹1,499, metal frames at
-              ₹1,999. UV400 protected, spring-hinged for all-day comfort, designed to be the piece
-              that finishes the outfit, not an afterthought.
+              Sixteen shapes across two materials at launch — acetate or metal, flat ₹1,499. UV400
+              protected, spring-hinged for all-day comfort, designed to be the piece that finishes
+              the outfit, not an afterthought.
             </p>
             <p>
               Every lens is tinted, not just tinted-looking — built to shift what the night feels
@@ -50,7 +43,9 @@ export default function AboutPage() {
 
           <div>
             <p className="font-display text-heading-m text-ink">Anun Dhawan</p>
-            <p className="mt-1 text-caption uppercase tracking-[0.1em] text-secondary-text">Founder</p>
+            <p className="mt-1 text-caption uppercase tracking-[0.1em] text-secondary-text">
+              Founder &amp; Inspiration
+            </p>
 
             <div className="mt-8 space-y-6 text-body text-ink">
               <p>
@@ -72,20 +67,33 @@ export default function AboutPage() {
             <blockquote className="mt-8 border-l-2 border-[var(--moon-gold)]/50 pl-6 font-sans text-body italic text-white">
               &ldquo;Good Music, Brighter Days.&rdquo;
               <footer className="mt-3 text-caption not-italic uppercase tracking-[0.1em] text-secondary-text">
-                — Anun Dhawan, Founder
+                — Anun Dhawan, Founder &amp; Inspiration
               </footer>
             </blockquote>
 
-            <div className="mt-10 grid grid-cols-2 gap-4 border-t border-divider pt-8 sm:grid-cols-4">
-              {pillars.map((p) => (
-                <p
-                  key={p.title}
-                  className="text-center text-micro uppercase tracking-[0.08em] text-secondary-text"
-                >
-                  {p.title}
-                </p>
-              ))}
+            <div className="mt-10 border-t border-divider pt-8">
+              <p className="text-center text-micro uppercase tracking-[0.15em] text-secondary-text">
+                Good Music And Vibes Always!
+              </p>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-16 flex items-center gap-4 border-t border-divider pt-10">
+          <div className="relative h-16 w-16 flex-none overflow-hidden rounded-full bg-surface-alt">
+            <Image
+              src="/images/team/virat-mohan.png"
+              alt="Virat Mohan, Co-Founder & Enabler of MOON GLASSES"
+              fill
+              sizes="64px"
+              className="object-cover"
+            />
+          </div>
+          <div>
+            <p className="font-display text-body text-ink">Virat Mohan</p>
+            <p className="mt-0.5 text-caption uppercase tracking-[0.1em] text-secondary-text">
+              Co-Founder &amp; Enabler
+            </p>
           </div>
         </div>
       </main>
