@@ -79,21 +79,30 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="mt-16 flex items-center gap-4 border-t border-divider pt-10">
-          <div className="relative h-16 w-16 flex-none overflow-hidden rounded-full bg-surface-alt">
+        <div className="mt-16 grid grid-cols-1 gap-8 border-t border-divider pt-10 sm:grid-cols-[240px_1fr] sm:items-center sm:gap-10">
+          <div className="relative aspect-[4/5] w-full max-w-[240px] overflow-hidden bg-surface-alt">
             <Image
               src="/images/team/virat-mohan.png"
-              alt="Virat Mohan, Co-Founder & Enabler of MOON GLASSES"
+              alt="Virat Mohan, Co-Founder & AI Enabler of MOON GLASSES"
               fill
-              sizes="64px"
+              sizes="240px"
               className="object-cover"
             />
           </div>
           <div>
-            <p className="font-display text-body text-ink">Virat Mohan</p>
-            <p className="mt-0.5 text-caption uppercase tracking-[0.1em] text-secondary-text">
-              Co-Founder &amp; Enabler
+            <p className="font-display text-heading-m text-ink">Virat Mohan</p>
+            <p className="mt-1 text-caption uppercase tracking-[0.1em] text-secondary-text">
+              Co-Founder And AI Enabler
             </p>
+            <p className="mt-4 text-body-s text-ink">Powering D2C businesses with AI.</p>
+            <a
+              href="https://www.viratmohan.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-block text-caption uppercase tracking-[0.1em] text-ink underline underline-offset-4 transition-colors hover:text-[var(--moon-gold)]"
+            >
+              viratmohan.com
+            </a>
           </div>
         </div>
       </main>
