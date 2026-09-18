@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 const columns = [
   {
@@ -37,14 +36,7 @@ export function FooterEditorial() {
     <footer className="border-t border-[var(--moon-line)] bg-[var(--moon-black)] py-16">
       <div className="mx-auto grid w-full max-w-[1440px] grid-cols-2 gap-10 px-6 font-sans md:grid-cols-6 md:px-12">
         <div className="col-span-2">
-          <Image
-            src="/images/brand/moon-glasses-logo.png"
-            alt="MOON GLASSES"
-            width={280}
-            height={160}
-            style={{ height: "36px", width: "auto" }}
-          />
-          <p className="mt-4 max-w-xs text-caption text-secondary-text">Get into the MOON.</p>
+          <p className="max-w-xs text-caption text-secondary-text">Get into the MOON.</p>
           <form className="mt-4 flex max-w-xs border-b border-white/25 pb-2">
             <input
               type="email"
