@@ -79,13 +79,13 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="mt-16 grid grid-cols-1 gap-8 border-t border-divider pt-10 sm:grid-cols-[240px_1fr] sm:items-center sm:gap-10">
-          <div className="relative aspect-[4/5] w-full max-w-[240px] overflow-hidden bg-surface-alt">
+        <div className="mt-16 grid grid-cols-1 gap-8 border-t border-divider pt-10 sm:grid-cols-[420px_1fr] sm:items-center sm:gap-10">
+          <div className="relative aspect-[4/5] w-full max-w-[420px] overflow-hidden bg-surface-alt">
             <Image
               src="/images/team/virat-mohan.png"
               alt="Virat Mohan, Co-Founder & AI Enabler of MOON GLASSES"
               fill
-              sizes="240px"
+              sizes="420px"
               className="object-cover"
             />
           </div>
