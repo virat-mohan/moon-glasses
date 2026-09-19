@@ -18,7 +18,7 @@ export default function AboutPage() {
               a night out rather than a beach chair.
             </p>
             <p>
-              Ten shapes across two materials at launch — acetate or metal, flat ₹1,499. UV400
+              Six shapes across 22 colourways at launch — acetate or metal, flat ₹1,499. UV400
               protected, spring-hinged for all-day comfort, designed to be the piece that finishes
               the outfit, not an afterthought.
             </p>

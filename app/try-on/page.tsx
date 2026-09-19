@@ -4,18 +4,16 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 
 export const metadata = { title: "Try It On" };
 
-// All 10 launch shapes in the rotating strip.
+// One of each of the 6 shapes plus a couple of standout colourways.
 const TRY_ON_SLUGS = [
-  "moon-01-hexagonal",
-  "moon-02-rectangular",
-  "moon-03-aviator",
-  "moon-04-wayfarer",
-  "moon-05-round",
-  "moon-06-wide-wayfarer",
-  "moon-07-hexagonal-ii",
-  "moon-08-cateye-oval",
-  "moon-09-oval",
-  "moon-10-wide-rectangular",
+  "moon-wayfarer-black",
+  "moon-round-black",
+  "moon-rectangle-black-orange",
+  "moon-aviator-classic-black-black",
+  "moon-octagon-gold-grey",
+  "moon-aviator-metal-black-yellow",
+  "moon-rectangle-black-blue",
+  "moon-octagon-black-blue",
 ];
 
 export default function TryOnPage() {
