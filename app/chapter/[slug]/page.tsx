@@ -240,7 +240,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             <p className="mb-6 text-caption uppercase tracking-[0.08em] text-secondary-text">
               Continue Exploring — {chapter.series}
             </p>
-            <div className="grid grid-cols-2 gap-0.5 md:grid-cols-5">
+            <div className="grid grid-cols-2 gap-0 md:grid-cols-5">
               {others.map((c, i) => (
                 <CollectionItem
                   key={c.slug}

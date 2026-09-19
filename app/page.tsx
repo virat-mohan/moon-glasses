@@ -77,7 +77,7 @@ export default async function Home() {
             <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
               Trending Now
             </p>
-            <div className="grid grid-cols-2 gap-0.5 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-0 md:grid-cols-4">
               {trending.map((chapter, i) => (
                 <CollectionItem
                   key={chapter.slug}
@@ -97,7 +97,7 @@ export default async function Home() {
             Six shapes, 22 colourways, across two materials. Every pair, flat ₹1,499.
           </p>
 
-          <div className="mt-10 grid grid-cols-2 gap-0.5 md:grid-cols-4">
+          <div className="mt-10 grid grid-cols-2 gap-0 md:grid-cols-4">
             {collection.map((chapter, i) => (
               <CollectionItem
                 key={chapter.slug}

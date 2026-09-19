@@ -110,7 +110,7 @@ export function CollectionItem({
             fill
             sizes="(min-width: 1024px) 25vw, 50vw"
             onError={() => setHasLifestyle(false)}
-            className={`absolute inset-0 object-cover transition-opacity duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
+            className={`absolute inset-0 object-cover object-[50%_18%] transition-opacity duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
               modelShowing ? "opacity-100" : "opacity-0"
             }`}
           />
