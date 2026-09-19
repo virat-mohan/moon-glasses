@@ -11,7 +11,7 @@ import { resolveCouponDiscount } from "@/lib/coupons";
 /** The fixed amount charged upfront for a COD order — the rest is collected by the courier on delivery. */
 export async function getCodAdvanceRupees() {
   const setting = await getSetting("COD_ADVANCE_AMOUNT_RUPEES");
-  return setting ? Number(setting) : 99;
+  return setting ? Number(setting) : 200;
 }
 
 /**

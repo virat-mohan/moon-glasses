@@ -57,7 +57,7 @@ export default function CheckoutPage() {
   const [razorpay, setRazorpay] = useState<{ enabled: boolean; keyId: string | null; codAdvanceRupees: number }>({
     enabled: false,
     keyId: null,
-    codAdvanceRupees: 99,
+    codAdvanceRupees: 200,
   });
   // razorpay.enabled defaults to false until /api/checkout/config resolves —
   // without this separate flag, a customer submitting the form before that
@@ -246,7 +246,7 @@ export default function CheckoutPage() {
           codAdvanceRupees: data.codAdvanceRupees ?? 99,
         })
       )
-      .catch(() => setRazorpay({ enabled: false, keyId: null, codAdvanceRupees: 99 }))
+      .catch(() => setRazorpay({ enabled: false, keyId: null, codAdvanceRupees: 200 }))
       .finally(() => setConfigLoaded(true));
   }, []);
 
@@ -265,7 +265,7 @@ export default function CheckoutPage() {
       }));
       setIdentityStep("verified");
     } else {
-      setIdentityStep("identify");
+      setIdentityStep("guest");
     }
   }
 
@@ -273,7 +273,7 @@ export default function CheckoutPage() {
     fetch("/api/account/me")
       .then((res) => res.json())
       .then(applyAccount)
-      .catch(() => setIdentityStep("identify"));
+      .catch(() => setIdentityStep("guest"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -739,7 +739,7 @@ export default function CheckoutPage() {
                   >
                     <span className="block font-bold uppercase tracking-[0.03em]">Cash On Delivery</span>
                     <span className="block text-caption opacity-80">
-                      Pay ₹{razorpay.codAdvanceRupees.toLocaleString("en-IN")} now, rest on delivery
+                      Pay ₹{razorpay.codAdvanceRupees.toLocaleString("en-IN")} now, balance on delivery (shipping extra)
                     </span>
                   </button>
                 </div>
@@ -761,62 +761,6 @@ export default function CheckoutPage() {
                 </span>
               </label>
             )}
-
-            <div className="mt-4">
-              <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                Referral Code (Optional)
-              </label>
-              <input
-                value={referralCodeInput}
-                onChange={(e) => updateReferralCode(e.target.value)}
-                placeholder="Got a code from a friend? Enter it here"
-                className="mt-1.5 w-full max-w-[280px] border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s uppercase text-ink outline-none placeholder:normal-case placeholder:text-secondary-text focus:border-ink"
-              />
-              {normalizedReferralCode && (
-                <p className="mt-2 text-caption">
-                  {referralChecking ? (
-                    <span className="text-secondary-text">Checking code...</span>
-                  ) : referralPreview?.checked === normalizedReferralCode && referralPreview.valid ? (
-                    <span className="text-tan-gold">
-                      Code applied — ₹{referralDiscount.toLocaleString("en-IN")} off
-                    </span>
-                  ) : referralPreview?.checked === normalizedReferralCode ? (
-                    <span className="text-paint-orange">That code isn&apos;t valid for this order.</span>
-                  ) : null}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-4">
-              <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                Coupon Code (Optional)
-              </label>
-              <div className="mt-1.5 flex max-w-[280px] items-center gap-1.5">
-                <input
-                  value={couponCodeInput}
-                  onChange={(e) => setCouponCodeInput(e.target.value)}
-                  placeholder="Have a code? Enter it here"
-                  className="min-w-0 flex-1 border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s uppercase text-ink outline-none placeholder:normal-case placeholder:text-secondary-text focus:border-ink"
-                />
-                <button
-                  type="button"
-                  onClick={applyCoupon}
-                  disabled={!normalizedCouponCode || couponChecking}
-                  className="shrink-0 border border-ink/30 px-3 py-2 font-sans text-caption uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
-                >
-                  {couponChecking ? "..." : "Apply"}
-                </button>
-              </div>
-              {normalizedCouponCode && couponPreview?.checked === normalizedCouponCode && (
-                <p className="mt-2 text-caption">
-                  {couponPreview.valid ? (
-                    <span className="text-tan-gold">Code applied — ₹{couponDiscount.toLocaleString("en-IN")} off</span>
-                  ) : (
-                    <span className="text-paint-orange">That code isn&apos;t valid for this order.</span>
-                  )}
-                </p>
-              )}
-            </div>
 
             <form onSubmit={handleSubmit} className="mt-10 space-y-4">
               <div>
@@ -974,6 +918,62 @@ export default function CheckoutPage() {
                       : "Place Order via WhatsApp"}
               </button>
             </form>
+
+            <div className="mt-8 border-t border-divider pt-6">
+              <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
+                Referral Code (Optional)
+              </label>
+              <input
+                value={referralCodeInput}
+                onChange={(e) => updateReferralCode(e.target.value)}
+                placeholder="Got a code from a friend? Enter it here"
+                className="mt-1.5 w-full max-w-[280px] border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s uppercase text-ink outline-none placeholder:normal-case placeholder:text-secondary-text focus:border-ink"
+              />
+              {normalizedReferralCode && (
+                <p className="mt-2 text-caption">
+                  {referralChecking ? (
+                    <span className="text-secondary-text">Checking code...</span>
+                  ) : referralPreview?.checked === normalizedReferralCode && referralPreview.valid ? (
+                    <span className="text-tan-gold">
+                      Code applied — ₹{referralDiscount.toLocaleString("en-IN")} off
+                    </span>
+                  ) : referralPreview?.checked === normalizedReferralCode ? (
+                    <span className="text-paint-orange">That code isn&apos;t valid for this order.</span>
+                  ) : null}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-4">
+              <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
+                Coupon Code (Optional)
+              </label>
+              <div className="mt-1.5 flex max-w-[280px] items-center gap-1.5">
+                <input
+                  value={couponCodeInput}
+                  onChange={(e) => setCouponCodeInput(e.target.value)}
+                  placeholder="Have a code? Enter it here"
+                  className="min-w-0 flex-1 border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s uppercase text-ink outline-none placeholder:normal-case placeholder:text-secondary-text focus:border-ink"
+                />
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  disabled={!normalizedCouponCode || couponChecking}
+                  className="shrink-0 border border-ink/30 px-3 py-2 font-sans text-caption uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
+                >
+                  {couponChecking ? "..." : "Apply"}
+                </button>
+              </div>
+              {normalizedCouponCode && couponPreview?.checked === normalizedCouponCode && (
+                <p className="mt-2 text-caption">
+                  {couponPreview.valid ? (
+                    <span className="text-tan-gold">Code applied — ₹{couponDiscount.toLocaleString("en-IN")} off</span>
+                  ) : (
+                    <span className="text-paint-orange">That code isn&apos;t valid for this order.</span>
+                  )}
+                </p>
+              )}
+            </div>
           </>
         )}
       </main>
