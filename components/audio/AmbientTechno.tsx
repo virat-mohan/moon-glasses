@@ -104,13 +104,26 @@ export function AmbientTechno() {
 
   function start() {
     const ctx = new AudioContext();
+    // iOS Safari sometimes leaves a freshly-created context "suspended"
+    // even when constructed inside a user gesture — an explicit resume()
+    // is the standard unlock nudge.
+    ctx.resume();
     const gain = ctx.createGain();
     gain.gain.value = VOLUME;
     gain.connect(ctx.destination);
     ctxRef.current = ctx;
     gainRef.current = gain;
     stepRef.current = 0;
-    nextTimeRef.current = ctx.currentTime + 0.05;
+    const startTime = ctx.currentTime + 0.05;
+    nextTimeRef.current = startTime;
+
+    // Schedule the very first step synchronously, in the same tick as the
+    // gesture, rather than only via the interval below — iOS Safari can
+    // fail to unlock audio at all if the first sound is only ever queued
+    // asynchronously.
+    scheduleStep(ctx, gain, stepRef.current, startTime);
+    nextTimeRef.current += STEP_SECONDS;
+    stepRef.current += 1;
 
     schedulerRef.current = window.setInterval(() => {
       while (nextTimeRef.current < ctx.currentTime + 0.15) {
