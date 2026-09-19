@@ -84,7 +84,9 @@ export function CollectionItem({
 
   return (
     <div
-      className="group relative aspect-square overflow-hidden product-tile-bg"
+      className={`group relative aspect-square overflow-hidden transition-colors duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
+        modelShowing ? "bg-[var(--moon-black)]" : "bg-white"
+      }`}
       onPointerDown={(e) => {
         lastPointerTypeRef.current = e.pointerType;
         stopAutoFlip();

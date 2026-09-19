@@ -21,7 +21,7 @@ export function Product360Viewer({
 
   return (
     <div>
-      <div className="chapter-card-bg relative aspect-square overflow-hidden product-tile-bg">
+      <div className="chapter-card-bg relative aspect-square overflow-hidden bg-white">
         {images.map((img, i) => (
           <Image
             key={img}
@@ -29,7 +29,7 @@ export function Product360Viewer({
             alt={i === frame ? name : ""}
             fill
             sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-cover"
+            className="object-contain p-[6%]"
             style={{ opacity: i === frame ? 1 : 0 }}
             priority={i === 0}
           />
@@ -44,17 +44,17 @@ export function Product360Viewer({
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-5 gap-3">
+      <div className="mt-4 grid grid-cols-4 gap-3">
         {images.map((img, i) => (
           <button
             key={img}
             onClick={() => setFrame(i)}
-            className={`relative aspect-square overflow-hidden product-tile-bg transition-opacity ${
+            className={`relative aspect-square overflow-hidden bg-white transition-opacity ${
               i === frame ? "opacity-100 ring-1 ring-ink" : "opacity-60 hover:opacity-100"
             }`}
             aria-label={`${name} angle ${i + 1}`}
           >
-            <Image src={chapterImageSrc(folder, img)} alt="" fill sizes="120px" className="object-cover" />
+            <Image src={chapterImageSrc(folder, img)} alt="" fill sizes="120px" className="object-contain p-[6%]" />
           </button>
         ))}
       </div>
