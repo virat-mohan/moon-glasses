@@ -20,7 +20,7 @@ export const DEFAULT_BRAND_PROFILE: BrandProfile = {
   productNoun: "sunglasses",
   currencySymbol: "₹",
   siteUrl: "https://moon-glasses.store",
-  instagramHandle: "@moonglasses",
+  instagramHandle: "@moonglassesonline",
 };
 
 /**

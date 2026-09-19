@@ -61,7 +61,7 @@ const organizationJsonLd = {
   logo: `${SITE_URL}/images/brand/moon-glasses-logo.png`,
   description: DESCRIPTION,
   address: { "@type": "PostalAddress", addressCountry: "IN" },
-  sameAs: ["https://instagram.com/moonglasses"],
+  sameAs: ["https://www.instagram.com/moonglassesonline/"],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
