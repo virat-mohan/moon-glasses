@@ -113,7 +113,7 @@ export default async function Home() {
           image="/images/brand/editorial-01.jpg"
           eyebrow="Made For After Dark"
           title="Fashion First"
-          copy="Frames built to be seen — bold shapes, real lens colour, designed for a night out."
+          copy="The pair for gigs, sets and the walk home after — bold shapes, real lens colour, built to keep up."
         />
         <EditorialSplit
           image="/images/brand/editorial-02.jpg"
