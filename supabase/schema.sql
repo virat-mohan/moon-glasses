@@ -1168,3 +1168,35 @@ create table if not exists creator_content (
   created_at timestamptz not null default now()
 );
 create index if not exists creator_content_creator_idx on creator_content (creator_id);
+
+-- ============================================================
+-- "Pay With A Post" — a checkout payment method that isn't currency: a
+-- shopper with a verified minimum follower count (via Instagram Business
+-- Discovery, see getPublicFollowerCount in lib/instagram.ts — never a
+-- self-reported number) gets the product against wearing it, posting a
+-- photo, and adding the brand as a collaborator, but it only actually SHIPS
+-- once their personal coupon code (barter_coupon_code, minted the same way
+-- creator coupons are — see lib/post-barter.ts) has driven
+-- barter_required_orders real, non-self redemptions — reusing the existing
+-- coupon_codes/coupon_redemptions engine unchanged, not a parallel
+-- attribution system. is_post_barter is a plain boolean flag (not a new
+-- status) specifically so lib/pnl.ts can flag these — they count as real
+-- revenue at full retail value like any other order, with the offsetting
+-- cost booked as a "Pay With A Post (Marketing CAC)" expense line of the
+-- same amount, rather than being quietly excluded from the top line.
+-- ============================================================
+alter table orders add column if not exists is_post_barter boolean not null default false;
+-- gift_first (follower count >= threshold) ships immediately, on trust —
+-- they post afterward. sell_first (below threshold, or unverifiable) is the
+-- safer default: nothing ships until their code has driven
+-- barter_required_orders real orders. Open to anyone either way — there is
+-- no minimum to participate, only a tier, decided server-side in
+-- lib/post-barter.ts's classifyPostBarterApplicant, never client-supplied.
+alter table orders add column if not exists barter_tier text not null default 'sell_first';
+alter table orders add column if not exists barter_instagram_handle text;
+alter table orders add column if not exists barter_follower_count integer;
+alter table orders add column if not exists barter_coupon_code text;
+alter table orders add column if not exists barter_required_orders integer not null default 3;
+alter table orders add column if not exists barter_post_url text;
+alter table orders add column if not exists barter_qualified_at timestamptz;
+create index if not exists orders_is_post_barter_idx on orders (is_post_barter) where is_post_barter;

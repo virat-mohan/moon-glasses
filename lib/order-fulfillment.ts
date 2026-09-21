@@ -8,6 +8,7 @@ import { applyNewsletterOptIn } from "@/lib/newsletter";
 import { recordGuestCheckoutLead } from "@/lib/leads";
 import { rewardReferrer } from "@/lib/referrals";
 import { redeemCoupon } from "@/lib/coupons";
+import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
 import { findOrCreateCustomerForGuest } from "@/lib/auth";
 import { checkAndAlertLowStock } from "@/lib/inventory";
 import { shipOrder } from "@/lib/order-shipping";
@@ -209,6 +210,13 @@ export async function finalizeOrder(
       payload.customer.phone,
       payload.customer.email
     );
+    // Best-effort — a "Pay With A Post" order this redemption happened to
+    // qualify must never block this (normal, paying) order from completing.
+    try {
+      await maybeQualifyBarterOrderForCoupon(pricing.coupon.code);
+    } catch (err) {
+      console.error("Failed to check barter qualification", err);
+    }
   }
 
   // Best-effort — a failed email/WhatsApp send shouldn't fail the order.

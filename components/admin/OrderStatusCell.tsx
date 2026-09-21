@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const OPTIONS: Record<string, string[]> = {
-  status: ["pending_whatsapp_confirmation", "confirmed", "cancelled"],
+  status: ["pending_whatsapp_confirmation", "pending_upi_payment", "confirmed", "cancelled"],
 };
 
 export function OrderStatusCell({

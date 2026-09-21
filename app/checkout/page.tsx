@@ -60,6 +60,12 @@ export default function CheckoutPage() {
     keyId: null,
     codAdvanceRupees: 200,
   });
+  const [upi, setUpi] = useState<{ enabled: boolean; id: string | null; qrImageUrl: string | null }>({
+    enabled: false,
+    id: null,
+    qrImageUrl: null,
+  });
+  const [upiSubmitting, setUpiSubmitting] = useState(false);
   // razorpay.enabled defaults to false until /api/checkout/config resolves —
   // without this separate flag, a customer submitting the form before that
   // fetch completes (a real risk: it's an async call fired on mount) would
@@ -87,7 +93,135 @@ export default function CheckoutPage() {
   // Prepaid ships free nationwide; COD charges the real Shiprocket rate
   // (collected by the courier alongside the balance due) plus a small
   // upfront advance to filter out fake/non-serious COD orders.
-  const [paymentType, setPaymentType] = useState<"prepaid" | "cod_advance">("prepaid");
+  const [paymentType, setPaymentType] = useState<"prepaid" | "cod_advance" | "post_barter" | "upi_qr">("prepaid");
+  const [barterHandle, setBarterHandle] = useState("");
+  // Open to anyone — this is a preview of which tier a handle will land in,
+  // never a pass/fail gate. Submitting works with or without checking it
+  // first; the server re-classifies independently either way.
+  const [barterPreview, setBarterPreview] = useState<
+    { tier: "gift_first" | "sell_first"; followerCount: number | null; minFollowers: number; verificationCode: string | null } | null
+  >(null);
+  const [barterChecking, setBarterChecking] = useState(false);
+  const [barterSubmitting, setBarterSubmitting] = useState(false);
+  const [barterError, setBarterError] = useState<string | null>(null);
+  // gift_first ships real inventory on trust, so it needs proof the shopper
+  // actually controls the handle they typed — see verify-ownership. Failing
+  // or skipping this never blocks checkout; the server just downgrades to
+  // sell_first automatically if it can't confirm ownership at submit time.
+  const [ownershipChecking, setOwnershipChecking] = useState(false);
+  const [ownershipVerified, setOwnershipVerified] = useState(false);
+
+  async function checkBarterTier() {
+    if (!barterHandle.trim()) return;
+    setBarterChecking(true);
+    setBarterPreview(null);
+    setOwnershipVerified(false);
+    try {
+      const res = await fetch("/api/checkout/post-barter/check-eligibility", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instagramHandle: barterHandle.trim() }),
+      });
+      const data = await res.json();
+      setBarterPreview(data);
+    } catch {
+      setBarterPreview(null);
+    } finally {
+      setBarterChecking(false);
+    }
+  }
+
+  async function verifyOwnership() {
+    if (!barterPreview?.verificationCode) return;
+    setOwnershipChecking(true);
+    try {
+      const res = await fetch("/api/checkout/post-barter/verify-ownership", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instagramHandle: barterHandle.trim(), code: barterPreview.verificationCode }),
+      });
+      const data = await res.json();
+      setOwnershipVerified(!!data.verified);
+      if (!data.verified) setBarterError("Couldn't find that code in your bio yet — add it and try again.");
+      else setBarterError(null);
+    } catch {
+      setOwnershipVerified(false);
+    } finally {
+      setOwnershipChecking(false);
+    }
+  }
+
+  async function handlePostBarterSubmit() {
+    setBarterError(null);
+    if (!barterHandle.trim()) {
+      setBarterError("Enter your Instagram handle.");
+      return;
+    }
+    if (unitCount !== 1) {
+      setBarterError("Pay With A Post covers one item per order — adjust your cart to a single item.");
+      return;
+    }
+    setBarterSubmitting(true);
+    try {
+      const res = await fetch("/api/checkout/post-barter/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: form,
+          items: items.map((i) => ({ slug: i.slug, quantity: i.quantity })),
+          instagramHandle: barterHandle.trim(),
+          ownershipCode: ownershipVerified ? barterPreview?.verificationCode : undefined,
+          isGift,
+          giftNote: isGift ? giftNote : null,
+          sessionKey: getSessionKey(),
+          newsletterOptIn,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not create your order");
+      clear();
+      router.push(
+        `/checkout/confirmed?order=${data.orderId}&code=${data.couponCode}&required=${data.requiredOrders}&tier=${data.tier}`
+      );
+    } catch (err) {
+      setBarterError(err instanceof Error ? err.message : "Could not create your order");
+    } finally {
+      setBarterSubmitting(false);
+    }
+  }
+
+  async function handleUpiSubmit() {
+    setPayError(null);
+    setUpiSubmitting(true);
+    try {
+      const res = await fetch("/api/checkout/upi/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: form,
+          items: items.map((i) => ({ slug: i.slug, quantity: i.quantity })),
+          isGift,
+          giftNote: isGift ? giftNote : null,
+          sessionKey: getSessionKey(),
+          redeemMilesRupees: loyaltyDiscount,
+          newsletterOptIn,
+          referralCode: referralCodeInput.trim().toUpperCase() || null,
+          couponCode: couponCodeInput.trim().toUpperCase() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not start your order");
+      clear();
+      router.push(
+        `/checkout/confirmed?order=${data.orderId}&upi=1&amount=${data.total}&upiId=${encodeURIComponent(data.upiId)}&qr=${encodeURIComponent(data.qrImageUrl)}&link=${encodeURIComponent(data.upiLink)}`
+      );
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Could not start your order");
+    } finally {
+      setUpiSubmitting(false);
+    }
+  }
+
   const [shippingCharge, setShippingCharge] = useState<number | null>(null);
   const [shippingUnavailable, setShippingUnavailable] = useState(false);
   // Distinct from shippingUnavailable: this specifically means Shiprocket
@@ -128,6 +262,12 @@ export default function CheckoutPage() {
     Math.max(0, subtotal - discount - loyaltyDiscount - referralDiscount - couponDiscount) +
     displayShippingCharge;
   const unitCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  // Pay With A Post only covers a single item — the tile itself only
+  // renders when unitCount === 1 (see below), and nothing on this page lets
+  // the cart quantity change without unmounting/remounting the page (which
+  // resets paymentType to its default anyway), so "post_barter" selected
+  // with unitCount !== 1 is not a reachable state. The real 1-item cap is
+  // still enforced server-side regardless — see createPostBarterOrder.
 
   // Live referral-code validation — mirrors resolveReferralDiscount's rules
   // (self-referral, one-time-per-customer) so the total shown before payment
@@ -240,13 +380,21 @@ export default function CheckoutPage() {
   useEffect(() => {
     fetch("/api/checkout/config")
       .then((res) => res.json())
-      .then((data) =>
+      .then((data) => {
         setRazorpay({
           enabled: !!data.razorpayEnabled,
           keyId: data.razorpayKeyId,
           codAdvanceRupees: data.codAdvanceRupees ?? 99,
-        })
-      )
+        });
+        setUpi({ enabled: !!data.upiEnabled, id: data.upiId ?? null, qrImageUrl: data.upiQrImageUrl ?? null });
+        // With Razorpay off, "prepaid" has no visible tile to select it —
+        // default straight to the real payment method so submitting
+        // without touching a tile does something sensible instead of
+        // silently falling through to the WhatsApp-manual fallback.
+        if (!data.razorpayEnabled && data.upiEnabled) {
+          setPaymentType("upi_qr");
+        }
+      })
       .catch(() => setRazorpay({ enabled: false, keyId: null, codAdvanceRupees: 200 }))
       .finally(() => setConfigLoaded(true));
   }, []);
@@ -452,6 +600,16 @@ export default function CheckoutPage() {
 
     if (!configLoaded) return; // guarded — see the disabled submit button below
 
+    if (paymentType === "post_barter") {
+      await handlePostBarterSubmit();
+      return;
+    }
+
+    if (paymentType === "upi_qr") {
+      await handleUpiSubmit();
+      return;
+    }
+
     if (razorpay.enabled) {
       await handleRazorpayPayment();
       return;
@@ -608,7 +766,7 @@ export default function CheckoutPage() {
       )}
       <div className="flex items-center justify-between pt-3 font-display text-heading-s text-ink">
         <span>Total</span>
-        <span>₹{total.toLocaleString("en-IN")}</span>
+        <span>{paymentType === "post_barter" ? "Paid with a post" : `₹${total.toLocaleString("en-IN")}`}</span>
       </div>
     </div>
   );
@@ -706,7 +864,9 @@ export default function CheckoutPage() {
             <p className="mt-4 max-w-md text-body-s text-secondary-text">
               {razorpay.enabled
                 ? "Pay securely below and we'll email your invoice and confirm right after."
-                : "We don't run this through a payment gateway yet — placing an order sends your details and cart straight to us on WhatsApp, and we'll confirm payment and delivery with you directly."}
+                : upi.enabled
+                  ? "Pay by UPI QR below, or skip payment entirely with Pay With A Post — pick whichever fits."
+                  : "We don't run this through a payment gateway yet — placing an order sends your details and cart straight to us on WhatsApp, and we'll confirm payment and delivery with you directly."}
             </p>
 
             <div className="mt-6 flex items-center justify-between border-t border-divider pt-4 text-body-s">
@@ -768,6 +928,145 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
+
+            {upi.enabled && (
+              <div className="mt-4 border border-ink/30 p-4">
+                <button
+                  type="button"
+                  onClick={() => setPaymentType(paymentType === "upi_qr" ? "prepaid" : "upi_qr")}
+                  className={`block w-full border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
+                    paymentType === "upi_qr" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
+                  }`}
+                >
+                  <span className="block font-bold uppercase tracking-[0.03em]">Pay via UPI QR</span>
+                  <span className="block text-caption opacity-80">
+                    Scan to pay ₹{total.toLocaleString("en-IN")} directly — GPay, PhonePe, Paytm, any UPI app.
+                  </span>
+                </button>
+
+                {paymentType === "upi_qr" && (
+                  <div className="mt-4 flex flex-col items-center gap-3 text-center">
+                    {upi.qrImageUrl && (
+                      <Image
+                        src={upi.qrImageUrl}
+                        alt="Scan to pay via UPI"
+                        width={220}
+                        height={264}
+                        className="border border-ink/20"
+                      />
+                    )}
+                    {upi.id && <p className="text-caption text-secondary-text">UPI ID: {upi.id}</p>}
+                    <p className="max-w-[320px] text-caption text-secondary-text">
+                      Scan and pay <strong className="text-ink">₹{total.toLocaleString("en-IN")}</strong>, then
+                      submit below — we&apos;ll confirm receipt and email you once it&apos;s shipped.
+                    </p>
+                    {payError && <p className="text-caption text-paint-orange">{payError}</p>}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {unitCount === 1 ? (
+              <div className="mt-4 border border-ink/30 p-4">
+                <button
+                  type="button"
+                  onClick={() => setPaymentType(paymentType === "post_barter" ? "prepaid" : "post_barter")}
+                  className={`block w-full border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
+                    paymentType === "post_barter" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
+                  }`}
+                >
+                  <span className="block font-bold uppercase tracking-[0.03em]">Pay With A Post</span>
+                  <span className="block text-caption opacity-80">
+                    Skip the payment — post about us on Instagram instead.
+                  </span>
+                </button>
+
+                {paymentType === "post_barter" && (
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="border border-ink/20 bg-surface-alt p-3">
+                        <p className="font-sans text-caption font-bold uppercase tracking-[0.03em] text-ink">
+                          Just starting out
+                        </p>
+                        <p className="mt-1 text-micro leading-relaxed text-secondary-text">
+                          Post about us and share your own code. The moment 3 people shop with it, your
+                          pair ships — free.
+                        </p>
+                      </div>
+                      <div className="border border-ink/20 bg-surface-alt p-3">
+                        <p className="font-sans text-caption font-bold uppercase tracking-[0.03em] text-ink">
+                          5,000+ followers
+                        </p>
+                        <p className="mt-1 text-micro leading-relaxed text-secondary-text">
+                          We ship your pair right away — you post once it arrives. No waiting.
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-caption text-secondary-text">
+                      Enter your Instagram handle below and we&apos;ll tell you which one&apos;s yours.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        value={barterHandle}
+                        onChange={(e) => {
+                          setBarterHandle(e.target.value);
+                          setBarterPreview(null);
+                          setOwnershipVerified(false);
+                        }}
+                        placeholder="Your Instagram handle (e.g. @yourname)"
+                        className="min-w-0 flex-1 border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
+                      />
+                      <button
+                        type="button"
+                        onClick={checkBarterTier}
+                        disabled={!barterHandle.trim() || barterChecking}
+                        className="shrink-0 border border-ink/30 px-3 py-2 font-sans text-caption uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
+                      >
+                        {barterChecking ? "Checking…" : "Check"}
+                      </button>
+                    </div>
+                    {barterPreview && (
+                      <p className="text-caption text-tan-gold">
+                        {barterPreview.tier === "gift_first"
+                          ? `You're in the 5,000+ tier (${barterPreview.followerCount?.toLocaleString("en-IN")} followers) — we'll ship it to you right away, once we confirm it's really you below.`
+                          : barterPreview.followerCount != null
+                            ? `${barterPreview.followerCount.toLocaleString("en-IN")} followers — you're in the "just starting out" tier, so this ships once your code brings in 3 orders.`
+                            : "Couldn't verify your follower count (make sure your Instagram is Business or Creator, not Personal) — you're in the \"just starting out\" tier, so this ships once your code brings in 3 orders."}
+                      </p>
+                    )}
+                    {barterPreview?.tier === "gift_first" && barterPreview.verificationCode && (
+                      <div className="border border-ink/20 bg-surface-alt p-3">
+                        <p className="text-caption text-ink">
+                          Quick check — add this to your Instagram bio for a minute, then verify:
+                        </p>
+                        <code className="mt-2 inline-block border border-ink/30 bg-surface px-3 py-1.5 font-sans text-caption tracking-[0.08em] text-ink">
+                          {barterPreview.verificationCode}
+                        </code>
+                        <div className="mt-2">
+                          {ownershipVerified ? (
+                            <span className="text-caption text-tan-gold">Verified — you&apos;re good to go.</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={verifyOwnership}
+                              disabled={ownershipChecking}
+                              className="border border-ink/30 px-3 py-1.5 font-sans text-caption uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
+                            >
+                              {ownershipChecking ? "Checking…" : "I&apos;ve added it — Verify"}
+                            </button>
+                          )}
+                        </div>
+                        <p className="mt-2 text-micro text-secondary-text">
+                          Skip this and we&apos;ll still take your order — it just ships once your code
+                          drives 3 real orders instead of right away.
+                        </p>
+                      </div>
+                    )}
+                    {barterError && <p className="text-caption text-paint-orange">{barterError}</p>}
+                  </div>
+                )}
+              </div>
+            ) : null}
 
             {orderSummary}
 
@@ -925,20 +1224,34 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={paying || shippingBlocking || !configLoaded}
+                disabled={
+                  paying ||
+                  shippingBlocking ||
+                  !configLoaded ||
+                  (paymentType === "post_barter" && (!barterHandle.trim() || barterSubmitting)) ||
+                  (paymentType === "upi_qr" && upiSubmitting)
+                }
                 className="w-full py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
               >
                 {!configLoaded
                   ? "Loading..."
                   : shippingBlocking
                     ? "Undeliverable Pincode"
-                    : razorpay.enabled
-                      ? paying
-                        ? "Processing..."
-                        : paymentType === "cod_advance"
-                          ? `Pay ₹${Math.min(razorpay.codAdvanceRupees, total).toLocaleString("en-IN")} Now`
-                          : `Pay ₹${total.toLocaleString("en-IN")}`
-                      : "Place Order via WhatsApp"}
+                    : paymentType === "post_barter"
+                      ? barterSubmitting
+                        ? "Confirming..."
+                        : "Confirm — Pay With A Post"
+                      : paymentType === "upi_qr"
+                        ? upiSubmitting
+                          ? "Confirming..."
+                          : `I've Paid ₹${total.toLocaleString("en-IN")} — Confirm Order`
+                        : razorpay.enabled
+                          ? paying
+                            ? "Processing..."
+                            : paymentType === "cod_advance"
+                              ? `Pay ₹${Math.min(razorpay.codAdvanceRupees, total).toLocaleString("en-IN")} Now`
+                              : `Pay ₹${total.toLocaleString("en-IN")}`
+                          : "Place Order via WhatsApp"}
               </button>
             </form>
 

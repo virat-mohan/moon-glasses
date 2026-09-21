@@ -17,6 +17,7 @@ const NAV_SECTIONS = [
       { href: "/admin/content-calendar", label: "Content Calendar" },
       { href: "/admin/reports", label: "Growth Reports" },
       { href: "/admin/abandoned-carts", label: "Abandoned Carts" },
+      { href: "/admin/post-barter", label: "Pay With A Post" },
       { href: "/admin/agent-log", label: "Ad Agent" },
     ],
   },
@@ -44,6 +45,7 @@ const NAV_SECTIONS = [
   {
     label: "Community",
     links: [
+      { href: "/admin/creators", label: "Creators" },
       { href: "/admin/explorer-submissions", label: "Explorer Submissions" },
       { href: "/admin/reviews", label: "Reviews" },
     ],

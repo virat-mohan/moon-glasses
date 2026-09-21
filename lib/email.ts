@@ -562,3 +562,154 @@ export async function sendWarehouseNotificationEmail(
   );
   return results.every(Boolean);
 }
+
+/** Sent the moment a creator submits the /creator/apply form — confirms it was received, sets expectations, no promises either way. */
+export async function sendCreatorApplicationReceivedEmail(toEmail: string, name: string) {
+  const brand = await getBrandProfile();
+  const html = `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <p style="text-align:center;text-transform:uppercase;letter-spacing:0.15em;font-size:12px;color:#666;">${brand.brandName}</p>
+      <h1 style="font-size:22px;margin:24px 0 8px;">Thanks, ${name}.</h1>
+      <p style="font-size:14px;color:#444;line-height:1.6;">
+        Your creator application is in. We review every application by hand — if it's a fit,
+        we'll be in touch by email or WhatsApp with next steps.
+      </p>
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+  return sendEmail(toEmail, `We've got your ${brand.brandName} creator application`, html);
+}
+
+/** Internal heads-up the moment a new creator application lands, with the agent's score/recommendation so review starts pre-triaged. */
+export async function sendCreatorApplicationNotificationEmail(
+  name: string,
+  instagramHandle: string,
+  followerCount: number,
+  score: number,
+  recommendation: string
+) {
+  const html = `
+    <div style="max-width:480px;margin:0 auto;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;">
+      <p style="font-size:13px;color:#666;">New creator application</p>
+      <p style="font-size:15px;"><strong>${name}</strong> · @${instagramHandle.replace(/^@/, "")} · ${followerCount.toLocaleString("en-IN")} followers</p>
+      <p style="font-size:14px;">Agent score: <strong>${score}/100</strong> — recommend <strong>${recommendation.toUpperCase()}</strong></p>
+      <p style="font-size:13px;"><a href="https://moon-glasses.store/admin/creators">Review in admin</a></p>
+    </div>
+  `;
+  await Promise.all(ORDER_NOTIFICATION_RECIPIENTS.map((to) => sendEmail(to, `New creator application — ${name}`, html)));
+}
+
+/** Sent when an admin approves a creator — carries the link to review and sign the collaboration agreement. */
+export async function sendCreatorApprovedEmail(toEmail: string, name: string, agreementUrl: string) {
+  const brand = await getBrandProfile();
+  const html = `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <p style="text-align:center;text-transform:uppercase;letter-spacing:0.15em;font-size:12px;color:#666;">${brand.brandName}</p>
+      <h1 style="font-size:22px;margin:24px 0 8px;">You're in, ${name}.</h1>
+      <p style="font-size:14px;color:#444;line-height:1.6;">
+        Welcome to the ${brand.brandName} creator community. One last step before we ship your product —
+        please review and sign the short collaboration agreement.
+      </p>
+      <a href="${agreementUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Review &amp; Sign</a>
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+  return sendEmail(toEmail, `You're approved — sign your ${brand.brandName} creator agreement`, html);
+}
+
+/** Sent when an admin rejects a creator application. */
+export async function sendCreatorRejectedEmail(toEmail: string, name: string) {
+  const brand = await getBrandProfile();
+  const html = `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <p style="font-size:16px;">Hi ${name},</p>
+      <p style="font-size:14px;color:#444;line-height:1.6;">
+        Thanks for applying to the ${brand.brandName} creator program — we're not able to move forward
+        with it right now, but we'd love to see future applications as the program grows.
+      </p>
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+  return sendEmail(toEmail, `Update on your ${brand.brandName} creator application`, html);
+}
+
+/** Sent the moment a "Pay With A Post" order is placed — hands over the shareable code and explains what has to happen before it ships. */
+export async function sendPostBarterOrderConfirmationEmail(
+  toEmail: string,
+  name: string,
+  orderId: string,
+  couponCode: string,
+  requiredOrders: number,
+  tier: "gift_first" | "sell_first"
+) {
+  const brand = await getBrandProfile();
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
+  const trackingUrl = `${brand.siteUrl.replace(/\/$/, "")}/barter/${orderId}`;
+
+  const steps =
+    tier === "gift_first"
+      ? `
+        <li>It's on its way — no need to wait for anything.</li>
+        <li>Once it arrives, wear it and take a photo or Reel.</li>
+        <li>Post it on Instagram and add <a href="${instagramProfileUrl}" style="color:#101820;">${brand.instagramHandle}</a> as a collaborator (or tag us if collaborator invites aren't available to you).</li>
+      `
+      : `
+        <li>Take a photo and post it on Instagram, adding <a href="${instagramProfileUrl}" style="color:#101820;">${brand.instagramHandle}</a> as a collaborator or tagging us.</li>
+        <li>Share your code below with your followers — anyone who checks out with it counts toward your goal.</li>
+        <li>Once <strong>${requiredOrders}</strong> people check out with it, we ship your order automatically — free.</li>
+      `;
+  const intro =
+    tier === "gift_first"
+      ? "Your order is confirmed and shipping now — here's what happens next:"
+      : "Your order is confirmed. Here's what happens next:";
+
+  const html = `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+      </div>
+      <p style="font-size:16px;">Hi ${name},</p>
+      <p style="font-size:14px;color:#444;line-height:1.6;">${intro}</p>
+      <ol style="font-size:14px;color:#444;line-height:1.8;padding-left:20px;">${steps}</ol>
+      <p style="margin:16px 0;padding:12px 20px;background:#f0eee4;border:1px dashed #101820;display:inline-block;font-size:18px;font-weight:bold;letter-spacing:0.08em;">${couponCode}</p>
+      <a href="${trackingUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">${tier === "gift_first" ? "View Details" : "Track Your Progress"}</a>
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+  return sendEmail(toEmail, `You're in — here's your ${brand.brandName} code`, html);
+}
+
+/** Sent the moment a "Pay With A Post" order clears its required-orders line and actually ships. */
+export async function sendPostBarterQualifiedEmail(toEmail: string, phone: string) {
+  const brand = await getBrandProfile();
+  const html = `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <p style="font-size:16px;">You did it.</p>
+      <p style="font-size:14px;color:#444;line-height:1.6;">
+        Your network came through — your order is shipping now, on us. We'll follow up on WhatsApp
+        (${phone}) with tracking.
+      </p>
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+  return sendEmail(toEmail, `It's shipping — you hit your goal`, html);
+}
+
+/** Sent right after a creator signs their agreement — confirms it, hands over their tracking/discount code. */
+export async function sendCreatorAgreementSignedEmail(toEmail: string, name: string, couponCode: string | null) {
+  const brand = await getBrandProfile();
+  const couponLine = couponCode
+    ? `<p style="font-size:14px;color:#444;line-height:1.6;">Your creator code is <strong>${couponCode}</strong> — share it so anyone who buys through you gets a discount and we can track what your content drives.</p>`
+    : "";
+  const html = `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <p style="text-align:center;text-transform:uppercase;letter-spacing:0.15em;font-size:12px;color:#666;">${brand.brandName}</p>
+      <h1 style="font-size:22px;margin:24px 0 8px;">Agreement signed, ${name}.</h1>
+      <p style="font-size:14px;color:#444;line-height:1.6;">We'll ship your product shortly and follow up with tracking.</p>
+      ${couponLine}
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+  return sendEmail(toEmail, `Agreement signed — welcome to ${brand.brandName}`, html);
+}

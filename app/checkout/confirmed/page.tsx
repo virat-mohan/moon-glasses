@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
@@ -33,6 +34,25 @@ export default function OrderConfirmedPage() {
   const [paid] = useState(() =>
     typeof window === "undefined" ? false : new URLSearchParams(window.location.search).get("paid") === "1"
   );
+  const [barter] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const required = params.get("required");
+    const tier = params.get("tier") === "gift_first" ? "gift_first" : "sell_first";
+    return code ? { code, required: required ? Number(required) : 3, tier: tier as "gift_first" | "sell_first" } : null;
+  });
+  const [upiPending] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upi") !== "1") return null;
+    return {
+      amount: Number(params.get("amount") ?? 0),
+      upiId: params.get("upiId") ?? "",
+      qrImageUrl: params.get("qr") ?? "",
+      upiLink: params.get("link") ?? "",
+    };
+  });
   const [order, setOrder] = useState<OrderSummary | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [referralCode, setReferralCode] = useState<string | null>(null);
@@ -112,19 +132,85 @@ export default function OrderConfirmedPage() {
     <>
       <main className="mx-auto w-full max-w-[600px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
         <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">
-          {paid ? "Order Confirmed" : "Order Sent"}
+          {upiPending ? "Awaiting Payment" : barter ? "Pay With A Post" : paid ? "Order Confirmed" : "Order Sent"}
         </p>
         <CheckoutSteps current="confirmed" />
         <h1 className="mt-6 font-display text-heading-xl uppercase text-ink md:text-display-m">
-          {paid ? "Thank You For Your Purchase." : "Check WhatsApp."}
+          {upiPending
+            ? "Scan To Pay."
+            : barter
+              ? barter.tier === "gift_first"
+                ? "It's Shipping."
+                : "Now Post It."
+              : paid
+                ? "Thank You For Your Purchase."
+                : "Check WhatsApp."}
         </h1>
         <p className="mt-4 text-body text-secondary-text">
-          {paid
-            ? "Welcome to being an Explorer — we've emailed your invoice and sent a confirmation on WhatsApp, and your order is on its way to being packed."
-            : "Your order details opened in WhatsApp — send that message through and we'll confirm payment and delivery with you directly, usually within a few hours."}
+          {upiPending
+            ? "Scan the QR below with any UPI app to pay. We'll confirm receipt and email you the moment it's on its way."
+            : barter
+              ? barter.tier === "gift_first"
+                ? "Your order is on its way — no need to wait for anything. Once it arrives, wear it, post a photo, and add us as a collaborator."
+                : `Post about it and share your code below. The moment ${barter.required} people check out with it, we ship — free.`
+              : paid
+                ? "Welcome to being an Explorer — we've emailed your invoice and sent a confirmation on WhatsApp, and your order is on its way to being packed."
+                : "Your order details opened in WhatsApp — send that message through and we'll confirm payment and delivery with you directly, usually within a few hours."}
         </p>
 
-        {paid && order && (
+        {upiPending && (
+          <div className="mt-8 flex flex-col items-center gap-3 border border-divider p-6 text-center">
+            {upiPending.qrImageUrl && (
+              <Image
+                src={upiPending.qrImageUrl}
+                alt="Scan to pay via UPI"
+                width={220}
+                height={264}
+                className="border border-ink/20"
+              />
+            )}
+            {upiPending.upiId && (
+              <p className="text-caption text-secondary-text">UPI ID: {upiPending.upiId}</p>
+            )}
+            <p className="font-display text-heading-s text-ink">₹{upiPending.amount.toLocaleString("en-IN")}</p>
+            {upiPending.upiLink && (
+              <a
+                href={upiPending.upiLink}
+                className="mt-2 inline-block border border-ink bg-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-cream hover:bg-cream hover:text-ink"
+              >
+                Open In UPI App
+              </a>
+            )}
+            <p className="mt-4 max-w-[360px] text-caption text-secondary-text">
+              Already paid? No need to do anything else — we check payments and confirm within a few
+              hours. You&apos;ll get an email the moment it&apos;s shipped.
+            </p>
+          </div>
+        )}
+
+        {barter && (
+          <div className="mt-8 border border-divider p-6">
+            <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Your Code</p>
+            <code className="mt-3 inline-block border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s tracking-[0.1em] text-ink">
+              {barter.code}
+            </code>
+            <p className="mt-4 text-caption text-secondary-text">
+              {barter.tier === "gift_first"
+                ? "We've emailed you the full step-by-step for your post — no need to wait, your order is already on its way."
+                : "We've emailed you the full step-by-step, along with a link to check your progress and drop your post link once it's live."}
+            </p>
+            {orderId && (
+              <Link
+                href={`/barter/${orderId}`}
+                className="mt-4 inline-block border border-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream"
+              >
+                View Instructions &amp; Progress
+              </Link>
+            )}
+          </div>
+        )}
+
+        {paid && !barter && order && (
           <div className="mt-8 border border-divider p-6">
             <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">
               Order Summary
@@ -191,7 +277,7 @@ export default function OrderConfirmedPage() {
           Keep Exploring
         </Link>
 
-        {referralCode && (
+        {referralCode && !barter && (
           <div className="mt-12 border border-divider p-6 text-left">
             <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">
               Recommend to a Fellow Explorer

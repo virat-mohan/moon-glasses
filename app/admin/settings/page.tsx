@@ -15,6 +15,14 @@ const GROUPS: { label: string; fields: Field[] }[] = [
     ],
   },
   {
+    label: "UPI QR Payment (works without Razorpay)",
+    fields: [
+      { key: "UPI_ID", label: "UPI ID (VPA)", hint: "e.g. moonglasses@okhdfcbank — shown at checkout as a fallback for anyone who can't scan." },
+      { key: "UPI_QR_IMAGE_URL", label: "UPI QR Image URL", hint: "Upload your QR image at /admin/marketing-assets first, then paste its URL here. Shown at checkout as a real, standalone payment method — no Razorpay account needed. Orders placed this way stay unpaid until you confirm the payment landed and click \"Mark Paid\" in /admin/orders." },
+      { key: "UPI_PAYEE_NAME", label: "Payee Name", hint: "Shown alongside the QR and used in the UPI deep link. Defaults to your brand name if unset." },
+    ],
+  },
+  {
     label: "Email",
     fields: [
       { key: "BREVO_API_KEY", label: "Brevo API Key", hint: "From Brevo → Settings → SMTP & API → API Keys. Powers every customer email — OTP, order confirmation, abandoned cart, newsletter." },

@@ -20,11 +20,17 @@ export async function computePnl(monthKey: string) {
   let discountsGiven = 0;
   let refunds = 0;
   let shippingCollected = 0;
+  // Pay-With-A-Post orders count as real revenue at full retail value — no
+  // currency actually changed hands, but the offsetting cost is booked below
+  // as a "Pay With A Post (Marketing CAC)" expense line of the same amount,
+  // so net profit nets out correctly while grossSales still shows the real
+  // top-line number instead of silently hiding these orders from it.
+  let barterValue = 0;
 
   const { data: orders } = await supabase
     .from("orders")
     .select(
-      "id, subtotal, discount_amount, referral_discount_amount, loyalty_discount_amount, coupon_discount_amount, shipping_charge, refunded_amount, status"
+      "id, subtotal, discount_amount, referral_discount_amount, loyalty_discount_amount, coupon_discount_amount, shipping_charge, refunded_amount, status, is_post_barter"
     )
     .gte("created_at", rangeStart)
     .lt("created_at", rangeEnd)
@@ -39,6 +45,7 @@ export async function computePnl(monthKey: string) {
       (o.coupon_discount_amount ?? 0);
     refunds += o.refunded_amount ?? 0;
     shippingCollected += o.shipping_charge ?? 0;
+    if (o.is_post_barter) barterValue += o.subtotal ?? 0;
   }
 
   let unitsSold = 0;
@@ -83,6 +90,13 @@ export async function computePnl(monthKey: string) {
   const whatsappSpend = Math.round((whatsappMessageCount ?? 0) * whatsappCostPerMessage);
   if (whatsappSpend > 0) {
     byCategory.set("WhatsApp Messaging (auto)", (byCategory.get("WhatsApp Messaging (auto)") ?? 0) + whatsappSpend);
+  }
+
+  if (barterValue > 0) {
+    byCategory.set(
+      "Pay With A Post (Marketing CAC, auto)",
+      (byCategory.get("Pay With A Post (Marketing CAC, auto)") ?? 0) + barterValue
+    );
   }
 
   const expensesByCategory = Array.from(byCategory.entries()).map(([category, amount]) => ({ category, amount }));

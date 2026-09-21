@@ -191,6 +191,106 @@ export async function getRecentPostPerformance(limit = 12): Promise<InstagramPos
 }
 
 /**
+ * Looks up a creator's PUBLIC follower count via Instagram Graph API's
+ * Business Discovery — the brand's own connected Business/Creator account
+ * querying another public Business/Creator account's basic stats by
+ * username. Deliberately not a per-creator OAuth/connect flow: the creator
+ * never authenticates anything, and we never touch anything beyond public
+ * counts. Returns null (never throws) if the account can't be resolved —
+ * most commonly because it's a personal (not Business/Creator) account,
+ * which Business Discovery simply can't see, or Meta isn't configured
+ * locally. Callers must treat null as "couldn't verify," not zero.
+ */
+export async function getPublicFollowerCount(instagramHandle: string): Promise<number | null> {
+  const profile = await getBusinessDiscoveryProfile(instagramHandle);
+  return profile?.followersCount ?? null;
+}
+
+/**
+ * Same Business Discovery lookup as getPublicFollowerCount, but also pulls
+ * `biography` — used ONLY for the "Pay With A Post" gift_first ownership
+ * check (see lib/post-barter.ts's verifyGiftFirstOwnership): asking someone
+ * to briefly drop a one-time code in their own bio proves they control the
+ * account before free product ships on trust, without a full OAuth connect
+ * flow. Kept as a separate function rather than always fetching biography
+ * in getPublicFollowerCount, since every other caller (creator applications,
+ * eligibility previews) has no reason to read someone's bio text.
+ */
+export async function getBusinessDiscoveryProfile(
+  instagramHandle: string
+): Promise<{ followersCount: number; biography: string } | null> {
+  try {
+    const { accessToken, igUserId } = await getInstagramAuth();
+    const username = instagramHandle.replace(/^@/, "").trim();
+    if (!username) return null;
+
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${igUserId}?` +
+        new URLSearchParams({
+          fields: `business_discovery.username(${username}){followers_count,biography}`,
+          access_token: accessToken,
+        })
+    );
+    const data = await res.json();
+    if (!res.ok || typeof data?.business_discovery?.followers_count !== "number") return null;
+    return {
+      followersCount: data.business_discovery.followers_count as number,
+      biography: (data.business_discovery.biography as string) ?? "",
+    };
+  } catch (err) {
+    console.error("Instagram Business Discovery lookup failed", instagramHandle, err);
+    return null;
+  }
+}
+
+export type InstagramTaggedMedia = {
+  id: string;
+  caption: string | null;
+  permalink: string | null;
+  mediaType: string;
+  username: string | null;
+  timestamp: string;
+  likeCount: number | null;
+  commentsCount: number | null;
+};
+
+/**
+ * Media where the connected brand Instagram account itself is tagged or
+ * added as a collaborator — this is the ONLY content-discovery mechanism in
+ * the creator program, deliberately. It never touches a creator's own
+ * account or requires them to connect anything: it only reads the brand's
+ * own account's tagged-media list, which the already-configured
+ * META_ACCESS_TOKEN has permission for. An admin reviews this list in
+ * /admin/creators and links the relevant post to a creator by hand — see
+ * app/api/admin/creators/content/route.ts.
+ */
+export async function getTaggedMedia(limit = 25): Promise<InstagramTaggedMedia[]> {
+  const { accessToken, igUserId } = await getInstagramAuth();
+
+  const res = await fetch(
+    `https://graph.facebook.com/${GRAPH_VERSION}/${igUserId}/tags?` +
+      new URLSearchParams({
+        fields: "id,caption,media_type,permalink,timestamp,username,like_count,comments_count",
+        limit: String(limit),
+        access_token: accessToken,
+      })
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(`Instagram Graph API error: ${JSON.stringify(data)}`);
+
+  return (data.data ?? []).map((item: Record<string, unknown>) => ({
+    id: item.id as string,
+    caption: (item.caption as string) ?? null,
+    permalink: (item.permalink as string) ?? null,
+    mediaType: item.media_type as string,
+    username: (item.username as string) ?? null,
+    timestamp: item.timestamp as string,
+    likeCount: (item.like_count as number) ?? null,
+    commentsCount: (item.comments_count as number) ?? null,
+  }));
+}
+
+/**
  * Posts a photo to the connected Instagram Business account's Story feed.
  * Requires the Instagram account to be a Business/Creator account connected
  * to the same Meta app as META_ACCESS_TOKEN. Best-effort — a missing setting

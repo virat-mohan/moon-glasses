@@ -5,6 +5,7 @@ import { ShipmentStatusCell } from "@/components/admin/ShipmentStatusCell";
 import { ShipmentCell } from "@/components/admin/ShipmentCell";
 import { RefundActions } from "@/components/admin/RefundActions";
 import { OpsDigestCard } from "@/components/admin/OpsDigestCard";
+import { MarkUpiPaidButton } from "@/components/admin/MarkUpiPaidButton";
 
 // This page reads live, frequently-changing order data and needs Supabase
 // env vars — never prerender it at build time.
@@ -56,6 +57,7 @@ export default async function AdminOrdersPage() {
     subtotal: number;
     discount_amount: number;
     payment_type: string | null;
+    payment_status: string | null;
     balance_due: number | null;
     status: string;
     shipment_status: string | null;
@@ -78,7 +80,7 @@ export default async function AdminOrdersPage() {
     const { data } = await supabase
       .from("orders")
       .select(
-        "id, created_at, customer_name, customer_phone, total, subtotal, discount_amount, payment_type, balance_due, status, shipment_status, refund_status, is_gift, gift_note, shiprocket_order_id, shiprocket_shipment_id, shiprocket_awb_code, shiprocket_label_url, courier_name, razorpay_payment_id, refunded_amount, return_shipment_id"
+        "id, created_at, customer_name, customer_phone, total, subtotal, discount_amount, payment_type, payment_status, balance_due, status, shipment_status, refund_status, is_gift, gift_note, shiprocket_order_id, shiprocket_shipment_id, shiprocket_awb_code, shiprocket_label_url, courier_name, razorpay_payment_id, refunded_amount, return_shipment_id"
       )
       .order("created_at", { ascending: false })
       .limit(50);
@@ -166,7 +168,16 @@ export default async function AdminOrdersPage() {
                   ₹{o.total?.toLocaleString("en-IN")}
                 </td>
                 <td className="py-3 text-caption">
-                  {o.payment_type === "cod_advance" ? (
+                  {o.payment_type === "upi_qr" ? (
+                    o.payment_status === "paid" ? (
+                      <span className="text-tan-gold">UPI QR · Paid</span>
+                    ) : (
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="font-bold text-paint-orange">UPI QR · Unpaid</span>
+                        <MarkUpiPaidButton orderId={o.id} />
+                      </div>
+                    )
+                  ) : o.payment_type === "cod_advance" ? (
                     <span className="font-bold text-paint-orange">
                       COD · ₹{o.balance_due?.toLocaleString("en-IN")} due
                     </span>

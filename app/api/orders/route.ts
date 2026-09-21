@@ -9,6 +9,7 @@ import { recordGuestCheckoutLead } from "@/lib/leads";
 import { getShippingRate } from "@/lib/shiprocket";
 import { resolveReferralDiscount, rewardReferrer } from "@/lib/referrals";
 import { resolveCouponDiscount, redeemCoupon } from "@/lib/coupons";
+import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
 import { checkAndAlertLowStock } from "@/lib/inventory";
 
 type OrderPayload = {
@@ -219,6 +220,11 @@ export async function POST(request: Request) {
 
     if (coupon) {
       await redeemCoupon(coupon.couponId, order.id, couponDiscountAmount, body.customer.phone, body.customer.email);
+      try {
+        await maybeQualifyBarterOrderForCoupon(coupon.code);
+      } catch (err) {
+        console.error("Failed to check barter qualification", err);
+      }
     }
 
     // Best-effort — a failed email must never fail the order itself.
