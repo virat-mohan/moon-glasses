@@ -17,7 +17,11 @@ import {
 
 const DEFAULT_MIN_FOLLOWERS = 5000;
 const DEFAULT_REQUIRED_ORDERS = 3;
-const DEFAULT_FRIEND_DISCOUNT_RUPEES = 200;
+// Pay With A Post codes are attribution-only, not a discount — friends
+// checking out with one still pay full price. Kept as a real, admin-editable
+// setting (POST_BARTER_FRIEND_DISCOUNT_RUPEES) rather than removing the
+// column, in case that changes later.
+const DEFAULT_FRIEND_DISCOUNT_RUPEES = 0;
 const DEFAULT_GIFT_FIRST_DAILY_CAP = 10;
 
 export type BarterTier = "gift_first" | "sell_first";
@@ -136,13 +140,26 @@ function randomSuffix() {
   return Math.random().toString(36).slice(2, 6).toUpperCase();
 }
 
-/** Mints a shareable coupon code for this barter order — same shape as a creator's coupon (lib/creators.ts), reusing the exact checkout coupon engine so a friend's redemption is a completely ordinary coupon redemption. */
-async function createBarterCouponCode(instagramHandle: string, friendDiscountRupees: number): Promise<string> {
+// Rotated onto the sharer's first name (e.g. "ZARA" -> "ZARANIGHT") so the
+// code reads like something worth sharing rather than a random string —
+// echoes the brand's night-out positioning instead of being purely
+// functional. Picked by hashing the name rather than randomly, so the same
+// person always lands on the same word if a code ever needs regenerating.
+const THEME_WORDS = ["NIGHT", "MOON", "GLOW", "AFTERDARK", "DROP", "VIBES"];
+
+/** Mints a shareable coupon code for this barter order — same shape as a creator's coupon (lib/creators.ts), reusing the exact checkout coupon engine so a friend's redemption is a completely ordinary coupon redemption. Full price for the friend — see discount_value below — this is attribution, not a discount mechanic. */
+async function createBarterCouponCode(customerName: string, instagramHandle: string, friendDiscountRupees: number): Promise<string> {
   const supabase = getSupabaseServerClient();
-  const base = parseInstagramHandle(instagramHandle).replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase() || "CREATOR";
+  const firstName = customerName.trim().split(/\s+/)[0]?.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const base =
+    firstName ||
+    parseInstagramHandle(instagramHandle).replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase() ||
+    "CREATOR";
+  const nameHash = Array.from(base).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const theme = THEME_WORDS[nameHash % THEME_WORDS.length];
 
   for (let attempt = 0; attempt < 5; attempt++) {
-    const code = `${base}${attempt === 0 ? "" : randomSuffix()}`;
+    const code = `${base}${theme}${attempt === 0 ? "" : randomSuffix()}`;
     const { error } = await supabase.from("coupon_codes").insert({
       code,
       discount_type: "flat",
@@ -246,7 +263,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   const pricing = await computeTrustedOrderTotal(payload.items, 0, payload.customer.pincode, null, payload.customer.phone, null, "prepaid");
 
   const guestCustomer = await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name);
-  const couponCode = await createBarterCouponCode(payload.instagramHandle, friendDiscountRupees);
+  const couponCode = await createBarterCouponCode(payload.customer.name, payload.instagramHandle, friendDiscountRupees);
   const isGiftFirst = tier === "gift_first";
 
   const { data: savedOrder, error: orderError } = await supabase

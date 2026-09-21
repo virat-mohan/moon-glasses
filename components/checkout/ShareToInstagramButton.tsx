@@ -83,67 +83,71 @@ async function buildShareCard(couponCode: string, siteDomain: string): Promise<B
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  ctx.fillStyle = "#0b0b0d";
+  ctx.fillStyle = "#050505";
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
+  const TOP_BAND = 220; // solid black — logo lives here, never over the photo
   const [hero, logo] = await Promise.all([loadImage(HERO_IMAGE), loadImage(LOGO_IMAGE), ensureFontsReady()]);
-  if (hero) drawCover(ctx, hero, 0, 0, CANVAS_W, CANVAS_H);
+  if (hero) drawCover(ctx, hero, 0, TOP_BAND, CANVAS_W, CANVAS_H - TOP_BAND);
 
-  // Top gradient — seats the (now much larger) logo legibly over the photo.
-  const topGrad = ctx.createLinearGradient(0, 0, 0, 340);
-  topGrad.addColorStop(0, "rgba(5,5,5,0.8)");
-  topGrad.addColorStop(1, "rgba(5,5,5,0)");
-  ctx.fillStyle = topGrad;
-  ctx.fillRect(0, 0, CANVAS_W, 340);
-
-  // Bottom gradient — the editorial-poster treatment that seats headline/code.
-  const bottomGrad = ctx.createLinearGradient(0, CANVAS_H - 660, 0, CANVAS_H);
-  bottomGrad.addColorStop(0, "rgba(5,5,5,0)");
-  bottomGrad.addColorStop(0.4, "rgba(5,5,5,0.85)");
-  bottomGrad.addColorStop(1, "rgba(5,5,5,0.97)");
-  ctx.fillStyle = bottomGrad;
-  ctx.fillRect(0, CANVAS_H - 660, CANVAS_W, 660);
+  // Thin gold seam between the black band and the photo — the same
+  // hairline-border language the site uses on tiles and cards, instead of a
+  // soft gradient blend.
+  ctx.fillStyle = "#e7c77a";
+  ctx.fillRect(0, TOP_BAND, CANVAS_W, 3);
 
   if (logo) {
-    const logoH = 160;
+    const logoH = 84;
     const logoW = (logo.width / logo.height) * logoH;
-    ctx.drawImage(logo, (CANVAS_W - logoW) / 2, 60, logoW, logoH);
+    ctx.drawImage(logo, 64, (TOP_BAND - logoH) / 2, logoW, logoH);
   }
+
+  // Bottom gradient — the editorial-poster treatment that seats headline/code.
+  const bottomGrad = ctx.createLinearGradient(0, CANVAS_H - 620, 0, CANVAS_H);
+  bottomGrad.addColorStop(0, "rgba(5,5,5,0)");
+  bottomGrad.addColorStop(0.4, "rgba(5,5,5,0.9)");
+  bottomGrad.addColorStop(1, "rgba(5,5,5,0.98)");
+  ctx.fillStyle = bottomGrad;
+  ctx.fillRect(0, CANVAS_H - 620, CANVAS_W, 620);
 
   ctx.textAlign = "center";
 
-  // Headline.
-  ctx.fillStyle = "#f2efe6";
-  ctx.font = `800 96px ${HEADLINE_FONT}`;
-  ctx.fillText("SPREAD THE", CANVAS_W / 2, CANVAS_H - 500);
-  ctx.fillStyle = "#d9a94c";
-  ctx.fillText("GOOD VIBES", CANVAS_W / 2, CANVAS_H - 398);
+  // Headline — the site's own voice: short lines, restrained, no hard sell.
+  ctx.fillStyle = "#e7c77a";
+  ctx.font = `700 40px ${HEADLINE_FONT}`;
+  ctx.letterSpacing = "6px";
+  ctx.fillText("SEE A BRIGHTER YOU", CANVAS_W / 2, CANVAS_H - 470);
+  ctx.letterSpacing = "0px";
 
-  // Direct CTA: where to go and why — not vague "something special."
-  ctx.fillStyle = "#f2efe6";
-  ctx.font = `700 46px ${HEADLINE_FONT}`;
-  ctx.fillText(`Shop ${siteDomain}`, CANVAS_W / 2, CANVAS_H - 318);
+  ctx.fillStyle = "#f7f7f4";
+  ctx.font = `800 84px ${HEADLINE_FONT}`;
+  ctx.fillText("MOON GLASSES", CANVAS_W / 2, CANVAS_H - 384);
 
   ctx.fillStyle = "#c9c5ba";
   ctx.font = `400 34px ${BODY_FONT}`;
-  const lines = wrapText(ctx, "Use my code at checkout for a discount.", CANVAS_W - 220);
-  let ly = CANVAS_H - 258;
+  const lines = wrapText(ctx, `Shop the drop at ${siteDomain} — use my code at checkout.`, CANVAS_W - 220);
+  let ly = CANVAS_H - 300;
   for (const line of lines) {
     ctx.fillText(line, CANVAS_W / 2, ly);
     ly += 44;
   }
 
-  // Code pill.
-  const pillY = ly + 28;
-  const pillW = 460;
-  const pillH = 96;
-  const pillX = (CANVAS_W - pillW) / 2;
-  ctx.strokeStyle = "#d9a94c";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(pillX, pillY, pillW, pillH);
-  ctx.fillStyle = "#f2efe6";
-  ctx.font = `700 44px ${HEADLINE_FONT}`;
-  ctx.fillText(couponCode, CANVAS_W / 2, pillY + pillH / 2 + 16);
+  // Code — set as letter-spaced gold text with a thin underline, matching
+  // how the site itself sets emphasis (e.g. product-page CTAs), rather than
+  // a boxed "coupon" pill that reads like a discount-app widget.
+  const codeY = ly + 70;
+  ctx.fillStyle = "#e7c77a";
+  ctx.font = `700 56px ${HEADLINE_FONT}`;
+  ctx.letterSpacing = "8px";
+  ctx.fillText(couponCode, CANVAS_W / 2, codeY);
+  ctx.letterSpacing = "0px";
+  const codeWidth = ctx.measureText(couponCode).width + couponCode.length * 8;
+  ctx.strokeStyle = "#e7c77a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(CANVAS_W / 2 - codeWidth / 2, codeY + 24);
+  ctx.lineTo(CANVAS_W / 2 + codeWidth / 2, codeY + 24);
+  ctx.stroke();
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png", 0.95));
 }
@@ -171,7 +175,7 @@ export function ShareToInstagramButton({
   // retype. Captured on landing (see captureCoupon in lib/client-tracking.ts)
   // and auto-applied the moment they reach checkout.
   const shopLink = `${siteUrl.replace(/\/$/, "")}/?coupon=${couponCode}`;
-  const caption = `Spreading the Good Vibes 🌙 Shop ${siteDomain} and use my code ${couponCode} for a discount — tag ${instagramHandle} as collaborator when you post.`;
+  const caption = `See a brighter you 🌙 Shop ${siteDomain} and use my code ${couponCode} at checkout — tag ${instagramHandle} as collaborator when you post.`;
 
   async function share() {
     setStatus("building");

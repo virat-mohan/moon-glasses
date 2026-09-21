@@ -126,8 +126,8 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
               collaborator invites aren&apos;t available to you).
             </li>
             <li>
-              Share your code below with your followers — anyone who checks out with it gets a
-              discount, and it counts toward your goal.
+              Share your code below with your followers — anyone who checks out with it counts
+              toward your goal (full price, no discount).
             </li>
             <li>
               Once <strong>{order.barter_required_orders}</strong> people have checked out with your
