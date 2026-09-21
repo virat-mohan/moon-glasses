@@ -46,6 +46,7 @@ export default function CartPage() {
   const discountRule = useDiscountRule();
   const discount = calculateDiscount(items, discountRule);
   const total = subtotal - discount;
+  const unitCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <>
@@ -75,15 +76,18 @@ export default function CartPage() {
             <div className="mt-12 divide-y divide-divider border-y border-divider">
               {items.map((item) => (
                 <div key={item.slug} className="flex flex-wrap items-center gap-4 py-6 sm:flex-nowrap sm:gap-5">
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-surface-alt sm:h-24 sm:w-24">
+                  <Link
+                    href={`/chapter/${item.slug}`}
+                    className="relative h-28 w-28 shrink-0 overflow-hidden bg-white sm:h-36 sm:w-36"
+                  >
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="96px"
-                      className="object-cover object-bottom"
+                      sizes="144px"
+                      className="object-contain p-2"
                     />
-                  </div>
+                  </Link>
 
                   <div className="min-w-0 flex-1">
                     <Link
@@ -132,6 +136,22 @@ export default function CartPage() {
               ))}
             </div>
 
+            <div className="mt-6 flex items-center gap-4 border-b border-divider pb-6">
+              <div className="relative aspect-square w-16 flex-none overflow-hidden bg-[var(--moon-black)] sm:w-20">
+                <Image
+                  src="/images/brand/case-and-pouch.png"
+                  alt="MOON Glasses branded case with microfiber cleaning cloth"
+                  fill
+                  sizes="80px"
+                  className="object-contain p-1.5"
+                />
+              </div>
+              <p className="flex-1 text-caption text-secondary-text">
+                Every pair ships in a branded MOON Glasses case with a microfiber cleaning cloth —
+                included, no extra charge.
+              </p>
+            </div>
+
             <div className="mt-8 flex items-center justify-between">
               <p className="font-sans text-body text-ink">Subtotal</p>
               <p className="font-sans text-body text-ink">₹{subtotal.toLocaleString("en-IN")}</p>
@@ -160,6 +180,16 @@ export default function CartPage() {
             >
               Proceed to Checkout
             </Link>
+
+            {unitCount === 1 && (
+              <p className="mt-3 text-center font-sans text-caption text-secondary-text">
+                <span className="text-tan-gold">New:</span> Skip the payment — get it free with{" "}
+                <Link href="/checkout" className="underline underline-offset-4 hover:text-ink">
+                  Pay With A Post
+                </Link>
+                .
+              </p>
+            )}
 
             {items.length > 1 && <CreatorTeaser className="mt-8" />}
           </>

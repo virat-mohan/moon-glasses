@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { chapters as staticChapters, chapterImageSrc, shortProductName, SHARED_SPECS } from "@/lib/chapters";
-import { getAllChapters } from "@/lib/chapters-dynamic";
+import { getAllChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getExplorerPostsForChapter } from "@/lib/community";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { getBrandProfile } from "@/lib/brand";
@@ -18,9 +18,31 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
 import { RestockNotifyForm } from "@/components/chapter/RestockNotifyForm";
 import { getApprovedReviews, getReviewSummary } from "@/lib/reviews";
+import type { Chapter } from "@/types/chapter";
 
 export function generateStaticParams() {
   return staticChapters.map((c) => ({ slug: c.slug }));
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** Random pick, capped at `limit`, guaranteeing one Limited Series item first when the pool has one. */
+function pickContinueExploring<T extends Chapter>(pool: T[], limitedSlugs: Set<string>, limit: number): T[] {
+  const limitedInPool = shuffle(pool.filter((c) => limitedSlugs.has(c.slug)));
+  const corePool = shuffle(pool.filter((c) => !limitedSlugs.has(c.slug)));
+  const picked: T[] = limitedInPool.length > 0 ? [limitedInPool[0]] : [];
+  for (const c of corePool) {
+    if (picked.length >= limit) break;
+    picked.push(c);
+  }
+  return picked;
 }
 
 export async function generateMetadata({
@@ -51,9 +73,19 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
   // product to anyone who guesses the slug.
   if (chapter.live === false) notFound();
 
-  const others = allChapters
+  // Capped at 4 and randomized rather than the full same-material list —
+  // that could be dozens of tiles as Master Inventory grows, which is what
+  // was actually slowing this section down. Guarantees one Limited Series
+  // piece when one exists, so it stays discoverable from a core product
+  // page instead of only surfacing to someone who already knows to look
+  // for /limited-series.
+  const limitedChapters = await getLimitedSeriesChapters();
+  const limitedSlugs = new Set(limitedChapters.map((c) => c.slug));
+  const otherPool = allChapters
     .filter((c) => c.series === chapter.series)
-    .filter((c) => c.slug !== chapter.slug);
+    .filter((c) => c.slug !== chapter.slug)
+    .filter((c) => c.live !== false);
+  const others = pickContinueExploring(otherPool, limitedSlugs, 4);
   const explorerPosts = await getExplorerPostsForChapter(chapter.slug);
   const inventory = await getInventoryMap();
   const stock = inventory[chapter.slug];
