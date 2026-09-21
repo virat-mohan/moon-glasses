@@ -145,7 +145,22 @@ async function generateWithGemini(
   const imagePart = data.candidates?.[0]?.content?.parts?.find(
     (p: { inlineData?: { data?: string } }) => p.inlineData?.data
   );
-  if (!imagePart) throw new Error("Gemini response did not contain an image");
+  if (!imagePart) {
+    // A 200 OK with no image usually means Gemini declined and explained
+    // why instead — in a text part, a block reason, or a finish reason —
+    // rather than an outright API failure. Surfacing that instead of a
+    // generic message is the difference between "try again" and actually
+    // knowing the edit instruction needs to change.
+    const textPart = data.candidates?.[0]?.content?.parts?.find((p: { text?: string }) => p.text)?.text;
+    const blockReason = data.promptFeedback?.blockReason;
+    const finishReason = data.candidates?.[0]?.finishReason;
+    const detail = textPart || blockReason || finishReason;
+    throw new Error(
+      detail
+        ? `Gemini didn't return an image: ${detail}`
+        : `Gemini response did not contain an image (raw response: ${JSON.stringify(data).slice(0, 500)})`
+    );
+  }
   return imagePart.inlineData.data as string;
 }
 
@@ -192,6 +207,22 @@ const GAZE_VARIANTS = [
   "head turned slightly to their right, gazing off past the camera, mid-laugh, hair/light catching the turn",
 ];
 
+// Randomized per call, same reasoning as GAZE_VARIANTS — without this,
+// generating model photos for several products back to back tends to
+// produce the same model and the same outfit each time, since the rest of
+// the prompt barely changes call to call. This is what actually makes
+// "wardrobe" a variable instead of an incidental constant.
+const WARDROBE_VARIANTS = [
+  "a sharp open-collar shirt, sleeves loosely rolled",
+  "a fitted blazer worn open over a simple top",
+  "a satin or silk slip top",
+  "a leather jacket over a fitted top",
+  "a turtleneck paired with statement gold jewelry",
+  "an off-shoulder or halter top",
+  "a relaxed oversized shirt tucked in at the front",
+  "a fitted knit top with a delicate chain necklace",
+];
+
 export async function generateModelPhoto(options: {
   referenceImageUrls: string[];
   gender: "male" | "female";
@@ -205,18 +236,21 @@ export async function generateModelPhoto(options: {
   }
 
   const gaze = GAZE_VARIANTS[Math.floor(Math.random() * GAZE_VARIANTS.length)];
+  const wardrobe = WARDROBE_VARIANTS[Math.floor(Math.random() * WARDROBE_VARIANTS.length)];
 
   const prompt = `Here ${
     options.referenceImageUrls.length > 1 ? "are transparent PNG cutouts" : "is a transparent PNG cutout"
   } of a pair of sunglasses${options.productName ? `: "${options.productName}"` : ""}.
 
-Generate a realistic, professional lifestyle photo of a good-looking, well-groomed, sexy Indian ${options.gender} model (age 22–35) wearing this exact pair of sunglasses. Match the frame shape, color, and lens tint in the reference image(s) exactly — do not change the design in any way.
+Generate a realistic, professional lifestyle photo of a good-looking, well-groomed, sexy Indian ${options.gender} model (age 22–35) wearing this exact pair of sunglasses. Match the frame shape, color, and lens tint in the reference image(s) exactly — do not change the design in any way. Give this model their own distinct look — a different face, hairstyle, and styling than you would default to — rather than repeating the same model identity across separate generations.
 
-Mood: dressed up and ready for a night out — confident, joyful, laughing or genuinely smiling, full of energy. No drink, glass, or bottle in hand or anywhere in frame. ${gaze}.
+Mood: at a lively party — genuinely joyful, mid-laugh or grinning, full of energy, having a great time. No drink, glass, or bottle in hand or anywhere in frame. ${gaze}.
 
-Wardrobe: fashionable, stylish going-out clothing (e.g. a sharp shirt, jacket, or top) in a color that ties in with the lens tint shown in the reference image — either a direct match or a complementary/adjacent tone — so the outfit and the sunglasses read as one styled look. Well-groomed hair, subtle styling, no other visible eyewear.
+Wardrobe: ${wardrobe}, in black, white, or another neutral tone — not matched to the lens tint. At most a small accent (a piece of jewelry, a subtle trim) can echo the lens color; the outfit itself should never be a color-to-color match with the lenses, since that reads as styled/staged rather than an actual night out. Well-groomed hair, subtle styling, no other visible eyewear.
 
-Framing: shot from the chest up (chest, shoulders, neck, and head all visible), the sunglasses clearly readable on the face. Shallow depth of field with a softly blurred backdrop suggesting a night-out setting (city lights, warm bar/lounge ambience, or a dark moody gradient) — nothing so busy it competes with the product. Editorial quality, sharp focus on the face and sunglasses. No text, no logos, no watermarks.`;
+Framing: shot from the chest up (chest, shoulders, neck, and head all visible), the sunglasses clearly readable on the face. Shallow depth of field with a softly blurred party backdrop — warm string lights, moody club lighting, or the suggestion of other people/movement in the background — near-black and high-contrast with warm gold highlights, matching an editorial nightlife shoot. Nothing so busy it competes with the product.
+
+Photography style: this must look like a real photograph taken on a professional camera at an actual party, not a rendered or AI-generated image. Natural skin texture with visible pores, fine lines, and subtle asymmetry — never airbrushed, waxy, or unnaturally smooth. Real directional lighting with natural shadow falloff, slight authentic film/sensor grain, imperfect flyaway hairs. Avoid the typical AI-image look entirely: no plastic-looking skin, no overly symmetrical features, no synthetic-looking background blur. Sharp focus on the face and sunglasses. No text, no logos, no watermarks.`;
 
   const base64Png = await generateWithGemini(geminiKey, prompt, options.referenceImageUrls, "portrait4x5");
   const url = await uploadGeneratedImage(base64Png, "model-photos");

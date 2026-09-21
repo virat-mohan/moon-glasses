@@ -323,6 +323,7 @@ export default function CheckoutPage() {
   // someone who tapped a Story link sticker shouldn't also have to find
   // and click "Apply" themselves.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync on mount from a captured link, not a derived-state loop
     if (couponCodeInput.trim()) applyCoupon();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -705,9 +706,9 @@ export default function CheckoutPage() {
         <div key={item.slug} className="flex items-center gap-4">
           <Link
             href={`/chapter/${item.slug}`}
-            className="relative aspect-square w-24 flex-none overflow-hidden bg-white"
+            className="relative aspect-square w-36 flex-none overflow-hidden bg-white sm:w-44"
           >
-            <Image src={item.image} alt={item.name} fill sizes="96px" className="object-contain p-1.5" />
+            <Image src={item.image} alt={item.name} fill sizes="176px" className="object-contain p-2" />
           </Link>
           <Link href={`/chapter/${item.slug}`} className="flex-1 text-body-s text-ink hover:underline">
             {item.quantity} × {item.name}
@@ -717,13 +718,13 @@ export default function CheckoutPage() {
       ))}
 
       <div className="flex items-center gap-4 border-t border-divider pt-4">
-        <div className="relative aspect-square w-24 flex-none overflow-hidden bg-[var(--moon-black)]">
+        <div className="relative aspect-square w-36 flex-none overflow-hidden bg-[var(--moon-black)] sm:w-44">
           <Image
             src="/images/brand/case-and-pouch.png"
             alt="MOON Glasses branded case with microfiber cleaning cloth"
             fill
-            sizes="96px"
-            className="object-contain p-1.5"
+            sizes="176px"
+            className="object-contain p-2"
           />
         </div>
         <p className="flex-1 text-caption text-secondary-text">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 
 type BarterOrder = {
   id: string;
@@ -38,7 +39,9 @@ export default function AdminPostBarterPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1000px] px-6 pt-28 pb-24 md:px-12">
-      <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Pay With A Post</h1>
+      <h1 className="mt-2 text-heading-l uppercase">
+        <PayWithAPostMark />
+      </h1>
       <p className="mt-2 max-w-lg text-body-s text-secondary-text">
         Orders paid for with an Instagram post instead of currency. Ships automatically once a
         customer&apos;s code clears its required-orders line — nothing to approve manually.

@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { ShareToInstagramButton } from "@/components/checkout/ShareToInstagramButton";
+import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,9 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
 
   return (
     <main className="mx-auto w-full max-w-[600px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
-      <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">Pay With A Post</p>
+      <p className="text-caption uppercase tracking-[0.15em]">
+        <PayWithAPostMark />
+      </p>
       <h1 className="mt-2 font-display text-heading-xl uppercase text-ink">Hi, {order.customer_name}</h1>
 
       {isGiftFirst ? (

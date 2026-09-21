@@ -40,6 +40,10 @@ export default function MasterInventoryPage() {
   const [editInstructions, setEditInstructions] = useState("");
   const [applyingEdit, setApplyingEdit] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [genderBySlug, setGenderBySlug] = useState<Record<string, "male" | "female">>({});
+  const [zoomImage, setZoomImage] = useState<{ url: string; alt: string } | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
   function load() {
     fetch("/api/admin/master-inventory")
@@ -106,14 +110,20 @@ export default function MasterInventoryPage() {
   async function generateModel(row: Row) {
     setBusySlug(row.slug);
     try {
+      const gender = genderBySlug[row.slug] ?? "female";
       const res = await fetch("/api/admin/generate-model-photo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ referenceImageUrls: [row.primary], gender: "female", productName: row.name, chapterSlug: row.slug }),
+        body: JSON.stringify({ referenceImageUrls: [row.primary], gender, productName: row.name, chapterSlug: row.slug }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       await updateRow(row, { modelImage: data.url });
+      // Re-fetch from the server rather than trusting the optimistic local
+      // update alone — this is what's actually shown as the published photo
+      // everywhere else (homepage tile, product page), so it must match
+      // exactly what the server just persisted, not a client-side guess.
+      load();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Could not generate model photo");
     } finally {
@@ -121,9 +131,34 @@ export default function MasterInventoryPage() {
     }
   }
 
+  // Every past generate/regenerate/edit for this chapter, newest first —
+  // lets the lightbox offer a left/right browser instead of only ever
+  // showing whatever's currently active (see route for the marketing_assets
+  // query this reads).
+  useEffect(() => {
+    if (!lightboxSlug) return;
+    setHistory([]);
+    setHistoryIndex(0);
+    fetch(`/api/admin/model-photo-history?chapterSlug=${encodeURIComponent(lightboxSlug)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const urls: string[] = data.urls ?? [];
+        setHistory(urls);
+        const activeImage = rows.find((r) => r.slug === lightboxSlug)?.modelImage;
+        const idx = activeImage ? urls.indexOf(activeImage) : -1;
+        setHistoryIndex(idx === -1 ? 0 : idx);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxSlug]);
+
+  const filtered = rows.filter((r) => (filter === "all" ? true : filter === "live" ? r.live : !r.live));
+  const lightboxRow = rows.find((r) => r.slug === lightboxSlug) ?? null;
+  const displayedImage = history[historyIndex] ?? lightboxRow?.modelImage;
+  const isDisplayedActive = displayedImage === lightboxRow?.modelImage;
+
   async function applyEdit() {
     const row = rows.find((r) => r.slug === lightboxSlug);
-    if (!row?.modelImage || !editInstructions.trim()) return;
+    if (!displayedImage || !editInstructions.trim() || !row) return;
     setApplyingEdit(true);
     setEditError(null);
     try {
@@ -131,7 +166,7 @@ export default function MasterInventoryPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageUrl: row.modelImage,
+          imageUrl: displayedImage,
           instructions: editInstructions,
           productName: row.name,
           chapterSlug: row.slug,
@@ -139,6 +174,8 @@ export default function MasterInventoryPage() {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      setHistory((prev) => [data.url, ...prev]);
+      setHistoryIndex(0);
       await updateRow(row, { modelImage: data.url });
       setEditInstructions("");
     } catch (err) {
@@ -148,8 +185,11 @@ export default function MasterInventoryPage() {
     }
   }
 
-  const filtered = rows.filter((r) => (filter === "all" ? true : filter === "live" ? r.live : !r.live));
-  const lightboxRow = rows.find((r) => r.slug === lightboxSlug) ?? null;
+  function useThisPhoto() {
+    const row = rows.find((r) => r.slug === lightboxSlug);
+    if (!row || !displayedImage) return;
+    updateRow(row, { modelImage: displayedImage });
+  }
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
@@ -219,9 +259,14 @@ export default function MasterInventoryPage() {
         <div className="mt-8 space-y-3">
           {filtered.map((row) => (
             <div key={row.slug} className="flex flex-wrap items-center gap-4 border-t border-divider pt-4">
-              <div className="relative h-20 w-20 flex-none overflow-hidden bg-white">
+              <button
+                type="button"
+                onClick={() => setZoomImage({ url: row.primary, alt: row.name })}
+                className="relative h-20 w-20 flex-none overflow-hidden bg-white"
+                title="Click to zoom"
+              >
                 <Image src={row.primary} alt={row.name} fill sizes="80px" className="object-contain p-1.5" />
-              </div>
+              </button>
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-body-s text-ink">{row.name}</p>
@@ -243,6 +288,15 @@ export default function MasterInventoryPage() {
                   <Image src={row.modelImage} alt="" fill sizes="80px" className="object-cover" />
                 </button>
               )}
+
+              <select
+                value={genderBySlug[row.slug] ?? "female"}
+                onChange={(e) => setGenderBySlug((prev) => ({ ...prev, [row.slug]: e.target.value as "male" | "female" }))}
+                className="flex-none border border-ink/30 bg-surface px-2 py-1.5 font-sans text-caption text-ink"
+              >
+                <option value="female">Female Model</option>
+                <option value="male">Male Model</option>
+              </select>
 
               <button
                 type="button"
@@ -297,7 +351,31 @@ export default function MasterInventoryPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative aspect-[4/5] w-full flex-none bg-[var(--moon-black)] md:w-80">
-              <Image src={lightboxRow.modelImage} alt="" fill sizes="320px" className="object-cover" />
+              {displayedImage && <Image src={displayedImage} alt="" fill sizes="320px" className="object-cover" />}
+
+              {history.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryIndex((i) => (i - 1 + history.length) % history.length)}
+                    aria-label="Previous version"
+                    className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center bg-black/50 text-white hover:bg-black/70"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryIndex((i) => (i + 1) % history.length)}
+                    aria-label="Next version"
+                    className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center bg-black/50 text-white hover:bg-black/70"
+                  >
+                    ›
+                  </button>
+                  <span className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 px-2 py-0.5 text-micro text-white">
+                    {historyIndex + 1} / {history.length}
+                  </span>
+                </>
+              )}
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col">
@@ -311,6 +389,17 @@ export default function MasterInventoryPage() {
                   Close
                 </button>
               </div>
+
+              {history.length > 1 && (
+                <button
+                  type="button"
+                  onClick={useThisPhoto}
+                  disabled={isDisplayedActive}
+                  className="mt-3 self-start border border-ink px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-ink hover:text-cream disabled:cursor-default disabled:opacity-40"
+                >
+                  {isDisplayedActive ? "Currently In Use" : "Use This Photo"}
+                </button>
+              )}
 
               <p className="mt-4 text-micro uppercase tracking-[0.05em] text-secondary-text">
                 Edit instructions
@@ -336,6 +425,24 @@ export default function MasterInventoryPage() {
                 framing stay the same unless your instructions say otherwise.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {zoomImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+          onClick={() => setZoomImage(null)}
+        >
+          <div className="relative aspect-square w-full max-w-lg bg-white" onClick={(e) => e.stopPropagation()}>
+            <Image src={zoomImage.url} alt={zoomImage.alt} fill sizes="512px" className="object-contain p-4" />
+            <button
+              type="button"
+              onClick={() => setZoomImage(null)}
+              className="absolute -top-9 right-0 font-sans text-caption text-cream hover:text-tan-gold"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
