@@ -112,7 +112,7 @@ export function CollectionItem({
               translucent lens tint away from its true colour. Thin gold
               accent border instead gives it a premium "pop" against the
               black page without touching the interior white. */}
-          <div className="absolute inset-0 bg-white shadow-[inset_0_0_0_1px_var(--moon-gold)] [backface-visibility:hidden]">
+          <div className="absolute inset-0 bg-white [backface-visibility:hidden]">
             <Image
               src={productImage}
               alt={chapter.name}
