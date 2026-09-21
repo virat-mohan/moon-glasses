@@ -61,8 +61,15 @@ export function CollectionItem({
 
   return (
     <div
-      className="group relative aspect-square overflow-hidden bg-[var(--moon-black)]"
-      style={{ boxShadow: "0 0 0 1px var(--moon-black)" }}
+      className="group relative aspect-square overflow-hidden"
+      style={{
+        // Masks a sub-pixel seam artifact from the 3D transform (confirmed
+        // via getBoundingClientRect that grid layout itself has zero gap)
+        // — has to match whichever face is currently showing (white product
+        // vs black model), or it just becomes a seam of its own colour.
+        backgroundColor: shown ? "var(--moon-black)" : "#fff",
+        boxShadow: `0 0 0 1px ${shown ? "var(--moon-black)" : "#fff"}`,
+      }}
     >
       <div
         role="button"
@@ -104,8 +111,15 @@ export function CollectionItem({
           className="relative h-full w-full transition-transform duration-1000 ease-[cubic-bezier(.22,.61,.36,1)] [transform-style:preserve-3d]"
           style={{ transform: shown ? "rotateY(180deg)" : "rotateY(0deg)" }}
         >
-          {/* Front face — product, on solid black */}
-          <div className="absolute inset-0 bg-[var(--moon-black)] [backface-visibility:hidden]">
+          {/* Front face — product, on white. Many lenses are semi-transparent
+              tints, not opaque color — their apparent colour is a blend with
+              whatever sits behind them, so this has to stay white to match
+              the real product photos (which are shot/composited on white).
+              A black or coloured background here would visibly shift every
+              translucent lens tint away from its true colour. Thin gold
+              accent border instead gives it a premium "pop" against the
+              black page without touching the interior white. */}
+          <div className="absolute inset-0 bg-white shadow-[inset_0_0_0_1px_var(--moon-gold)] [backface-visibility:hidden]">
             <Image
               src={productImage}
               alt={chapter.name}

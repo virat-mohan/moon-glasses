@@ -21,7 +21,7 @@ export function Product360Viewer({
 
   return (
     <div>
-      <div className="chapter-card-bg relative aspect-square overflow-hidden bg-white">
+      <div className="chapter-card-bg relative aspect-square overflow-hidden bg-white shadow-[inset_0_0_0_1px_var(--moon-gold)]">
         {images.map((img, i) => (
           <Image
             key={img}
@@ -49,7 +49,7 @@ export function Product360Viewer({
           <button
             key={img}
             onClick={() => setFrame(i)}
-            className={`relative aspect-square overflow-hidden bg-white transition-opacity ${
+            className={`relative aspect-square overflow-hidden bg-white shadow-[inset_0_0_0_1px_var(--moon-gold)] transition-opacity ${
               i === frame ? "opacity-100 ring-1 ring-ink" : "opacity-60 hover:opacity-100"
             }`}
             aria-label={`${name} angle ${i + 1}`}
