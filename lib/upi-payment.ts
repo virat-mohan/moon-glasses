@@ -60,21 +60,28 @@ export type UpiOrderPayload = {
 };
 
 export async function createUpiOrder(payload: UpiOrderPayload) {
-  const config = await getUpiPaymentConfig();
+  // getUpiPaymentConfig, computeTrustedOrderTotal (which itself calls out to
+  // Shiprocket for a live shipping quote), and getCurrentCustomer are all
+  // independent reads — running them one after another was most of why the
+  // QR took a visible moment to appear after tapping "Pay". In parallel
+  // instead, total wait time is however long the SLOWEST of the three
+  // takes, not the sum of all three.
+  const [config, pricing, customer] = await Promise.all([
+    getUpiPaymentConfig(),
+    computeTrustedOrderTotal(
+      payload.items,
+      payload.redeemMilesRupees,
+      payload.customer.pincode,
+      payload.referralCode,
+      payload.customer.phone,
+      payload.couponCode,
+      "prepaid" // free shipping — UPI is a full-payment method, not COD
+    ),
+    getCurrentCustomer(),
+  ]);
   if (!config) throw new Error("UPI payment isn't set up yet — add UPI_ID and UPI_QR_IMAGE_URL in /admin/settings");
-
-  const pricing = await computeTrustedOrderTotal(
-    payload.items,
-    payload.redeemMilesRupees,
-    payload.customer.pincode,
-    payload.referralCode,
-    payload.customer.phone,
-    payload.couponCode,
-    "prepaid" // free shipping — UPI is a full-payment method, not COD
-  );
   if (pricing.total <= 0) throw new Error("Order total must be greater than zero");
 
-  const customer = await getCurrentCustomer();
   const wasGuest = !customer;
   const guestCustomer = wasGuest
     ? await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name)
@@ -119,29 +126,31 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
     unit_price: item.price,
     quantity: item.quantity,
   }));
-  const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+
+  // None of these four depend on each other's result — only on savedOrder.id
+  // already being known — so they run together instead of one after another.
+  const [{ error: itemsError }] = await Promise.all([
+    supabase.from("order_items").insert(orderItems),
+    pricing.discountRule && pricing.discountAmount > 0
+      ? supabase.from("discount_rule_redemptions").insert({
+          discount_rule_id: pricing.discountRule.id,
+          order_id: savedOrder.id,
+          customer_phone: payload.customer.phone,
+          customer_email: payload.customer.email,
+          discount_amount: pricing.discountAmount,
+        })
+      : Promise.resolve(),
+    payload.newsletterOptIn != null
+      ? applyNewsletterOptIn(effectiveCustomerId, savedOrder.customer_email, payload.newsletterOptIn)
+      : Promise.resolve(),
+    markCartSessionConverted(payload.sessionKey, {
+      id: savedOrder.id,
+      customer_email: savedOrder.customer_email,
+      customer_phone: savedOrder.customer_phone,
+      total: pricing.total,
+    }),
+  ]);
   if (itemsError) throw itemsError;
-
-  if (pricing.discountRule && pricing.discountAmount > 0) {
-    await supabase.from("discount_rule_redemptions").insert({
-      discount_rule_id: pricing.discountRule.id,
-      order_id: savedOrder.id,
-      customer_phone: payload.customer.phone,
-      customer_email: payload.customer.email,
-      discount_amount: pricing.discountAmount,
-    });
-  }
-
-  if (payload.newsletterOptIn != null) {
-    await applyNewsletterOptIn(effectiveCustomerId, savedOrder.customer_email, payload.newsletterOptIn);
-  }
-
-  await markCartSessionConverted(payload.sessionKey, {
-    id: savedOrder.id,
-    customer_email: savedOrder.customer_email,
-    customer_phone: savedOrder.customer_phone,
-    total: pricing.total,
-  });
 
   const upiLink =
     `upi://pay?pa=${encodeURIComponent(config.upiId)}&pn=${encodeURIComponent(config.payeeName)}` +

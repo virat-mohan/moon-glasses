@@ -182,10 +182,32 @@ export default function OrderConfirmedPage() {
                 Open In UPI App
               </a>
             )}
-            <p className="mt-4 max-w-[360px] text-caption text-secondary-text">
-              Already paid? No need to do anything else — we check payments and confirm within a few
-              hours. You&apos;ll get an email the moment it&apos;s shipped.
-            </p>
+
+            <div className="mt-6 w-full border-t border-divider pt-5">
+              <p className="text-body-s font-bold text-ink">Already paid?</p>
+              <p className="mt-1.5 max-w-[380px] text-caption text-secondary-text">
+                Send us a quick WhatsApp with your order details — that&apos;s the fastest way to get
+                it confirmed and packed. We&apos;ll check for it, mark your payment received, and your
+                order goes out the same day if you send it during business hours. You&apos;ll get an
+                email the moment it ships either way, usually within a few hours.
+              </p>
+              <a
+                href={`https://wa.me/919999277240?text=${encodeURIComponent(
+                  `Hi! I've just paid ₹${upiPending.amount.toLocaleString("en-IN")} for my MOON Glasses order${
+                    orderId ? ` (Order #${orderId.slice(0, 8).toUpperCase()})` : ""
+                  }.${
+                    items.length > 0
+                      ? ` Items: ${items.map((i) => `${i.chapter_name} x${i.quantity}`).join(", ")}.`
+                      : ""
+                  } Please confirm and ship — thanks!`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-block border border-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream"
+              >
+                Notify Us On WhatsApp
+              </a>
+            </div>
           </div>
         )}
 

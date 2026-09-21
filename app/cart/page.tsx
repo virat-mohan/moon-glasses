@@ -12,6 +12,7 @@ import { parseCartDeepLink } from "@/lib/cart-deep-link";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
+import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 
 /**
  * Lands a WhatsApp-catalog order (or any pre-built cart shared as a link)
@@ -182,10 +183,10 @@ export default function CartPage() {
             </Link>
 
             {unitCount === 1 && (
-              <p className="mt-3 text-center font-sans text-caption text-secondary-text">
-                <span className="text-tan-gold">New:</span> Skip the payment — get it free with{" "}
-                <Link href="/checkout" className="underline underline-offset-4 hover:text-ink">
-                  Pay With A Post
+              <p className="mt-3 text-center font-sans text-body-s font-bold text-ink">
+                Skip the payment — get it free with{" "}
+                <Link href="/checkout" className="underline underline-offset-4">
+                  <PayWithAPostMark />
                 </Link>
                 .
               </p>

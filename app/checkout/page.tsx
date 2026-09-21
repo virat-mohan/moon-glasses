@@ -13,6 +13,7 @@ import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
+import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 
 const WHATSAPP_NUMBER = "918800339125";
 
@@ -876,11 +877,16 @@ export default function CheckoutPage() {
         {(identityStep === "verified" || identityStep === "guest") && (
           <>
             <p className="mt-4 max-w-md text-body-s text-secondary-text">
-              {razorpay.enabled
-                ? "Pay securely below and we'll email your invoice and confirm right after."
-                : upi.enabled
-                  ? "Pay by UPI QR below, or skip payment entirely with Pay With A Post — pick whichever fits."
-                  : "We don't run this through a payment gateway yet — placing an order sends your details and cart straight to us on WhatsApp, and we'll confirm payment and delivery with you directly."}
+              {razorpay.enabled ? (
+                "Pay securely below and we'll email your invoice and confirm right after."
+              ) : upi.enabled ? (
+                <>
+                  Pay by UPI QR below, or skip payment entirely with <PayWithAPostMark /> — pick
+                  whichever fits.
+                </>
+              ) : (
+                "We don't run this through a payment gateway yet — placing an order sends your details and cart straight to us on WhatsApp, and we'll confirm payment and delivery with you directly."
+              )}
             </p>
 
             <div className="mt-6 flex items-center justify-between border-t border-divider pt-4 text-body-s">
@@ -989,8 +995,10 @@ export default function CheckoutPage() {
                     paymentType === "post_barter" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
                   }`}
                 >
-                  <span className="block font-bold uppercase tracking-[0.03em]">Pay With A Post</span>
-                  <span className="block text-caption opacity-80">
+                  <span className="block text-body-s font-bold">
+                    <PayWithAPostMark />
+                  </span>
+                  <span className="mt-0.5 block text-caption opacity-80">
                     Skip the payment — post about us on Instagram instead.
                   </span>
                 </button>
@@ -1087,7 +1095,7 @@ export default function CheckoutPage() {
             ) : (
               <div className="mt-4 border border-ink/20 bg-surface-alt p-4">
                 <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">
-                  Pay With A Post — One Item Only
+                  <PayWithAPostMark /> — One Item Only
                 </p>
                 <p className="mt-1 text-caption text-secondary-text">
                   This cart has {unitCount} items. Checkout with just one to pay with a post instead of
@@ -1268,7 +1276,11 @@ export default function CheckoutPage() {
                     : paymentType === "post_barter"
                       ? barterSubmitting
                         ? "Confirming..."
-                        : "Confirm — Pay With A Post"
+                        : (
+                          <>
+                            Confirm — <PayWithAPostMark />
+                          </>
+                        )
                       : paymentType === "upi_qr"
                         ? upiSubmitting
                           ? "Confirming..."

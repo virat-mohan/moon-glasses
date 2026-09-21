@@ -17,6 +17,7 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
 import { RestockNotifyForm } from "@/components/chapter/RestockNotifyForm";
+import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { getApprovedReviews, getReviewSummary } from "@/lib/reviews";
 import type { Chapter } from "@/types/chapter";
 
@@ -207,10 +208,10 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             </div>
 
             {stockLabel !== "out-of-stock" && (
-              <p className="mt-3 font-sans text-caption text-secondary-text">
-                <span className="text-tan-gold">New:</span> Skip the payment — Buy Now with{" "}
-                <Link href="/#pay-with-a-post" className="underline underline-offset-4 hover:text-ink">
-                  Pay With A Post
+              <p className="mt-3 font-sans text-body-s font-bold text-ink">
+                Skip the payment — Buy Now with{" "}
+                <Link href="/#pay-with-a-post" className="underline underline-offset-4">
+                  <PayWithAPostMark />
                 </Link>{" "}
                 instead.
               </p>

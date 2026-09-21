@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 
 /**
  * Homepage teaser for the Pay With A Post checkout mechanic — its own
@@ -13,7 +14,9 @@ export function PayWithAPostBanner() {
     <section id="pay-with-a-post" className="scroll-mt-24 border-t border-divider py-20">
       <div className="mx-auto max-w-[720px] text-center">
         <p className="font-sans text-micro uppercase tracking-[0.3em] text-tan-gold">New</p>
-        <h2 className="mt-4 font-display text-display-m uppercase text-ink">Pay With A Post</h2>
+        <h2 className="mt-4 text-display-m">
+          <PayWithAPostMark />
+        </h2>
         <p className="mt-4 font-sans text-body-s text-secondary-text">
           Skip the payment — post about us on Instagram instead. Choose it right at checkout, no
           separate sign-up.
@@ -42,7 +45,7 @@ export function PayWithAPostBanner() {
           href="/#shop"
           className="mt-10 inline-block border border-ink bg-ink px-8 py-3.5 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink"
         >
-          Shop &amp; Pay With A Post
+          Shop &amp; <PayWithAPostMark />
         </Link>
       </div>
     </section>

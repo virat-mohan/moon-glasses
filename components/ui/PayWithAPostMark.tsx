@@ -8,7 +8,9 @@
  */
 export function PayWithAPostMark({ className = "" }: { className?: string }) {
   return (
-    <span className={`relative inline-flex items-baseline whitespace-nowrap font-display tracking-[0.02em] text-tan-gold ${className}`}>
+    <span
+      className={`relative inline-flex items-baseline whitespace-nowrap font-display normal-case tracking-[0.02em] text-tan-gold ${className}`}
+    >
       Pay With A Post
       <sup className="ml-0.5 font-sans text-[0.45em] font-normal not-italic tracking-normal">™</sup>
     </span>
