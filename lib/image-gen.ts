@@ -223,6 +223,19 @@ const WARDROBE_VARIANTS = [
   "a fitted knit top with a delicate chain necklace",
 ];
 
+// Same reasoning as GAZE_VARIANTS/WARDROBE_VARIANTS — left as one fixed
+// phrase, Gemini kept defaulting to string lights behind almost every
+// model, making a batch of generations feel repetitive. Randomizing the
+// backdrop keeps every shot a "party" without it being the same party.
+const BACKDROP_VARIANTS = [
+  "warm string lights softly blurred behind them",
+  "the moody glow of a club's colored stage lighting",
+  "the suggestion of a crowd dancing and moving in the background",
+  "a rooftop night party with city lights blurred in the distance",
+  "a bar backdrop with warm bottle-lit shelving softly out of focus",
+  "confetti or light haze drifting through the air behind them",
+];
+
 export async function generateModelPhoto(options: {
   referenceImageUrls: string[];
   gender: "male" | "female";
@@ -237,6 +250,7 @@ export async function generateModelPhoto(options: {
 
   const gaze = GAZE_VARIANTS[Math.floor(Math.random() * GAZE_VARIANTS.length)];
   const wardrobe = WARDROBE_VARIANTS[Math.floor(Math.random() * WARDROBE_VARIANTS.length)];
+  const backdrop = BACKDROP_VARIANTS[Math.floor(Math.random() * BACKDROP_VARIANTS.length)];
 
   const prompt = `Here ${
     options.referenceImageUrls.length > 1 ? "are transparent PNG cutouts" : "is a transparent PNG cutout"
@@ -248,7 +262,7 @@ Mood: at a lively party — genuinely joyful, mid-laugh or grinning, full of ene
 
 Wardrobe: ${wardrobe}, in black, white, or another neutral tone — not matched to the lens tint. At most a small accent (a piece of jewelry, a subtle trim) can echo the lens color; the outfit itself should never be a color-to-color match with the lenses, since that reads as styled/staged rather than an actual night out. Well-groomed hair, subtle styling, no other visible eyewear.
 
-Framing: a tight head-and-shoulders portrait crop — head, neck, and top of the shoulders filling most of the frame, the same close zoom level every time, with the sunglasses large and clearly readable on the face. Crop just below the collarbone: no chest or décolletage on display, and if the wardrobe is low-cut or off-shoulder, crop tighter so it doesn't read that way. Shallow depth of field with a softly blurred party backdrop — warm string lights, moody club lighting, or the suggestion of other people/movement in the background. Nothing so busy it competes with the product.
+Framing: a tight head-and-shoulders portrait crop — head, neck, and top of the shoulders filling most of the frame, the same close zoom level every time, with the sunglasses large and clearly readable on the face. Crop just below the collarbone: no chest or décolletage on display, and if the wardrobe is low-cut or off-shoulder, crop tighter so it doesn't read that way. Shallow depth of field, with ${backdrop}. Nothing so busy it competes with the product.
 
 Lighting and color: near-black background with strong, punchy contrast and warm gold highlights on the skin — a moody, high-contrast editorial nightlife look, not a flat, dim, or washed-out one. Bright, crisp key light on the face so skin tone, sunglasses, and jewelry all read clearly; deep shadows in the background, not on the subject. Match this same brightness and contrast level consistently across every generation — no dull, gray, or low-contrast results.
 
