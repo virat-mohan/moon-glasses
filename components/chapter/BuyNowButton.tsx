@@ -39,10 +39,10 @@ export function BuyNowButton({
       className={
         variant === "minimal"
           ? "font-sans text-caption font-medium tracking-[0.02em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
-          : "font-sans text-caption font-medium tracking-[0.02em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
+          : "border border-ink px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-ink hover:text-cream disabled:opacity-60"
       }
     >
-      {loading ? "..." : "Buy Now"}
+      {loading ? "Working…" : "Buy Now"}
     </button>
   );
 }

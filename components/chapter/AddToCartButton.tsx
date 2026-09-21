@@ -21,17 +21,12 @@ export function AddToCartButton({
 
   if (added) {
     return (
-      <div className="flex items-center gap-4">
-        <span className="font-sans text-caption uppercase tracking-[0.05em] text-ink">
-          Added to cart
-        </span>
-        <Link
-          href="/cart"
-          className="font-sans text-caption uppercase tracking-[0.1em] text-ink underline underline-offset-4"
-        >
-          View Cart
-        </Link>
-      </div>
+      <Link
+        href="/cart"
+        className="inline-flex items-center justify-center border border-ink bg-ink px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-cream transition-colors hover:bg-cream hover:text-ink"
+      >
+        Added — View Cart
+      </Link>
     );
   }
 
@@ -39,7 +34,7 @@ export function AddToCartButton({
     return (
       <button
         disabled
-        className="cursor-not-allowed border border-divider bg-surface-alt px-6 py-2.5 font-sans text-caption font-medium uppercase tracking-[0.12em] text-secondary-text"
+        className="cursor-not-allowed border border-divider bg-surface-alt px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-secondary-text"
       >
         Sold Out
       </button>
@@ -52,7 +47,7 @@ export function AddToCartButton({
         addItem(chapter, image, quantity);
         setAdded(true);
       }}
-      className="font-sans text-caption font-medium uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
+      className="border border-ink bg-ink px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-cream transition-colors hover:bg-cream hover:text-ink"
     >
       Add to Cart
     </button>

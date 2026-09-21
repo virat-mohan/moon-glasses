@@ -10,6 +10,7 @@ import { EditorialSplit } from "@/components/hero/EditorialSplit";
 import { PayWithAPostBanner } from "@/components/hero/PayWithAPostBanner";
 import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
+import { computeWebsiteAnalytics } from "@/lib/website-analytics";
 import { getExplorerPosts } from "@/lib/community";
 import { chapters, groupByStyle } from "@/lib/chapters";
 
@@ -34,6 +35,20 @@ export default async function Home() {
   const explorerPosts = await getExplorerPosts();
   const limitedChapters = await getLimitedSeriesChapters();
 
+  let trending: typeof collection = [];
+  try {
+    const analytics = await computeWebsiteAnalytics(
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      new Date().toISOString()
+    );
+    trending = analytics.topViewedChapters
+      .map((v) => collection.find((c) => c.slug === v.slug))
+      .filter((c): c is (typeof collection)[number] => !!c)
+      .slice(0, 4);
+  } catch (err) {
+    console.error("Homepage: failed to compute trending chapters", err);
+  }
+
   return (
     <>
       <Hero />
@@ -50,6 +65,20 @@ export default async function Home() {
             </p>
             <TileGrid
               items={limitedChapters.map((chapter) => ({
+                chapter,
+                stockLabel: stockLabelFor(inventory[chapter.slug]),
+              }))}
+            />
+          </section>
+        )}
+
+        {trending.length > 0 && (
+          <section className="border-b border-divider pb-16 pt-8">
+            <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
+              Trending Now
+            </p>
+            <TileGrid
+              items={trending.map((chapter) => ({
                 chapter,
                 stockLabel: stockLabelFor(inventory[chapter.slug]),
               }))}
