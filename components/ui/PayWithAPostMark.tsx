@@ -9,10 +9,14 @@
 export function PayWithAPostMark({ className = "" }: { className?: string }) {
   return (
     <span
-      className={`relative inline-flex items-baseline whitespace-nowrap font-display normal-case tracking-[0.02em] text-tan-gold ${className}`}
+      className={`relative inline-flex items-baseline whitespace-nowrap font-display font-bold italic normal-case tracking-[0.01em] text-tan-gold [text-shadow:0_0_16px_rgba(231,199,122,0.35)] ${className}`}
     >
-      Pay With A Post
-      <sup className="ml-0.5 font-sans text-[0.45em] font-normal not-italic tracking-normal">™</sup>
+      <span className="bg-[linear-gradient(var(--moon-gold),var(--moon-gold))] bg-[length:100%_1.5px] bg-no-repeat bg-[position:0_100%] pb-[0.15em]">
+        Pay With A Post
+      </span>
+      <sup className="ml-0.5 -translate-y-px font-sans text-[0.4em] font-semibold not-italic tracking-normal [text-shadow:none]">
+        ™
+      </sup>
     </span>
   );
 }
