@@ -543,13 +543,13 @@ export default function CheckoutPage() {
       ))}
 
       <div className="flex items-center gap-3 border-t border-divider pt-4">
-        <div className="relative aspect-square w-14 flex-none overflow-hidden bg-white">
+        <div className="relative aspect-square w-14 flex-none overflow-hidden bg-[var(--moon-black)]">
           <Image
-            src="/images/brand/case-and-pouch.jpg"
+            src="/images/brand/case-and-pouch.png"
             alt="MOON Glasses branded case with microfiber cleaning cloth"
             fill
             sizes="56px"
-            className="object-cover"
+            className="object-contain p-1"
           />
         </div>
         <p className="flex-1 text-caption text-secondary-text">
