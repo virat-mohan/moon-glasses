@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { chapters as staticChapters, chapterImageSrc, shortProductName, SHARED_SPECS } from "@/lib/chapters";
 import { getAllChapters } from "@/lib/chapters-dynamic";
@@ -139,6 +140,8 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
                 <span className="text-tan-gold">★</span> {reviewSummary.average} ({reviewSummary.count})
               </a>
             )}
+            <DiscountPromoBanner className="mt-4" />
+
             <p className="mt-6 max-w-md font-sans text-body text-secondary-text">{chapter.story}</p>
 
             {!chapter.verifiedOnSite && (
@@ -158,8 +161,6 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
               </p>
             )}
 
-            <DiscountPromoBanner className="mt-4" />
-
             <div className="mt-10 flex flex-wrap gap-4 [&>button]:min-w-[200px]">
               <AddToCartButton
                 chapter={chapter}
@@ -172,6 +173,16 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
                 disabled={stockLabel === "out-of-stock"}
               />
             </div>
+
+            {stockLabel !== "out-of-stock" && (
+              <p className="mt-3 font-sans text-caption text-secondary-text">
+                <span className="text-tan-gold">New:</span> Skip the payment — Buy Now with{" "}
+                <Link href="/#pay-with-a-post" className="underline underline-offset-4 hover:text-ink">
+                  Pay With A Post
+                </Link>{" "}
+                instead.
+              </p>
+            )}
 
             {stockLabel === "out-of-stock" && <RestockNotifyForm chapterSlug={chapter.slug} />}
 

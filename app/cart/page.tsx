@@ -11,6 +11,7 @@ import { calculateDiscount, describeDiscountRule } from "@/lib/discounts";
 import { parseCartDeepLink } from "@/lib/cart-deep-link";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
+import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
 
 /**
  * Lands a WhatsApp-catalog order (or any pre-built cart shared as a link)
@@ -159,6 +160,8 @@ export default function CartPage() {
             >
               Proceed to Checkout
             </Link>
+
+            {items.length > 1 && <CreatorTeaser className="mt-8" />}
           </>
         )}
       </main>

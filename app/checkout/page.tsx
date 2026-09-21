@@ -8,10 +8,11 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { useDiscountRule } from "@/lib/useDiscountRule";
 import { calculateDiscount } from "@/lib/discounts";
-import { trackEvent, getSessionKey, getAttribution, getReferralCode } from "@/lib/client-tracking";
+import { trackEvent, getSessionKey, getAttribution, getReferralCode, getCapturedCoupon } from "@/lib/client-tracking";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
+import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
 
 const WHATSAPP_NUMBER = "918800339125";
 
@@ -83,7 +84,11 @@ export default function CheckoutPage() {
   function updateReferralCode(value: string) {
     setReferralCodeInput(value);
   }
-  const [couponCodeInput, setCouponCodeInput] = useState("");
+  // Seeded from a `?coupon=` link capture (see captureCoupon in
+  // lib/client-tracking.ts) — e.g. a "Pay With A Post" code shared as a
+  // Story link sticker or bio link, so it applies automatically rather
+  // than requiring the code be retyped by hand.
+  const [couponCodeInput, setCouponCodeInput] = useState(() => getCapturedCoupon() ?? "");
   const [couponPreview, setCouponPreview] = useState<{ checked: string; valid: boolean; discountRupees: number } | null>(null);
   const [couponChecking, setCouponChecking] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -313,6 +318,14 @@ export default function CheckoutPage() {
       .catch(() => setCouponPreview({ checked: code, valid: false, discountRupees: 0 }))
       .finally(() => setCouponChecking(false));
   }
+
+  // A coupon seeded from a captured `?coupon=` link should apply itself —
+  // someone who tapped a Story link sticker shouldn't also have to find
+  // and click "Apply" themselves.
+  useEffect(() => {
+    if (couponCodeInput.trim()) applyCoupon();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Live pass-through shipping quote from Shiprocket, by pincode — a
   // display-only preview; the actual charge is recomputed server-side from
@@ -1325,6 +1338,11 @@ export default function CheckoutPage() {
               )}
             </div>
           </>
+        )}
+        {items.length > 1 && (
+          <div className="mx-auto mt-10 w-full max-w-[600px] px-6 md:px-0">
+            <CreatorTeaser />
+          </div>
         )}
       </main>
 

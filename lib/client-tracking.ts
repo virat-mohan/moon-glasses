@@ -88,6 +88,38 @@ export function getReferralCode(): string | null {
   }
 }
 
+const COUPON_STORAGE = "moonglasses-coupon";
+const COUPON_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Same pattern as captureReferral, for a `?coupon=<code>` link — this is
+ * what makes a "Pay With A Post" code an actual clickable link rather than
+ * just text someone has to remember and retype: a Story link sticker or
+ * bio link to moon-glasses.store/?coupon=CODE lands here, gets remembered,
+ * and auto-fills the coupon field the moment they reach checkout.
+ */
+export function captureCoupon() {
+  if (typeof window === "undefined") return;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("coupon");
+  if (!code) return;
+  localStorage.setItem(COUPON_STORAGE, JSON.stringify({ code, capturedAt: Date.now() }));
+}
+
+/** The still-valid captured coupon code, if any, to pre-fill at checkout. */
+export function getCapturedCoupon(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(COUPON_STORAGE);
+    if (!raw) return null;
+    const { code, capturedAt } = JSON.parse(raw);
+    if (Date.now() - capturedAt > COUPON_TTL_MS) return null;
+    return code ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** The still-valid attributed ad brief id, if any, for stamping onto an order at checkout. */
 export function getAttribution(): string | null {
   if (typeof window === "undefined") return null;

@@ -64,6 +64,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           couponCode={order.barter_coupon_code}
           brandName={brand.brandName}
           instagramHandle={brand.instagramHandle}
+          siteUrl={brand.siteUrl}
           requiredOrders={order.barter_required_orders}
         />
       </div>

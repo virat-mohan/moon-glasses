@@ -10,7 +10,7 @@ import Link from "next/link";
  */
 export function PayWithAPostBanner() {
   return (
-    <section className="border-t border-divider py-20">
+    <section id="pay-with-a-post" className="scroll-mt-24 border-t border-divider py-20">
       <div className="mx-auto max-w-[720px] text-center">
         <p className="font-sans text-micro uppercase tracking-[0.3em] text-tan-gold">New</p>
         <h2 className="mt-4 font-display text-display-m uppercase text-ink">Pay With A Post</h2>

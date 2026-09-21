@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { chapters as staticChapters, chapterImageSrc } from "@/lib/chapters";
 import { limitedSeries } from "@/lib/limited-series";
 import { getSupabaseServerClient } from "@/lib/supabase";
@@ -162,7 +164,24 @@ export async function getMasterInventoryChapters(): Promise<
     // The master-inventory list has no folder-aware <Image> component of its
     // own, so resolve it into a real URL here instead of leaking the raw
     // filename to a plain <img src>.
-    return { ...c, primary: isStatic ? chapterImageSrc(c.folder, c.primary) : c.primary, isStatic };
+    const primary = isStatic ? chapterImageSrc(c.folder, c.primary) : c.primary;
+
+    // Static chapters don't store their lifestyle shot as `modelImage` at
+    // all — CollectionItem instead falls back to the on-disk convention
+    // /images/chapters/<folder>/lifestyle.jpg at render time. Without
+    // checking that same file here, every one of the original 16 looked
+    // like it had no model photo yet, even when it's been live with one for
+    // ages. Only claim it exists when the file is actually there, same as
+    // CollectionItem's own onError fallback.
+    let modelImage = c.modelImage;
+    if (!modelImage && isStatic) {
+      const lifestylePath = path.join(process.cwd(), "public", "images", "chapters", c.folder, "lifestyle.jpg");
+      if (fs.existsSync(lifestylePath)) {
+        modelImage = `/images/chapters/${encodeURIComponent(c.folder)}/lifestyle.jpg`;
+      }
+    }
+
+    return { ...c, primary, modelImage, isStatic };
   });
 }
 

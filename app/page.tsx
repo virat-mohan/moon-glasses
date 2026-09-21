@@ -12,7 +12,7 @@ import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapt
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { computeWebsiteAnalytics } from "@/lib/website-analytics";
 import { getExplorerPosts } from "@/lib/community";
-import { chapters, groupByStyle } from "@/lib/chapters";
+import { chapters, groupByStyle, styleRimLens } from "@/lib/chapters";
 
 function chapterName(slug: string) {
   return chapters.find((c) => c.slug === slug)?.name ?? slug;
@@ -20,16 +20,27 @@ function chapterName(slug: string) {
 
 export const revalidate = 3600;
 
-const pillars = [
-  { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
-  { title: "Plastic Or Metal", copy: "Acetate frames ₹1,499, metal frames ₹1,999." },
-  { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
-  { title: "Core Collection", copy: "Five shapes, sixteen colourways — the everyday lineup." },
-];
+function buildPillars(shapeCount: number, colourwayCount: number) {
+  return [
+    { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
+    { title: "Plastic Or Metal", copy: "Acetate frames ₹1,499, metal frames ₹1,999." },
+    { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
+    {
+      title: "Core Collection",
+      copy: `${shapeCount} shape${shapeCount === 1 ? "" : "s"}, ${colourwayCount} colourway${colourwayCount === 1 ? "" : "s"} — the everyday lineup.`,
+    },
+  ];
+}
 
 export default async function Home() {
   const coreChapters = await getCoreCollectionChapters();
   const collection = groupByStyle(coreChapters);
+  // Computed live from what's actually published, rather than a hardcoded
+  // "five shapes, 16 colourways" — that line went stale the moment a shape
+  // or colourway was added via Master Inventory without anyone remembering
+  // to update this copy by hand.
+  const shapeCount = new Set(coreChapters.map((c) => styleRimLens(c).style)).size;
+  const colourwayCount = coreChapters.length;
   const inventory = await getInventoryMap();
 
   const explorerPosts = await getExplorerPosts();
@@ -90,7 +101,8 @@ export default async function Home() {
           <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">New In</p>
           <h2 className="font-display text-display-m uppercase text-ink">The Collection</h2>
           <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
-            Five shapes, 16 colourways, across two materials. ₹1,499 acetate, ₹1,999 metal.
+            {shapeCount} shape{shapeCount === 1 ? "" : "s"}, {colourwayCount} colourway
+            {colourwayCount === 1 ? "" : "s"}, across two materials. ₹1,499 acetate, ₹1,999 metal.
           </p>
 
           <div className="mt-10">
@@ -168,7 +180,7 @@ export default async function Home() {
         )}
 
         <section className="grid grid-cols-2 gap-8 border-t border-divider py-24 md:grid-cols-4">
-          {pillars.map((p) => (
+          {buildPillars(shapeCount, colourwayCount).map((p) => (
             <div key={p.title}>
               <p className="text-body-s text-ink">{p.title}</p>
               <p className="mt-2 text-caption text-secondary-text">{p.copy}</p>
