@@ -368,7 +368,7 @@ export async function sendWinbackEmail(toEmail: string, name: string | null, mil
 
   const milesLine =
     milesBalance > 0
-      ? `You've still got ${milesBalance.toLocaleString("en-IN")} Moonglasses Miles sitting there, ready to redeem.`
+      ? `You've still got ${milesBalance.toLocaleString("en-IN")} Moonglasses Good Vibes sitting there, ready to redeem.`
       : "There are new Chapters up since you last checked in.";
 
   const html = `

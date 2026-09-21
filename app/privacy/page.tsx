@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
               <li>Contact details you give us: name, phone number, email, delivery address.</li>
               <li>Order information: items purchased, order value, payment status.</li>
               <li>
-                Account information if you sign in: your phone/email, and your Miles loyalty balance.
+                Account information if you sign in: your phone/email, and your Good Vibes loyalty balance.
               </li>
               <li>
                 Usage data: pages viewed, products browsed, and cart activity, collected via first-party
@@ -40,7 +40,7 @@ export default function PrivacyPolicyPage() {
             <ul className="mt-3 list-disc space-y-1.5 pl-5">
               <li>To process and deliver your order, and to contact you about it.</li>
               <li>To send order confirmations, shipping updates, and OTP codes by email and/or WhatsApp/SMS.</li>
-              <li>To operate the Miles loyalty program.</li>
+              <li>To operate the Good Vibes loyalty program.</li>
               <li>
                 To send marketing communications (new Products, drops, offers) — only if you&apos;ve
                 opted in, and you can opt out at any time.

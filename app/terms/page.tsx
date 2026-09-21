@@ -59,10 +59,10 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="font-display text-heading-s uppercase text-ink">Loyalty Program (Miles)</h2>
+            <h2 className="font-display text-heading-s uppercase text-ink">Loyalty Program (Good Vibes)</h2>
             <p className="mt-3">
-              Miles are earned on completed purchases and can be redeemed for a discount on a future
-              order, at the rate shown in your account. Miles have no cash value, can&apos;t be transferred
+              Good Vibes are earned on completed purchases and can be redeemed for a discount on a future
+              order, at the rate shown in your account. Good Vibes have no cash value, can&apos;t be transferred
               between accounts, and we may adjust the earning/redemption rate or the program itself at any
               time, with changes applying to future purchases.
             </p>

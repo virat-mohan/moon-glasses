@@ -13,7 +13,7 @@ export async function GET(request: Request) {
       ["Moonglasses P&L", monthKey],
       [],
       ["Gross Sales", pnl.grossSales],
-      ["Discounts, Referrals, Miles & Coupons", -pnl.discountsGiven],
+      ["Discounts, Referrals, Good Vibes & Coupons", -pnl.discountsGiven],
       ["Refunds", -pnl.refunds],
       ["Net Sales", pnl.netSales],
       [],

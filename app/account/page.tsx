@@ -170,10 +170,10 @@ export default function AccountPage() {
 
       {loyalty && (
         <div className="mt-10 border border-tan-gold/40 bg-tan-gold/10 p-6">
-          <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Moonglasses Miles</p>
+          <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Moonglasses Good Vibes</p>
           <p className="mt-1 font-display text-heading-l text-ink">{loyalty.balance.toLocaleString("en-IN")}</p>
           <p className="mt-1 text-caption text-secondary-text">
-            Every {loyalty.threshold.toLocaleString("en-IN")} Miles = ₹{loyalty.valueRupees.toLocaleString("en-IN")}{" "}
+            Every {loyalty.threshold.toLocaleString("en-IN")} Good Vibes = ₹{loyalty.valueRupees.toLocaleString("en-IN")}{" "}
             off. {loyalty.maxRedeemableRupees > 0
               ? `You can redeem ₹${loyalty.maxRedeemableRupees.toLocaleString("en-IN")} right now at checkout.`
               : "Keep buying to unlock your first redemption."}
@@ -187,7 +187,7 @@ export default function AccountPage() {
             Recommend to a Fellow Explorer
           </p>
           <p className="mt-2 max-w-md text-body-s text-secondary-text">
-            Share your code — they get a discount on their first order, you earn Miles once it ships.
+            Share your code — they get a discount on their first order, you earn Good Vibes once it ships.
             {referralCount > 0 && ` You've referred ${referralCount} order${referralCount === 1 ? "" : "s"} so far.`}
           </p>
           <div className="mt-3 flex items-center gap-3">

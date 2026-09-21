@@ -497,7 +497,7 @@ export default function CheckoutPage() {
       "",
       `Subtotal: ₹${subtotal.toLocaleString("en-IN")}`,
       ...(discount > 0 ? [`Discount: −₹${discount.toLocaleString("en-IN")}`] : []),
-      ...(loyaltyDiscount > 0 ? [`Moonglasses Miles redeemed: −₹${loyaltyDiscount.toLocaleString("en-IN")}`] : []),
+      ...(loyaltyDiscount > 0 ? [`Moonglasses Good Vibes redeemed: −₹${loyaltyDiscount.toLocaleString("en-IN")}`] : []),
       ...(displayShippingCharge ? [`Shipping: ₹${displayShippingCharge.toLocaleString("en-IN")}`] : []),
       `Total: ₹${total.toLocaleString("en-IN")}`,
       "",
@@ -531,25 +531,28 @@ export default function CheckoutPage() {
   const orderSummary = (
     <div className="mt-4 space-y-4 border-y border-divider py-6">
       {items.map((item) => (
-        <div key={item.slug} className="flex items-center gap-3">
-          <div className="relative aspect-square w-14 flex-none overflow-hidden bg-white">
-            <Image src={item.image} alt={item.name} fill sizes="56px" className="object-contain p-1" />
-          </div>
-          <span className="flex-1 text-body-s text-ink">
+        <div key={item.slug} className="flex items-center gap-4">
+          <Link
+            href={`/chapter/${item.slug}`}
+            className="relative aspect-square w-24 flex-none overflow-hidden bg-white"
+          >
+            <Image src={item.image} alt={item.name} fill sizes="96px" className="object-contain p-1.5" />
+          </Link>
+          <Link href={`/chapter/${item.slug}`} className="flex-1 text-body-s text-ink hover:underline">
             {item.quantity} × {item.name}
-          </span>
+          </Link>
           <span className="text-body-s text-secondary-text">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
         </div>
       ))}
 
-      <div className="flex items-center gap-3 border-t border-divider pt-4">
-        <div className="relative aspect-square w-14 flex-none overflow-hidden bg-[var(--moon-black)]">
+      <div className="flex items-center gap-4 border-t border-divider pt-4">
+        <div className="relative aspect-square w-24 flex-none overflow-hidden bg-[var(--moon-black)]">
           <Image
             src="/images/brand/case-and-pouch.png"
             alt="MOON Glasses branded case with microfiber cleaning cloth"
             fill
-            sizes="56px"
-            className="object-contain p-1"
+            sizes="96px"
+            className="object-contain p-1.5"
           />
         </div>
         <p className="flex-1 text-caption text-secondary-text">
@@ -565,7 +568,7 @@ export default function CheckoutPage() {
       )}
       {loyaltyDiscount > 0 && (
         <div className="flex items-center justify-between text-body-s">
-          <span className="text-tan-gold">Moonglasses Miles Redeemed</span>
+          <span className="text-tan-gold">Moonglasses Good Vibes Redeemed</span>
           <span className="text-tan-gold">−₹{loyaltyDiscount.toLocaleString("en-IN")}</span>
         </div>
       )}
@@ -653,7 +656,7 @@ export default function CheckoutPage() {
                       className="mt-1.5 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
                     />
                     <p className="mt-1.5 text-caption text-secondary-text">
-                      Use this to redeem your Moonglasses Miles and have your address filled in automatically.
+                      Use this to redeem your Moonglasses Good Vibes and have your address filled in automatically.
                     </p>
                   </div>
                   {identityError && <p className="text-body-s text-paint-orange">{identityError}</p>}
@@ -713,7 +716,7 @@ export default function CheckoutPage() {
                     Logged in as{" "}
                     <span className="text-ink">{account.customer.phone || account.customer.email}</span>
                     {account.loyalty && account.loyalty.balance > 0 && (
-                      <> · {account.loyalty.balance.toLocaleString("en-IN")} Moonglasses Miles</>
+                      <> · {account.loyalty.balance.toLocaleString("en-IN")} Moonglasses Good Vibes</>
                     )}
                   </span>
                   <button type="button" onClick={logOut} className="text-caption text-secondary-text underline">
@@ -726,7 +729,7 @@ export default function CheckoutPage() {
                   onClick={() => setIdentityStep("identify")}
                   className="text-caption text-ink underline"
                 >
-                  Have an account? Verify for faster checkout &amp; Miles
+                  Have an account? Verify for faster checkout &amp; Good Vibes
                 </button>
               )}
             </div>
@@ -777,7 +780,7 @@ export default function CheckoutPage() {
                   className="h-4 w-4 accent-ink"
                 />
                 <span className="font-sans text-body-s text-ink">
-                  Redeem Moonglasses Miles for ₹{account.loyalty.maxRedeemableRupees.toLocaleString("en-IN")} off
+                  Redeem Moonglasses Good Vibes for ₹{account.loyalty.maxRedeemableRupees.toLocaleString("en-IN")} off
                 </span>
               </label>
             )}

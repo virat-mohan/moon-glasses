@@ -197,7 +197,7 @@ export default function OrderConfirmedPage() {
               Recommend to a Fellow Explorer
             </p>
             <p className="mt-2 text-body-s text-secondary-text">
-              Share your code — they get a discount on their first order, you earn Miles once it
+              Share your code — they get a discount on their first order, you earn Good Vibes once it
               ships.
             </p>
             <code className="mt-3 inline-block border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s tracking-[0.1em] text-ink">

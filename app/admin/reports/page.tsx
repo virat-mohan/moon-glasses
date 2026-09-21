@@ -257,7 +257,7 @@ export default function ReportsPage() {
           </div>
           <p className="mt-1.5 max-w-lg text-micro text-secondary-text/80">
             Messages any customer who hasn&apos;t ordered in 60+ days, reminding them of their
-            Moonglasses Miles balance and inviting them back.
+            Moonglasses Good Vibes balance and inviting them back.
           </p>
         </div>
 

@@ -40,7 +40,7 @@ const NAV_SECTIONS = [
   {
     label: "Customers",
     links: [
-      { href: "/admin/customers", label: "Customers & Miles" },
+      { href: "/admin/customers", label: "Customers & Good Vibes" },
       { href: "/admin/leads", label: "Leads" },
     ],
   },

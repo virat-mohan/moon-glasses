@@ -87,14 +87,14 @@ export default function CustomersPage() {
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
       <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Customers</h1>
       <p className="mt-2 max-w-xl text-body-s text-secondary-text">
-        Grouped by phone number — real orders merged with any imported CSV history. Miles are
+        Grouped by phone number — real orders merged with any imported CSV history. Good Vibes are
         earned by anyone who&apos;s ever bought something; only customers who&apos;ve logged in via
         /account can actually redeem them at checkout.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-divider pt-6">
         <div className="flex items-center gap-3">
-          <label className="text-caption text-secondary-text">Miles earned per pair bought</label>
+          <label className="text-caption text-secondary-text">Good Vibes earned per pair bought</label>
           <input
             type="number"
             value={milesPerCap}
@@ -104,7 +104,7 @@ export default function CustomersPage() {
           />
         </div>
         <div className="flex items-center gap-3">
-          <label className="text-caption text-secondary-text">Miles per redemption</label>
+          <label className="text-caption text-secondary-text">Good Vibes per redemption</label>
           <input
             type="number"
             value={redemptionThreshold}
@@ -124,7 +124,7 @@ export default function CustomersPage() {
           />
         </div>
         <p className="text-caption text-secondary-text">
-          e.g. every {redemptionThreshold.toLocaleString("en-IN")} Miles = ₹
+          e.g. every {redemptionThreshold.toLocaleString("en-IN")} Good Vibes = ₹
           {redemptionValueRupees.toLocaleString("en-IN")} off at checkout.
         </p>
       </div>
@@ -206,7 +206,7 @@ export default function CustomersPage() {
               <th className="py-2 pr-4">Pairs Bought</th>
               <th className="py-2 pr-4">Total Spent</th>
               <th className="py-2 pr-4">Last Order</th>
-              <th className="py-2 pr-4">Miles</th>
+              <th className="py-2 pr-4">Good Vibes</th>
               <th className="py-2 pr-4">Source</th>
             </tr>
           </thead>

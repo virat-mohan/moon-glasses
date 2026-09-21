@@ -125,7 +125,7 @@ export default async function AdminPnlPage({
 
       <div className="mt-10">
         <Row label="Gross Sales" value={grossSales} />
-        <Row label="Discounts, Referrals, Miles & Coupons" value={-discountsGiven} indent />
+        <Row label="Discounts, Referrals, Good Vibes & Coupons" value={-discountsGiven} indent />
         <Row label="Refunds" value={-refunds} indent />
         <Row label="Net Sales" value={netSales} bold />
 

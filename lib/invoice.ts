@@ -81,7 +81,7 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
             <tr>
               <td style="padding:20px 24px;text-align:center;">
                 <p style="margin:0;font-size:13px;color:${MUTED};">Know someone who'd love ${brand.brandName}?</p>
-                <p style="margin:8px 0 0;font-size:13px;color:#e5e5e5;">Share your code — they get ₹${discountRupees} off, and you earn Miles when they buy.</p>
+                <p style="margin:8px 0 0;font-size:13px;color:#e5e5e5;">Share your code — they get ₹${discountRupees} off, and you earn Good Vibes when they buy.</p>
                 <p style="margin:12px 0 0;display:inline-block;padding:8px 20px;border:1px solid ${GOLD};border-radius:4px;font-size:15px;letter-spacing:0.12em;color:${GOLD};font-weight:700;">${referralCode}</p>
                 <p style="margin:12px 0 0;font-size:11px;color:#6a6a6a;">Terms and conditions apply.</p>
               </td>
@@ -167,7 +167,7 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
 
           <tr>
             <td style="padding:24px 40px 0 40px;text-align:center;">
-              <p style="margin:0;font-size:14px;color:#e5e5e5;">You earned <strong style="color:${GOLD};">${milesEarned} Moonglasses Miles</strong> on this order.</p>
+              <p style="margin:0;font-size:14px;color:#e5e5e5;">You earned <strong style="color:${GOLD};">${milesEarned} Moonglasses Good Vibes</strong> on this order.</p>
             </td>
           </tr>
 
