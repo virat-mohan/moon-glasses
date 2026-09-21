@@ -167,3 +167,27 @@ body {
   letter-spacing: 0.12em;
   font-weight: 500;
 }
+
+/*
+ * Homepage tile grid: mirror the model photo so left-column models face
+ * right (toward the grid's center) and right-column models face left —
+ * two rules because the column count itself changes at the md breakpoint
+ * (2 cols below it, 4 at/above it), so "left column" means different
+ * nth-child positions at each size.
+ */
+.tile-grid > *:nth-child(odd) .model-face-img {
+  transform: scaleX(-1);
+}
+.tile-grid > *:nth-child(even) .model-face-img {
+  transform: scaleX(1);
+}
+@media (min-width: 768px) {
+  .tile-grid > *:nth-child(4n + 1) .model-face-img,
+  .tile-grid > *:nth-child(4n + 2) .model-face-img {
+    transform: scaleX(-1);
+  }
+  .tile-grid > *:nth-child(4n + 3) .model-face-img,
+  .tile-grid > *:nth-child(4n) .model-face-img {
+    transform: scaleX(1);
+  }
+}

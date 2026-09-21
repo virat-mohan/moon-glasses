@@ -23,7 +23,7 @@ export function TileGrid({
   const flips = useMemo(() => pickDiverseModelFlips(items.map((i) => i.chapter)), [items]);
 
   return (
-    <div className={`grid ${columnsClassName} gap-0`}>
+    <div className={`tile-grid grid ${columnsClassName} gap-0`}>
       {items.map(({ chapter, stockLabel }, i) => (
         <CollectionItem key={chapter.slug} chapter={chapter} index={i} stockLabel={stockLabel} initialFlipped={flips[i]} />
       ))}

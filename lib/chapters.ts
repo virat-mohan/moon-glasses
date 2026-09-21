@@ -199,6 +199,7 @@ export const chapters: Chapter[] = [
     story: "Aviator (Metal) frame in metal, gunmetal brown lens tint.",
     price: 1999,
     verifiedOnSite: true,
+    modelGender: "female",
   },
   {
     slug: "moon-aviator-metal-gold-green",

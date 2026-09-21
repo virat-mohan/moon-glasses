@@ -91,7 +91,7 @@ export default async function Home() {
           image="/images/brand/editorial-01.jpg"
           eyebrow="Made For After Dark"
           title="Fashion First"
-          copy="The pair for gigs, sets and the walk home after — bold shapes, real lens colour, built to keep up."
+          copy="The pair for gigs, sets, night outs — light tints for the perfect after dark fashion accessory."
         />
         <EditorialSplit
           image="/images/brand/editorial-02.jpg"

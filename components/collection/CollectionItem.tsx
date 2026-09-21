@@ -88,14 +88,8 @@ export function CollectionItem({
           className="relative h-full w-full transition-transform duration-1000 ease-[cubic-bezier(.22,.61,.36,1)] [transform-style:preserve-3d]"
           style={{ transform: shown ? "rotateY(180deg)" : "rotateY(0deg)" }}
         >
-          {/* Front face — product, on a subtle warm spotlight-on-black */}
-          <div
-            className="absolute inset-0 [backface-visibility:hidden]"
-            style={{
-              background:
-                "radial-gradient(ellipse 60% 55% at 50% 42%, rgba(255,246,228,0.20) 0%, rgba(255,246,228,0.07) 40%, var(--moon-black) 78%)",
-            }}
-          >
+          {/* Front face — product, on solid black */}
+          <div className="absolute inset-0 bg-[var(--moon-black)] [backface-visibility:hidden]">
             <Image
               src={productImage}
               alt={chapter.name}
@@ -118,7 +112,7 @@ export function CollectionItem({
                 fill
                 sizes="(min-width: 1024px) 25vw, 50vw"
                 onError={() => setHasLifestyle(false)}
-                className="object-cover object-[50%_18%]"
+                className="model-face-img object-cover object-[50%_18%]"
               />
             </div>
           )}
@@ -138,7 +132,14 @@ export function CollectionItem({
           href={`/chapter/${chapter.slug}`}
           className="min-w-0 font-sans text-micro uppercase tracking-[0.05em] text-white/70 hover:text-white"
         >
-          {hasLifestyle ? "Tap Or Hover To Flip" : "View Details"}
+          {hasLifestyle ? (
+            <>
+              <span className="hidden [@media(hover:hover)]:inline">Hover To Flip</span>
+              <span className="hidden [@media(hover:none)]:inline">Tap To Flip</span>
+            </>
+          ) : (
+            "View Details"
+          )}
         </Link>
 
         {!disabled && (
