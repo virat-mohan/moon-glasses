@@ -80,7 +80,7 @@ async function askClaudeForRecommendations(signals: Signals): Promise<Recommenda
   const apiKey = await getSetting("ANTHROPIC_API_KEY");
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
 
-  const prompt = `You are a sharp, numbers-driven growth marketer for an Indian D2C brand selling trucker caps. Below is real performance data from the last 14 days across the website, WhatsApp, Instagram, and Meta ads. Look for what's actually working, what's underperforming, and non-obvious connections between channels (e.g. a chapter selling well organically that has no ad running, or a high-engagement Instagram post that was never turned into an ad).
+  const prompt = `You are a sharp, numbers-driven growth marketer for an Indian D2C brand selling sunglasses. Below is real performance data from the last 14 days across the website, WhatsApp, Instagram, and Meta ads. Look for what's actually working, what's underperforming, and non-obvious connections between channels (e.g. a chapter selling well organically that has no ad running, or a high-engagement Instagram post that was never turned into an ad).
 
 WEBSITE (last 14 days):
 - Sessions: ${signals.sessions}

@@ -43,7 +43,7 @@ export async function generateJournalDraft(topic: string): Promise<GeneratedJour
 
   const chapterList = chapters.map((c) => `${c.slug}: "${c.name}" — ${c.story.slice(0, 100)}...`).join("\n");
 
-  const prompt = `You are writing a Journal article for Moonglasses, a premium Indian trucker-cap brand ("Stories You Can Wear"). The brand voice is warm, specific, editorial — travel stories that happen to feature a cap, never a hard sell. Every article ties back to a real place or moment.
+  const prompt = `You are writing a Journal article for Moonglasses, a premium Indian sunglasses brand ("Stories You Can Wear"). The brand voice is warm, specific, editorial — nightlife and fashion stories that happen to feature a pair of sunglasses, never a hard sell. Every article ties back to a real place or moment.
 
 Topic: "${topic}"
 

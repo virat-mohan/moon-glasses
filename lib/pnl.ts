@@ -13,7 +13,7 @@ export async function computePnl(monthKey: string) {
   const rangeEnd = new Date(Date.UTC(year, month, 1)).toISOString();
 
   const supabase = getSupabaseServerClient();
-  const costSetting = await getSetting("COGS_PER_CAP_RUPEES");
+  const costSetting = await getSetting("COGS_PER_UNIT_RUPEES");
   const costPerCap = costSetting ? Number(costSetting) : 250;
 
   let grossSales = 0;

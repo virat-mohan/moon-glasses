@@ -1,16 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CollectionItem } from "@/components/collection/CollectionItem";
+import { CollectionExplorer } from "@/components/collection/CollectionExplorer";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
 import { Hero } from "@/components/hero/HeroVideo";
 import { EditorialSplit } from "@/components/hero/EditorialSplit";
-import { getAllChapters } from "@/lib/chapters-dynamic";
+import { getCoreCollectionChapters } from "@/lib/chapters-dynamic";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { computeWebsiteAnalytics } from "@/lib/website-analytics";
 import { getExplorerPosts } from "@/lib/community";
-import { chapters } from "@/lib/chapters";
+import { chapters, groupByStyle } from "@/lib/chapters";
 
 function chapterName(slug: string) {
   return chapters.find((c) => c.slug === slug)?.name ?? slug;
@@ -20,31 +21,14 @@ export const revalidate = 3600;
 
 const pillars = [
   { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
-  { title: "Plastic Or Metal", copy: "Acetate or metal — same flat ₹1,499 either way." },
+  { title: "Plastic Or Metal", copy: "Acetate frames ₹1,499, metal frames ₹1,999." },
   { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
-  { title: "Small-Batch", copy: "22 colourways at launch. When one sells out, it's gone." },
+  { title: "Core Collection", copy: "Five shapes, sixteen colourways — the everyday lineup." },
 ];
 
 export default async function Home() {
-  const chapters = await getAllChapters();
-  const bySeries = new Map<string, typeof chapters>();
-  for (const chapter of [...chapters].reverse()) {
-    const group = bySeries.get(chapter.series) ?? [];
-    group.push(chapter);
-    bySeries.set(chapter.series, group);
-  }
-  const grouped = [...bySeries.values()].flat();
-
-  const featuredSlugs = [
-    "moon-aviator-metal-black-yellow",
-    "moon-wayfarer-black",
-    "moon-octagon-gold-grey",
-    "moon-rectangle-black-orange",
-  ];
-  const featured = featuredSlugs
-    .map((slug) => grouped.find((c) => c.slug === slug))
-    .filter((c): c is (typeof grouped)[number] => !!c);
-  const collection = [...featured, ...grouped.filter((c) => !featuredSlugs.includes(c.slug))];
+  const coreChapters = await getCoreCollectionChapters();
+  const collection = groupByStyle(coreChapters);
   const inventory = await getInventoryMap();
 
   const explorerPosts = await getExplorerPosts();
@@ -94,18 +78,16 @@ export default async function Home() {
           <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">New In</p>
           <h2 className="font-display text-display-m uppercase text-ink">The Collection</h2>
           <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
-            Six shapes, 22 colourways, across two materials. Every pair, flat ₹1,499.
+            Five shapes, 16 colourways, across two materials. ₹1,499 acetate, ₹1,999 metal.
           </p>
 
-          <div className="mt-10 grid grid-cols-2 gap-0 md:grid-cols-4">
-            {collection.map((chapter, i) => (
-              <CollectionItem
-                key={chapter.slug}
-                chapter={chapter}
-                index={i}
-                stockLabel={stockLabelFor(inventory[chapter.slug])}
-              />
-            ))}
+          <div className="mt-10">
+            <CollectionExplorer
+              items={collection.map((chapter) => ({
+                chapter,
+                stockLabel: stockLabelFor(inventory[chapter.slug]),
+              }))}
+            />
           </div>
         </section>
 
@@ -119,10 +101,18 @@ export default async function Home() {
           image="/images/brand/editorial-02.jpg"
           eyebrow="New In"
           title="Light Tints"
-          copy="Wayfarer, round, rectangle, aviator and octagon — six shapes, 22 lens tints, across plastic and metal."
+          copy="Wayfarer, round, rectangle, aviator and octagon — five shapes, 16 lens tints, across plastic and metal."
           ctaLabel="Discover The Collection"
           ctaHref="/#shop"
           reverse
+        />
+        <EditorialSplit
+          image="/images/brand/editorial-01.jpg"
+          eyebrow="Small-Batch · Once Gone, Gone"
+          title="Limited Series"
+          copy="A separate line from the core collection — deliberately short runs that never restock. Dropping soon."
+          ctaLabel="See Limited Series"
+          ctaHref="/limited-series"
         />
 
         {explorerPosts.length > 0 && (

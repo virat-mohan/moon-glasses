@@ -88,3 +88,66 @@ export async function sendJournalArticleToSubscribers(article: JournalArticle) {
 
   return sent;
 }
+
+function renderDropAnnouncementHtml(
+  dropName: string,
+  description: string,
+  heroImageUrl: string,
+  ctaUrl: string,
+  brand: Awaited<ReturnType<typeof getBrandProfile>>
+) {
+  const GOLD = "#e0b84a";
+  const BORDER = "#2a2a2a";
+  return `
+    <div style="max-width:560px;margin:0 auto;background-color:#101010;font-family:Helvetica,Arial,sans-serif;color:#f0eee4;">
+      <div style="padding:28px 24px 0;text-align:center;">
+        <p style="text-transform:uppercase;letter-spacing:0.2em;font-size:11px;color:${GOLD};margin:0;">${brand.brandName}</p>
+      </div>
+      <img src="${heroImageUrl}" alt="${dropName}" width="560" style="display:block;width:100%;height:auto;margin-top:20px;" />
+      <div style="padding:28px 32px 8px;text-align:center;">
+        <p style="text-transform:uppercase;letter-spacing:0.15em;font-size:12px;color:${GOLD};margin:0 0 8px;">New Drop</p>
+        <h1 style="font-size:26px;margin:0 0 14px;text-transform:uppercase;">${dropName}</h1>
+        <p style="font-size:14px;line-height:1.7;color:#cfcfcf;margin:0 0 22px;">${description}</p>
+        <a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;background:${GOLD};color:#101010;text-decoration:none;text-transform:uppercase;letter-spacing:0.08em;font-size:13px;font-weight:bold;">Shop The Drop</a>
+      </div>
+      <div style="margin:28px 32px 0;border-top:1px solid ${BORDER};padding:20px 0 28px;text-align:center;">
+        <p style="font-size:13px;line-height:1.6;color:#cfcfcf;margin:0;">
+          Already got a pair? Your Good Vibes balance carries over — redeem it at checkout for a
+          discount on this drop.
+        </p>
+      </div>
+      <p style="text-align:center;padding:0 24px 28px;font-size:11px;color:#777;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+}
+
+/**
+ * Announces a new drop/collab to every newsletter subscriber — same list a
+ * Journal article goes to. Best-effort per recipient, like
+ * sendJournalArticleToSubscribers. Distinct from sendDropLiveEmail in
+ * lib/email.ts, which is a single-recipient "your preorder deposit is now
+ * live" email for people who already paid a deposit — this is the broader
+ * "hey, something new just launched" announcement to the whole list.
+ */
+export async function sendDropAnnouncementEmail(
+  dropName: string,
+  description: string,
+  heroImageUrl: string,
+  ctaPath = "/"
+) {
+  const apiKey = await getSetting("BREVO_API_KEY");
+  if (!apiKey) throw new Error("BREVO_API_KEY is not set — add it in /admin/settings first");
+
+  const [emails, brand] = await Promise.all([getSubscriberEmails(), getBrandProfile()]);
+  if (emails.length === 0) return 0;
+
+  const ctaUrl = `${brand.siteUrl.replace(/\/$/, "")}${ctaPath}`;
+  const html = renderDropAnnouncementHtml(dropName, description, heroImageUrl, ctaUrl, brand);
+  let sent = 0;
+
+  for (const email of emails) {
+    if (await sendEmail(email, `${dropName} just dropped at ${brand.brandName}`, html)) sent++;
+  }
+
+  return sent;
+}

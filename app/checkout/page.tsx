@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
@@ -528,15 +529,34 @@ export default function CheckoutPage() {
   }
 
   const orderSummary = (
-    <div className="mt-4 space-y-2 border-y border-divider py-6">
+    <div className="mt-4 space-y-4 border-y border-divider py-6">
       {items.map((item) => (
-        <div key={item.slug} className="flex items-center justify-between text-body-s">
-          <span className="text-ink">
+        <div key={item.slug} className="flex items-center gap-3">
+          <div className="relative aspect-square w-14 flex-none overflow-hidden bg-white">
+            <Image src={item.image} alt={item.name} fill sizes="56px" className="object-contain p-1" />
+          </div>
+          <span className="flex-1 text-body-s text-ink">
             {item.quantity} × {item.name}
           </span>
-          <span className="text-secondary-text">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+          <span className="text-body-s text-secondary-text">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
         </div>
       ))}
+
+      <div className="flex items-center gap-3 border-t border-divider pt-4">
+        <div className="relative aspect-square w-14 flex-none overflow-hidden bg-white">
+          <Image
+            src="/images/brand/case-and-pouch.jpg"
+            alt="MOON Glasses branded case with microfiber cleaning cloth"
+            fill
+            sizes="56px"
+            className="object-cover"
+          />
+        </div>
+        <p className="flex-1 text-caption text-secondary-text">
+          Every pair ships in a branded MOON Glasses case with a microfiber cleaning cloth — included, no
+          extra charge.
+        </p>
+      </div>
       {discount > 0 && discountRule && (
         <div className="flex items-center justify-between text-body-s">
           <span className="text-tan-gold">{discountRule.name}</span>

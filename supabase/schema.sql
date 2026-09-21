@@ -44,59 +44,9 @@ create table if not exists inventory (
   updated_at timestamptz not null default now()
 );
 
-insert into inventory (chapter_slug, stock_on_hand) values
-  ('travaholic-black', 110),
-  ('travaholic-ocean', 60),
-  ('travaholic-sky', 67),
-  ('sunshine', 10),
-  ('tropical-blue', 33),
-  ('tropical-pink', 83),
-  ('dunes-maroon', 10),
-  ('dunes-yellow', 0),
-  ('beachn', 94),
-  ('travaholic-orange', 11),
-  ('peaking', 13),
-  ('wildling', 86),
-  ('junglee', 96),
-  ('city-slicker-black', 34)
-on conflict (chapter_slug) do update set stock_on_hand = excluded.stock_on_hand;
-
--- Not yet seeded — no matching chapter slug found for these when the stock sheet
--- came in. Confirm with the client which chapter each belongs to, then either
--- rename an existing slug's row above or insert a new one:
---   'City Slicker Burgundy' — 54 units
---   'Travaholic White' — 31 units
--- Also missing entirely from the stock sheet: 'city-slicker' (City Slicker Black/Grey).
-
--- The rows above are leftover Travaholic Caps demo stock — none of them match
--- a real MOON GLASSES slug, so every real SKU had no inventory row at all,
--- silently disabling stock decrement/low-stock alerts/badges for the entire
--- live catalogue (see lib/inventory.ts, app/api/orders/route.ts). Remove the
--- stale demo rows and seed real starting stock for all 16 launch SKUs.
-delete from inventory where chapter_slug in (
-  'travaholic-black', 'travaholic-ocean', 'travaholic-sky', 'sunshine', 'tropical-blue',
-  'tropical-pink', 'dunes-maroon', 'dunes-yellow', 'beachn', 'travaholic-orange',
-  'peaking', 'wildling', 'junglee', 'city-slicker-black'
-);
-
-insert into inventory (chapter_slug, stock_on_hand) values
-  ('moon-p01-wayfarer-pale-blue', 25),
-  ('moon-p02-wayfarer-pale-pink', 25),
-  ('moon-p03-wayfarer-pale-green', 25),
-  ('moon-p04-wayfarer-pale-peach', 25),
-  ('moon-m01-round-pale-blue', 25),
-  ('moon-m02-round-pale-pink', 25),
-  ('moon-m03-round-pale-green', 25),
-  ('moon-m04-round-pale-peach', 25),
-  ('moon-m05-aviator-pale-blue', 25),
-  ('moon-m06-aviator-pale-pink', 25),
-  ('moon-m07-aviator-pale-green', 25),
-  ('moon-m08-aviator-pale-peach', 25),
-  ('moon-m09-broad-pale-blue', 25),
-  ('moon-m10-broad-pale-pink', 25),
-  ('moon-m11-broad-pale-green', 25),
-  ('moon-m12-broad-pale-peach', 25)
-on conflict (chapter_slug) do nothing;
+-- (Earlier demo/placeholder inventory rows from before the MOON GLASSES
+-- catalogue existed have been deleted — see the real 16-SKU seed further
+-- below.)
 
 -- Discount rules: simple "buy N, cheapest one at X% off" promos (e.g. buy 2 get
 -- 3rd at half price = buy_quantity 3, discount_percent 50). Only one should be
@@ -447,7 +397,7 @@ create table if not exists agent_actions (
 
 -- ============================================================
 -- Customer accounts: phone + OTP login, saved addresses, and a
--- Travaholic Miles loyalty ledger.
+-- Moonglasses Miles loyalty ledger.
 -- ============================================================
 
 -- One row per real customer, identified by phone and/or email — only one is
@@ -1058,3 +1008,49 @@ create table if not exists preorders (
 );
 create index if not exists preorders_status_idx on preorders (status);
 create index if not exists preorders_email_idx on preorders (email);
+
+-- ============================================================
+-- 6 products were dropped from the launch catalogue (no photography), but
+-- their inventory rows were seeded before that decision and were never
+-- cleaned up — delete them so `inventory` matches the real 16 SKUs in
+-- lib/chapters.ts exactly. Starting stock for the 16 real SKUs: 50 units
+-- each.
+-- ============================================================
+delete from inventory where chapter_slug in (
+  'moon-wayfarer-black',
+  'moon-round-black',
+  'moon-rectangle-black-grey',
+  'moon-rectangle-black-green',
+  'moon-aviator-classic-black-black',
+  'moon-aviator-metal-silver-grey'
+);
+
+update inventory set stock_on_hand = 50 where chapter_slug in (
+  'moon-wayfarer-black-green',
+  'moon-wayfarer-demi-brown-light-brown',
+  'moon-round-black-light-brown',
+  'moon-round-demi-brown-blue-graded',
+  'moon-rectangle-black-orange',
+  'moon-rectangle-black-blue',
+  'moon-rectangle-black-purple',
+  'moon-aviator-classic-demi-brown-grey-graded',
+  'moon-aviator-classic-black-yellow',
+  'moon-octagon-silver-light-brown',
+  'moon-octagon-gold-grey',
+  'moon-octagon-silver-grey',
+  'moon-octagon-black-blue',
+  'moon-aviator-metal-black-yellow',
+  'moon-aviator-metal-gunmetal-brown',
+  'moon-aviator-metal-gold-green'
+);
+
+-- ============================================================
+-- Admin-added products (via /admin/add-chapter) now carry their own model
+-- photo (generated via Gemini image-to-image from the uploaded angle
+-- shots, see lib/image-gen.ts generateModelPhoto) and which collection
+-- they belong to — "core" (the everyday homepage lineup) or "limited"
+-- (the Limited Series drop line at /limited-series). Defaults to "core" so
+-- existing rows keep behaving exactly as before.
+-- ============================================================
+alter table dynamic_chapters add column if not exists model_image text;
+alter table dynamic_chapters add column if not exists collection text not null default 'core' check (collection in ('core', 'limited'));

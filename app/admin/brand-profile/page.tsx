@@ -21,7 +21,7 @@ const FIELDS: { key: keyof BrandProfile; label: string; hint: string; multiline?
     hint: "Drives every Claude prompt — journal drafts and ad briefs both read this.",
     multiline: true,
   },
-  { key: "productNoun", label: "Product Noun", hint: "e.g. \"trucker cap\" — swap this to repoint the whole pipeline at a different product." },
+  { key: "productNoun", label: "Product Noun", hint: "e.g. \"sunglasses\" — swap this to repoint the whole pipeline at a different product." },
   { key: "currencySymbol", label: "Currency Symbol", hint: "" },
   { key: "siteUrl", label: "Site URL", hint: "Used as the base for ad landing links." },
   { key: "instagramHandle", label: "Instagram Handle", hint: "" },

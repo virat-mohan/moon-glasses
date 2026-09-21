@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Chapter } from "@/types/chapter";
@@ -8,18 +8,21 @@ import { chapterImageSrc, shortProductName } from "@/lib/chapters";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import type { StockLabel } from "@/lib/inventory";
 
-const FLIP_INTERVAL_MS = 3500;
-
 /**
- * Collage-style tile: product shot and lifestyle shot stacked, auto-flipping
- * back and forth on their own timer — each tile starts on a randomized
- * offset so a grid never flips in unison. Tapping/clicking a tile stops its
- * own auto-flip permanently (the visitor is interacting with it, not just
- * browsing past). Alternated starting side by index so a grid reads as
- * product/model/product/model rather than uniform rows. Name/price and Buy
- * Now share one flex row at the bottom (not two independently-positioned
- * absolute elements) so they can never overlap regardless of name length.
- * Silently stays product-only if no lifestyle shot exists yet at
+ * Collage-style tile: product shot and lifestyle shot live on opposite faces
+ * of a 3D-flipped card (real rotateY, not a cross-fade). No auto-flip timer —
+ * the visitor drives it entirely:
+ *  - Grid opens on an alternating product/model pattern (even index starts
+ *    on the product face, odd starts on the model face), so a full 16-tile
+ *    grid reads as 8 products / 8 models rather than a uniform wall.
+ *  - Desktop: hovering previews the other face; moving off reverts to
+ *    whichever face is "locked in".
+ *  - Any device: a tap/click locks in a flip to the other face (this is how
+ *    touch users flip, and how mouse users can settle on a face without
+ *    having to keep hovering).
+ * Name/price and Buy Now sit on a static overlay that never flips, so
+ * they're always reachable no matter which face is showing. Silently stays
+ * product-only if no lifestyle shot exists yet at
  * public/images/chapters/<folder>/lifestyle.jpg.
  */
 export function CollectionItem({
@@ -32,98 +35,88 @@ export function CollectionItem({
   index?: number;
 }) {
   const [hasLifestyle, setHasLifestyle] = useState(true);
-  const [flipped, setFlipped] = useState(index % 2 === 1);
-  const pausedRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tappedOnceRef = useRef(false);
+  const [baseFlipped, setBaseFlipped] = useState(index % 2 === 1);
+  const [hoverPreview, setHoverPreview] = useState(false);
 
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
   const lifestyleImage =
     chapter.modelImage ?? `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;
   const disabled = stockLabel === "out-of-stock";
 
-  useEffect(() => {
+  const flipped = hasLifestyle && (hoverPreview ? !baseFlipped : baseFlipped);
+
+  function toggleFlip() {
     if (!hasLifestyle) return;
-
-    function schedule(delay: number) {
-      timeoutRef.current = setTimeout(() => {
-        if (pausedRef.current) return;
-        setFlipped((f) => !f);
-        schedule(FLIP_INTERVAL_MS);
-      }, delay);
-    }
-
-    // Randomized initial offset (plus a per-index stagger) so tiles in the
-    // same grid never flip in lockstep.
-    schedule(300 + ((index * 137) % 1200) + Math.random() * 1500);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [hasLifestyle, index]);
-
-  const lastPointerTypeRef = useRef<string>("mouse");
-
-  function stopAutoFlip() {
-    pausedRef.current = true;
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setBaseFlipped((f) => !f);
+    setHoverPreview(false);
   }
-
-  // On touch, the first tap just stops the auto-flip and shows whichever
-  // image was current (a "preview"); a second tap actually navigates. Mouse
-  // clicks navigate immediately — there's no hover-preview step to consume.
-  function handleImageClick(e: React.MouseEvent) {
-    stopAutoFlip();
-    if (lastPointerTypeRef.current === "touch" && !tappedOnceRef.current) {
-      tappedOnceRef.current = true;
-      e.preventDefault();
-    }
-  }
-
-  const modelShowing = hasLifestyle && flipped;
 
   return (
-    <div
-      className={`group relative aspect-square overflow-hidden transition-colors duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
-        modelShowing ? "bg-[var(--moon-black)]" : "bg-white"
-      }`}
-      onPointerDown={(e) => {
-        lastPointerTypeRef.current = e.pointerType;
-        stopAutoFlip();
-      }}
-    >
-      <Link href={`/chapter/${chapter.slug}`} className="absolute inset-0 block" onClick={handleImageClick}>
-        <Image
-          src={productImage}
-          alt={chapter.name}
-          fill
-          sizes="(min-width: 1024px) 25vw, 50vw"
-          className={`object-contain p-[8%] transition-opacity duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
-            modelShowing ? "opacity-0" : "opacity-100"
-          }`}
-        />
-        {hasLifestyle && (
-          <Image
-            src={lifestyleImage}
-            alt=""
-            aria-hidden
-            fill
-            sizes="(min-width: 1024px) 25vw, 50vw"
-            onError={() => setHasLifestyle(false)}
-            className={`absolute inset-0 object-cover object-[50%_18%] transition-opacity duration-700 ease-[cubic-bezier(.22,.61,.36,1)] ${
-              modelShowing ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        )}
+    <div className="group relative aspect-square overflow-hidden bg-white">
+      <div
+        role="button"
+        aria-label={`Show ${flipped ? "product" : "model"} photo for ${chapter.name}`}
+        tabIndex={0}
+        onPointerEnter={(e) => {
+          if (e.pointerType === "mouse" && hasLifestyle) setHoverPreview(true);
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType === "mouse") setHoverPreview(false);
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          toggleFlip();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleFlip();
+          }
+        }}
+        className="absolute inset-0 cursor-pointer [perspective:1200px]"
+      >
+        <div
+          className="relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(.22,.61,.36,1)] [transform-style:preserve-3d]"
+          style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+        >
+          {/* Front face — product, on white */}
+          <div className="absolute inset-0 bg-white [backface-visibility:hidden]">
+            <Image
+              src={productImage}
+              alt={chapter.name}
+              fill
+              sizes="(min-width: 1024px) 25vw, 50vw"
+              className="object-contain p-[8%]"
+            />
+          </div>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+          {/* Back face — model, on black */}
+          {hasLifestyle && (
+            <div
+              className="absolute inset-0 bg-[var(--moon-black)] [backface-visibility:hidden]"
+              style={{ transform: "rotateY(180deg)" }}
+            >
+              <Image
+                src={lifestyleImage}
+                alt=""
+                aria-hidden
+                fill
+                sizes="(min-width: 1024px) 25vw, 50vw"
+                onError={() => setHasLifestyle(false)}
+                className="object-cover object-[50%_18%]"
+              />
+            </div>
+          )}
+        </div>
+      </div>
 
-        {stockLabel && (
-          <span className="absolute left-2 top-2 border border-white/40 bg-black px-2 py-1 text-micro uppercase tracking-[0.05em] text-white">
-            {stockLabel === "out-of-stock" ? "Sold Out" : "Selling Fast"}
-          </span>
-        )}
-      </Link>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+
+      {stockLabel && (
+        <span className="pointer-events-none absolute left-2 top-2 border border-white/40 bg-black px-2 py-1 text-micro uppercase tracking-[0.05em] text-white">
+          {stockLabel === "out-of-stock" ? "Sold Out" : "Selling Fast"}
+        </span>
+      )}
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
         <Link href={`/chapter/${chapter.slug}`} className="min-w-0">

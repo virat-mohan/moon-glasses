@@ -78,8 +78,8 @@ export function ExploreGlobe() {
         </p>
         <p className="mx-auto mt-4 max-w-md text-body-s text-secondary-text">
           Every Chapter starts with a real place — a coastline, a summit, a city that never quite
-          goes to sleep. Moonglasses is a travel and lifestyle brand first: the caps just happen to
-          be where those journeys end up living. Hover a pin to see where it's from.
+          goes to sleep. Moonglasses is a nightlife and lifestyle brand first: the sunglasses just
+          happen to be where those nights end up living. Hover a pin to see where it's from.
         </p>
       </div>
 

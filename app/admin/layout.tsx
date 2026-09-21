@@ -67,6 +67,7 @@ const NAV_SECTIONS = [
       { href: "/admin/edit-chapter", label: "Edit Products" },
       { href: "/admin/add-chapter", label: "Add Product" },
       { href: "/admin/product-images", label: "Product Images" },
+      { href: "/admin/models", label: "Models" },
       { href: "/admin/marketing-assets", label: "Marketing Assets" },
       { href: "/admin/brand-profile", label: "Brand Profile" },
       { href: "/admin/settings", label: "API Keys & Settings" },

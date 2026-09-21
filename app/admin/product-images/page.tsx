@@ -17,6 +17,8 @@ export default function ProductImagesPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [gender, setGender] = useState<"female" | "male">("female");
 
   useEffect(() => {
     fetch("/api/admin/all-chapters")
@@ -82,6 +84,32 @@ export default function ProductImagesPage() {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(null);
+    }
+  }
+
+  async function handleGenerateModel() {
+    const refs = angleImages.filter(Boolean);
+    if (refs.length === 0) {
+      setError("Upload at least one angle photo first — Gemini needs it as a reference.");
+      return;
+    }
+    setError(null);
+    setGenerating(true);
+    try {
+      const productName = chapterOptions.find((c) => c.slug === slug)?.name;
+      const res = await fetch("/api/admin/generate-model-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referenceImageUrls: refs, gender, productName, chapterSlug: slug }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setModelImage(data.url);
+      setSaved(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not generate model photo");
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -231,6 +259,28 @@ export default function ProductImagesPage() {
                 </button>
               )}
             </div>
+
+            <div className="mt-4 flex items-center gap-3">
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value as "female" | "male")}
+                className="border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none focus:border-ink"
+              >
+                <option value="female">Female model</option>
+                <option value="male">Male model</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleGenerateModel}
+                disabled={generating || angleImages.filter(Boolean).length === 0}
+                className="border border-ink px-4 py-2 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream disabled:opacity-50"
+              >
+                {generating ? "Generating…" : "Generate With Gemini"}
+              </button>
+            </div>
+            <p className="mt-2 max-w-sm text-caption text-secondary-text">
+              Uses the angle photos above as reference. Also saved to /admin/models for reuse.
+            </p>
           </div>
 
           {error && <p className="mt-6 text-body-s text-paint-orange">{error}</p>}

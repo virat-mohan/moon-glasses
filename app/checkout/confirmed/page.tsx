@@ -133,7 +133,7 @@ export default function OrderConfirmedPage() {
               {items.map((item, i) => (
                 <div key={i} className="flex items-center justify-between text-body-s">
                   <span className="text-ink">
-                    {item.quantity} × Trucker Cap — {item.chapter_name}
+                    {item.quantity} × Sunglasses — {item.chapter_name}
                   </span>
                   <span className="text-secondary-text">
                     ₹{(item.unit_price * item.quantity).toLocaleString("en-IN")}

@@ -32,7 +32,7 @@ const FIELD_LABELS: { key: keyof Mapping; label: string; required?: boolean; hin
   { key: "orderId", label: "Order ID", hint: "Groups multi-item orders into one purchase instead of one per line item." },
   { key: "purchaseDate", label: "Purchase Date" },
   { key: "purchaseValue", label: "Purchase Value (₹)", hint: "Per line item — summed within an order." },
-  { key: "quantity", label: "Quantity / Caps Bought" },
+  { key: "quantity", label: "Quantity / Pairs Bought" },
   { key: "status", label: "Order Status", hint: "Pick which statuses count as a real sale below." },
 ];
 

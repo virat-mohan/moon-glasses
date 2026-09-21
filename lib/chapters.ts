@@ -2,28 +2,16 @@ import type { Chapter } from "@/types/chapter";
 
 /**
  * MOON GLASSES launch catalogue — sourced from a licensed supplier (Ted
- * Smith) product pack: 6 shapes across 22 colour variants.
- * Every SKU is flat ₹1,499 regardless of frame material.
+ * Smith) product pack: 5 shapes across 16 colour variants.
+ * Plastic frames ₹1,499, metal frames ₹1,999.
  */
 export const chapters: Chapter[] = [
-  {
-    slug: "moon-wayfarer-black",
-    name: "MOON 01 Wayfarer — Black",
-    series: "Plastic",
-    folder: "moon-wayfarer-black",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
-    primary: "front.jpg",
-    sideImage: "angle.jpg",
-    story: "Wayfarer frame in acetate, black lens tint.",
-    price: 1499,
-    verifiedOnSite: true,
-  },
   {
     slug: "moon-wayfarer-black-green",
     name: "MOON 02 Wayfarer — Black Green",
     series: "Plastic",
     folder: "moon-wayfarer-black-green",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Wayfarer frame in acetate, black green lens tint.",
@@ -35,22 +23,10 @@ export const chapters: Chapter[] = [
     name: "MOON 03 Wayfarer — Demi-brown Light Brown",
     series: "Plastic",
     folder: "moon-wayfarer-demi-brown-light-brown",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Wayfarer frame in acetate, demi-brown light brown lens tint.",
-    price: 1499,
-    verifiedOnSite: true,
-  },
-  {
-    slug: "moon-round-black",
-    name: "MOON 04 Round — Black",
-    series: "Plastic",
-    folder: "moon-round-black",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
-    primary: "front.jpg",
-    sideImage: "angle.jpg",
-    story: "Round frame in acetate, black lens tint.",
     price: 1499,
     verifiedOnSite: true,
   },
@@ -59,7 +35,7 @@ export const chapters: Chapter[] = [
     name: "MOON 05 Round — Black Light Brown",
     series: "Plastic",
     folder: "moon-round-black-light-brown",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Round frame in acetate, black light brown lens tint.",
@@ -71,7 +47,7 @@ export const chapters: Chapter[] = [
     name: "MOON 06 Round — Demi-brown Blue Graded",
     series: "Plastic",
     folder: "moon-round-demi-brown-blue-graded",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Round frame in acetate, demi-brown blue graded lens tint.",
@@ -83,22 +59,10 @@ export const chapters: Chapter[] = [
     name: "MOON 07 Rectangle — Black Orange",
     series: "Plastic",
     folder: "moon-rectangle-black-orange",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Rectangle frame in acetate, black orange lens tint.",
-    price: 1499,
-    verifiedOnSite: true,
-  },
-  {
-    slug: "moon-rectangle-black-grey",
-    name: "MOON 08 Rectangle — Black Grey",
-    series: "Plastic",
-    folder: "moon-rectangle-black-grey",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
-    primary: "front.jpg",
-    sideImage: "angle.jpg",
-    story: "Rectangle frame in acetate, black grey lens tint.",
     price: 1499,
     verifiedOnSite: true,
   },
@@ -107,7 +71,7 @@ export const chapters: Chapter[] = [
     name: "MOON 09 Rectangle — Black Blue",
     series: "Plastic",
     folder: "moon-rectangle-black-blue",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Rectangle frame in acetate, black blue lens tint.",
@@ -119,22 +83,10 @@ export const chapters: Chapter[] = [
     name: "MOON 10 Rectangle — Black Purple",
     series: "Plastic",
     folder: "moon-rectangle-black-purple",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Rectangle frame in acetate, black purple lens tint.",
-    price: 1499,
-    verifiedOnSite: true,
-  },
-  {
-    slug: "moon-rectangle-black-green",
-    name: "MOON 11 Rectangle — Black Green",
-    series: "Plastic",
-    folder: "moon-rectangle-black-green",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
-    primary: "front.jpg",
-    sideImage: "angle.jpg",
-    story: "Rectangle frame in acetate, black green lens tint.",
     price: 1499,
     verifiedOnSite: true,
   },
@@ -143,22 +95,10 @@ export const chapters: Chapter[] = [
     name: "MOON 12 Aviator — Demi-brown Grey Graded",
     series: "Plastic",
     folder: "moon-aviator-classic-demi-brown-grey-graded",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Aviator frame in acetate, demi-brown grey graded lens tint.",
-    price: 1499,
-    verifiedOnSite: true,
-  },
-  {
-    slug: "moon-aviator-classic-black-black",
-    name: "MOON 13 Aviator — Black Black",
-    series: "Plastic",
-    folder: "moon-aviator-classic-black-black",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
-    primary: "front.jpg",
-    sideImage: "angle.jpg",
-    story: "Aviator frame in acetate, black black lens tint.",
     price: 1499,
     verifiedOnSite: true,
   },
@@ -167,7 +107,7 @@ export const chapters: Chapter[] = [
     name: "MOON 14 Aviator — Black Yellow",
     series: "Plastic",
     folder: "moon-aviator-classic-black-yellow",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Aviator frame in acetate, black yellow lens tint.",
@@ -179,11 +119,11 @@ export const chapters: Chapter[] = [
     name: "MOON 15 Octagon — Silver Light Brown",
     series: "Metal",
     folder: "moon-octagon-silver-light-brown",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Octagon frame in metal, silver light brown lens tint.",
-    price: 1499,
+    price: 1999,
     verifiedOnSite: true,
   },
   {
@@ -191,11 +131,11 @@ export const chapters: Chapter[] = [
     name: "MOON 16 Octagon — Gold Grey",
     series: "Metal",
     folder: "moon-octagon-gold-grey",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Octagon frame in metal, gold grey lens tint.",
-    price: 1499,
+    price: 1999,
     verifiedOnSite: true,
   },
   {
@@ -203,11 +143,11 @@ export const chapters: Chapter[] = [
     name: "MOON 17 Octagon — Silver Grey",
     series: "Metal",
     folder: "moon-octagon-silver-grey",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Octagon frame in metal, silver grey lens tint.",
-    price: 1499,
+    price: 1999,
     verifiedOnSite: true,
   },
   {
@@ -215,11 +155,11 @@ export const chapters: Chapter[] = [
     name: "MOON 18 Octagon — Black Blue",
     series: "Metal",
     folder: "moon-octagon-black-blue",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Octagon frame in metal, black blue lens tint.",
-    price: 1499,
+    price: 1999,
     verifiedOnSite: true,
   },
   {
@@ -227,11 +167,11 @@ export const chapters: Chapter[] = [
     name: "MOON 19 Aviator (Metal) — Black Yellow",
     series: "Metal",
     folder: "moon-aviator-metal-black-yellow",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Aviator (Metal) frame in metal, black yellow lens tint.",
-    price: 1499,
+    price: 1999,
     verifiedOnSite: true,
   },
   {
@@ -239,11 +179,11 @@ export const chapters: Chapter[] = [
     name: "MOON 20 Aviator (Metal) — Gunmetal Brown",
     series: "Metal",
     folder: "moon-aviator-metal-gunmetal-brown",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Aviator (Metal) frame in metal, gunmetal brown lens tint.",
-    price: 1499,
+    price: 1999,
     verifiedOnSite: true,
   },
   {
@@ -251,23 +191,11 @@ export const chapters: Chapter[] = [
     name: "MOON 21 Aviator (Metal) — Gold Green",
     series: "Metal",
     folder: "moon-aviator-metal-gold-green",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
+    images: ["front.jpg", "angle.jpg"],
     primary: "front.jpg",
     sideImage: "angle.jpg",
     story: "Aviator (Metal) frame in metal, gold green lens tint.",
-    price: 1499,
-    verifiedOnSite: true,
-  },
-  {
-    slug: "moon-aviator-metal-silver-grey",
-    name: "MOON 22 Aviator (Metal) — Silver Grey",
-    series: "Metal",
-    folder: "moon-aviator-metal-silver-grey",
-    images: ["front.jpg", "angle.jpg", "angle2.jpg", "side.jpg"],
-    primary: "front.jpg",
-    sideImage: "angle.jpg",
-    story: "Aviator (Metal) frame in metal, silver grey lens tint.",
-    price: 1499,
+    price: 1999,
     verifiedOnSite: true,
   },
 ];
@@ -302,4 +230,39 @@ export function chapterImageSrc(folder: string, file: string) {
   const stem = dot === -1 ? file : file.slice(0, dot);
   const resolved = `${stem}_no_bg.png`;
   return `/images/chapters/${encodeURIComponent(folder)}/${encodeURIComponent(resolved)}`;
+}
+
+/** Display order for grouping the catalogue by shape — matches the "five shapes" copy on-site. */
+export const STYLE_ORDER = ["Wayfarer", "Round", "Rectangle", "Aviator", "Octagon"] as const;
+
+/**
+ * Every product name follows "MOON <n> <Shape> [(Material)] — <Rim> <Lens>",
+ * e.g. "MOON 20 Aviator (Metal) — Gunmetal Brown" or
+ * "MOON 06 Round — Demi-brown Blue Graded". Rim is always a single token
+ * (the frame colourway), lens is everything after it (the tint name) — used
+ * to group the homepage by shape and to power the collection explorer's
+ * shape → rim colour → lens colour filters.
+ */
+export function styleRimLens(chapter: Chapter): { style: string; rim: string; lens: string } {
+  // The "MOON <n>" code prefix is optional (admin-added products from
+  // /admin/add-chapter don't get one), and a trailing "(descriptor)" —
+  // e.g. "(Special Edition)" — is ignored rather than swallowed into lens.
+  const match = chapter.name.match(
+    /^(?:MOON\s+\d+\s+)?(\S+)(?:\s+\([^)]+\))?\s+—\s+(\S+)\s+(.+?)(?:\s+\([^)]+\))?$/
+  );
+  if (!match) return { style: "Other", rim: "", lens: "" };
+  const [, style, rim, lens] = match;
+  return { style, rim, lens };
+}
+
+/** Sorts chapters into STYLE_ORDER groups (unrecognized styles sink to the end), stable within each group. */
+export function groupByStyle<T extends Chapter>(items: T[]): T[] {
+  const rank = (c: T) => {
+    const i = STYLE_ORDER.indexOf(styleRimLens(c).style as (typeof STYLE_ORDER)[number]);
+    return i === -1 ? STYLE_ORDER.length : i;
+  };
+  return items
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => rank(a.item) - rank(b.item) || a.i - b.i)
+    .map(({ item }) => item);
 }

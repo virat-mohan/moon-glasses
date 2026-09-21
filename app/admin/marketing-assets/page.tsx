@@ -106,7 +106,7 @@ export default function MarketingAssetsPage() {
       <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Marketing Assets</h1>
       <p className="mt-2 max-w-lg text-body-s text-secondary-text">
         Real photography for ad creatives — product shots, lifestyle, logos, people wearing the
-        caps. Ad briefs can use these directly instead of generating a new image, or feed one in as
+        sunglasses. Ad briefs can use these directly instead of generating a new image, or feed one in as
         a reference for image-gen compositing.
       </p>
 

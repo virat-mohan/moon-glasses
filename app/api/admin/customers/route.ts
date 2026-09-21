@@ -39,9 +39,9 @@ export async function GET() {
       ? await supabase.from("order_items").select("order_id, quantity").in("order_id", orderIds)
       : { data: [] };
 
-    const capsByOrder = new Map<string, number>();
+    const pairsByOrder = new Map<string, number>();
     for (const item of items ?? []) {
-      capsByOrder.set(item.order_id, (capsByOrder.get(item.order_id) ?? 0) + item.quantity);
+      pairsByOrder.set(item.order_id, (pairsByOrder.get(item.order_id) ?? 0) + item.quantity);
     }
 
     type CustomerRow = {
@@ -49,7 +49,7 @@ export async function GET() {
       name: string;
       email: string;
       orderCount: number;
-      capsBought: number;
+      pairsBought: number;
       totalSpent: number;
       lastOrderAt: string;
       firstOrderAt: string;
@@ -64,7 +64,7 @@ export async function GET() {
         name?: string | null;
         email?: string | null;
         orderDelta?: number;
-        capsDelta?: number;
+        pairsDelta?: number;
         spendDelta?: number;
         date?: string | null;
         importedDelta?: number;
@@ -74,7 +74,7 @@ export async function GET() {
       const existing = byPhone.get(phone);
       if (existing) {
         existing.orderCount += patch.orderDelta ?? 0;
-        existing.capsBought += patch.capsDelta ?? 0;
+        existing.pairsBought += patch.pairsDelta ?? 0;
         existing.totalSpent += patch.spendDelta ?? 0;
         existing.importedRecords += patch.importedDelta ?? 0;
         if (!existing.name && patch.name) existing.name = patch.name;
@@ -89,7 +89,7 @@ export async function GET() {
           name: patch.name ?? "",
           email: patch.email ?? "",
           orderCount: patch.orderDelta ?? 0,
-          capsBought: patch.capsDelta ?? 0,
+          pairsBought: patch.pairsDelta ?? 0,
           totalSpent: patch.spendDelta ?? 0,
           lastOrderAt: patch.date ?? "",
           firstOrderAt: patch.date ?? "",
@@ -101,12 +101,12 @@ export async function GET() {
 
     for (const order of orders ?? []) {
       const phone = normalizePhone(order.customer_phone);
-      const caps = capsByOrder.get(order.id) ?? 0;
+      const pairs = pairsByOrder.get(order.id) ?? 0;
       upsert(phone, {
         name: order.customer_name,
         email: order.customer_email,
         orderDelta: 1,
-        capsDelta: caps,
+        pairsDelta: pairs,
         spendDelta: order.total ?? 0,
         date: order.created_at,
       });
@@ -118,7 +118,7 @@ export async function GET() {
         name: record.name,
         email: record.email,
         orderDelta: 1,
-        capsDelta: record.quantity ?? 0,
+        pairsDelta: record.quantity ?? 0,
         spendDelta: record.purchase_value ?? 0,
         date: record.purchase_date,
         importedDelta: 1,
@@ -131,7 +131,7 @@ export async function GET() {
         // A customer with no real order yet (imported-only record) has no
         // lastOrderAt to judge — never flag them at-risk off an empty date.
         const isAtRisk = !!c.lastOrderAt && new Date(c.lastOrderAt).getTime() < atRiskCutoff;
-        return { ...c, miles: c.capsBought * milesPerCap, isVip, isAtRisk };
+        return { ...c, miles: c.pairsBought * milesPerCap, isVip, isAtRisk };
       })
       .sort((a, b) => b.totalSpent - a.totalSpent);
 

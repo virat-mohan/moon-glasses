@@ -8,8 +8,8 @@ export type ExplorerPost = {
 };
 
 /**
- * Community/UGC wall — no seed photos yet (previous static set was
- * Travaholic-specific and has been removed). Drop real rave/festival crowd
+ * Community/UGC wall — no seed photos yet (previous static set was from an
+ * earlier brand and has been removed). Drop real rave/festival crowd
  * shots into public/images/community/ and add captions here, or approve
  * submissions in /admin/explorer-submissions once that flow is wired back up.
  */

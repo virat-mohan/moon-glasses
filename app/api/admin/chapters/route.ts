@@ -28,6 +28,8 @@ export async function POST(request: Request) {
       verified_on_site: body.verifiedOnSite ?? true,
       images: body.images,
       primary_image: body.primaryImage,
+      model_image: body.modelImage ?? null,
+      collection: body.collection === "limited" ? "limited" : "core",
     });
 
     if (error) throw error;

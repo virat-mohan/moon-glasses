@@ -5,8 +5,8 @@ import { Fragment } from "react";
  * Renders one body paragraph, turning any [[chapter-slug|Product Name]]
  * markup (written by generateJournalDraft in lib/claude.ts) into a real
  * link to that Chapter's product page — this is how a Journal article
- * actually sends someone to buy the cap it just mentioned, instead of only
- * relying on the "Cap Suggestions" grid at the end of the article.
+ * actually sends someone to buy the pair it just mentioned, instead of only
+ * relying on the "Featured In This Issue" grid at the end of the article.
  */
 export function JournalParagraphText({ text }: { text: string }) {
   const parts: React.ReactNode[] = [];

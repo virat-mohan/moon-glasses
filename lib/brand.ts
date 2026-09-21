@@ -26,7 +26,7 @@ export const DEFAULT_BRAND_PROFILE: BrandProfile = {
 /**
  * Everything downstream (ad brief prompts, image-gen prompts, journal drafts)
  * reads brand voice/product from here instead of hardcoding "Moonglasses" or
- * "cap" — swap this one record to repoint the whole marketing pipeline at a
+ * "sunglasses" — swap this one record to repoint the whole marketing pipeline at a
  * different brand or product line later.
  */
 export async function getBrandProfile(): Promise<BrandProfile> {

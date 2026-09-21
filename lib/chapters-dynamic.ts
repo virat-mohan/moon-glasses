@@ -1,4 +1,5 @@
 import { chapters as staticChapters } from "@/lib/chapters";
+import { limitedSeries } from "@/lib/limited-series";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import type { Chapter } from "@/types/chapter";
 
@@ -11,13 +12,18 @@ type Override = {
   name: string | null;
 };
 
+type ChapterCollection = "core" | "limited";
+
 /**
  * Static 16 + anything added from /admin/add-chapter, with per-field edits
  * from /admin/edit-chapter applied. Server-only (uses the Supabase service
- * role client).
+ * role client). Every chapter (static or dynamic) also carries which
+ * collection it belongs to — "core" (the everyday lineup) or "limited"
+ * (the Limited Series drop line) — so the homepage and /limited-series can
+ * each show only their half without a second data source.
  */
-export async function getAllChapters(): Promise<Chapter[]> {
-  let dynamicChapters: Chapter[] = [];
+async function getMergedChapters(): Promise<(Chapter & { collection: ChapterCollection })[]> {
+  let dynamicChapters: (Chapter & { collection: ChapterCollection })[] = [];
   let overrides: Record<string, Override> = {};
 
   try {
@@ -40,9 +46,11 @@ export async function getAllChapters(): Promise<Chapter[]> {
       // Admin-added Chapters don't have a separate side-angle pick yet —
       // fall back to whatever was set as the hero image.
       sideImage: row.primary_image,
+      modelImage: row.model_image ?? undefined,
       story: row.story,
       price: row.price,
       verifiedOnSite: row.verified_on_site,
+      collection: (row.collection as ChapterCollection) ?? "core",
     }));
 
     overrides = Object.fromEntries(
@@ -62,7 +70,12 @@ export async function getAllChapters(): Promise<Chapter[]> {
     console.error("getAllChapters: Supabase fetch failed, falling back to static list", err);
   }
 
-  const merged = [...staticChapters, ...dynamicChapters];
+  const staticWithCollection = [
+    ...staticChapters.map((c) => ({ ...c, collection: "core" as ChapterCollection })),
+    ...limitedSeries.map((c) => ({ ...c, collection: "limited" as ChapterCollection })),
+  ];
+
+  const merged = [...staticWithCollection, ...dynamicChapters];
   return merged.map((c) => {
     const o = overrides[c.slug];
     if (!o) return c;
@@ -82,6 +95,21 @@ export async function getAllChapters(): Promise<Chapter[]> {
       modelImage: o.model_image ?? c.modelImage,
     };
   });
+}
+
+/** Every chapter, both collections — used by /chapter/[slug] and the admin editing tools. */
+export async function getAllChapters(): Promise<Chapter[]> {
+  return getMergedChapters();
+}
+
+/** Just the core/everyday lineup — what the homepage grid renders. */
+export async function getCoreCollectionChapters(): Promise<Chapter[]> {
+  return (await getMergedChapters()).filter((c) => c.collection === "core");
+}
+
+/** Just the Limited Series drop line — what /limited-series renders. */
+export async function getLimitedSeriesChapters(): Promise<Chapter[]> {
+  return (await getMergedChapters()).filter((c) => c.collection === "limited");
 }
 
 export async function getChapterBySlug(slug: string): Promise<Chapter | undefined> {

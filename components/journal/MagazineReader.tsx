@@ -223,7 +223,7 @@ export function MagazineReader({
                   {featuredChapters.length > 0 && (
                     <div className="mx-auto mt-12 max-w-2xl">
                       <p className="mb-5 text-caption uppercase tracking-[0.1em] text-secondary-text">
-                        Caps Featured In This Issue
+                        Featured In This Issue
                       </p>
                       <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
                         {featuredChapters.map((c) => (

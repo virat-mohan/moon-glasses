@@ -96,7 +96,7 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
     .map(
       (item) => `
         <tr>
-          <td style="padding:10px 0;font-size:14px;color:#e5e5e5;border-bottom:1px solid ${BORDER};">Trucker Cap — ${item.chapter_name}</td>
+          <td style="padding:10px 0;font-size:14px;color:#e5e5e5;border-bottom:1px solid ${BORDER};">Sunglasses — ${item.chapter_name}</td>
           <td style="padding:10px 0;font-size:14px;color:${MUTED};text-align:center;border-bottom:1px solid ${BORDER};">${item.quantity}</td>
           <td style="padding:10px 0;font-size:14px;color:${MUTED};text-align:right;border-bottom:1px solid ${BORDER};">₹${item.unit_price.toLocaleString("en-IN")}</td>
           <td style="padding:10px 0;font-size:14px;color:#e5e5e5;text-align:right;border-bottom:1px solid ${BORDER};">₹${(item.unit_price * item.quantity).toLocaleString("en-IN")}</td>

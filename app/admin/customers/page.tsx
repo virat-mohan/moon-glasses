@@ -8,7 +8,7 @@ type Customer = {
   name: string;
   email: string;
   orderCount: number;
-  capsBought: number;
+  pairsBought: number;
   totalSpent: number;
   lastOrderAt: string;
   miles: number;
@@ -94,7 +94,7 @@ export default function CustomersPage() {
 
       <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-divider pt-6">
         <div className="flex items-center gap-3">
-          <label className="text-caption text-secondary-text">Miles earned per cap bought</label>
+          <label className="text-caption text-secondary-text">Miles earned per pair bought</label>
           <input
             type="number"
             value={milesPerCap}
@@ -203,7 +203,7 @@ export default function CustomersPage() {
               <th className="py-2 pr-4">Phone</th>
               <th className="py-2 pr-4">Email</th>
               <th className="py-2 pr-4">Orders</th>
-              <th className="py-2 pr-4">Caps Bought</th>
+              <th className="py-2 pr-4">Pairs Bought</th>
               <th className="py-2 pr-4">Total Spent</th>
               <th className="py-2 pr-4">Last Order</th>
               <th className="py-2 pr-4">Miles</th>
@@ -244,7 +244,7 @@ export default function CustomersPage() {
                   <td className="py-3 text-caption text-secondary-text">{c.phone}</td>
                   <td className="py-3 text-caption text-secondary-text">{c.email || "—"}</td>
                   <td className="py-3 text-body-s text-ink">{c.orderCount}</td>
-                  <td className="py-3 text-body-s text-ink">{c.capsBought}</td>
+                  <td className="py-3 text-body-s text-ink">{c.pairsBought}</td>
                   <td className="py-3 text-body-s text-ink">₹{c.totalSpent.toLocaleString("en-IN")}</td>
                   <td className="py-3 text-caption text-secondary-text">{formatDate(c.lastOrderAt)}</td>
                   <td className="py-3 font-display text-body-s text-tan-gold">

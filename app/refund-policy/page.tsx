@@ -35,13 +35,13 @@ export default function RefundPolicyPage() {
           <section>
             <h2 className="font-display text-heading-s uppercase text-ink">Returns &amp; Exchanges</h2>
             <p className="mt-3">
-              We accept returns and exchanges within 7 days of delivery, as long as the cap is unused,
+              We accept returns and exchanges within 7 days of delivery, as long as the pair is unused,
               unworn, and in its original condition with tags attached. To start a return, email us at
               hello@moon-glasses.store with your order number and the reason for return — we&apos;ll confirm
               pickup or return-shipping instructions.
             </p>
             <p className="mt-3">
-              Caps marked as final sale, or damaged through normal wear, are not eligible for return.
+              Pairs marked as final sale, or damaged through normal wear, are not eligible for return.
             </p>
           </section>
 
@@ -58,7 +58,7 @@ export default function RefundPolicyPage() {
             <h2 className="font-display text-heading-s uppercase text-ink">Refunds</h2>
             <p className="mt-3">
               Once we receive and inspect a returned item, we&apos;ll process your refund to the original
-              payment method within 5–7 business days. Miles earned on a refunded order are deducted from
+              payment method within 5–7 business days. Good Vibes earned on a refunded order are deducted from
               your balance.
             </p>
           </section>

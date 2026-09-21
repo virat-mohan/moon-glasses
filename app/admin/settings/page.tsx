@@ -81,7 +81,7 @@ const GROUPS: { label: string; fields: Field[] }[] = [
   {
     label: "Finance",
     fields: [
-      { key: "COGS_PER_CAP_RUPEES", label: "Cost Per Cap (₹)", hint: "What you pay the vendor per cap, used to compute COGS on the P&L page. Defaults to ₹250 if unset." },
+      { key: "COGS_PER_UNIT_RUPEES", label: "Cost Per Unit (₹)", hint: "What you pay the vendor per pair, used to compute COGS on the P&L page. Defaults to ₹250 if unset." },
       { key: "LOW_STOCK_THRESHOLD_UNITS", label: "Low-Stock Alert Threshold (units)", hint: "Sends an email to the team the moment a Chapter's stock dips to or under this number. Defaults to 10 if unset." },
     ],
   },

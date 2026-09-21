@@ -63,7 +63,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
 
   // Product + Breadcrumb structured data — the concrete facts (price,
   // availability, brand) answer engines pull to respond to "how much is
-  // the Moonglasses X cap" style queries without a human ever landing here.
+  // the Moonglasses X sunglasses" style queries without a human ever landing here.
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -183,6 +183,19 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
                   </li>
                 ))}
               </ul>
+
+              <div className="relative mt-5 aspect-[8/3] w-full overflow-hidden bg-surface-alt">
+                <Image
+                  src="/images/brand/case-and-pouch.jpg"
+                  alt="MOON Glasses branded case with microfiber cleaning cloth, included with every pair"
+                  fill
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  className="object-cover"
+                />
+              </div>
+              <p className="mt-2 font-sans text-caption text-secondary-text">
+                Every pair ships in a branded MOON Glasses case with a microfiber cleaning cloth.
+              </p>
             </div>
           </div>
         </div>

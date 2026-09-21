@@ -120,7 +120,7 @@ export default async function AdminPnlPage({
       </div>
       <p className="mt-2 max-w-lg text-body-s text-secondary-text">
         Live — recalculated from real orders, refunds, and logged expenses for the selected month.
-        Cost per cap: {money(costPerCap)} (edit in Settings → Finance).
+        Cost per unit: {money(costPerCap)} (edit in Settings → Finance).
       </p>
 
       <div className="mt-10">

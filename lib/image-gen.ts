@@ -9,7 +9,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
  * instead of hallucinating a new product. Add a case below for another
  * provider (OpenAI, Flux, Ideogram) without touching any of the callers.
  */
-export type ImageAspectRatio = "square" | "portrait";
+export type ImageAspectRatio = "square" | "portrait" | "portrait4x5";
 
 export async function generateAdImage(options: {
   prompt: string;
@@ -30,7 +30,8 @@ export async function generateAdImage(options: {
   let base64Png: string;
   if (geminiKey) {
     try {
-      base64Png = await generateWithGemini(geminiKey, options.prompt, options.referenceImageUrl, aspectRatio);
+      const refs = options.referenceImageUrl ? [options.referenceImageUrl] : undefined;
+      base64Png = await generateWithGemini(geminiKey, options.prompt, refs, aspectRatio);
     } catch (err) {
       if (!openaiKey) throw err;
       base64Png = await generateWithOpenAI(openaiKey, options.prompt, aspectRatio);
@@ -75,17 +76,19 @@ async function generateWithOpenAI(apiKey: string, prompt: string, aspectRatio: I
 async function generateWithGemini(
   apiKey: string,
   prompt: string,
-  referenceImageUrl: string | undefined,
+  referenceImageUrls: string[] | undefined,
   aspectRatio: ImageAspectRatio
 ) {
   const orientationInstruction =
     aspectRatio === "portrait"
       ? " The image MUST be composed as a vertical 9:16 portrait frame (like a phone screen, 1080x1920) — full-bleed, with the main subject centered so nothing important sits in the top or bottom strip that a UI overlay might cover."
-      : "";
+      : aspectRatio === "portrait4x5"
+        ? " The image MUST be composed as a 4:5 portrait frame, full-bleed."
+        : "";
   const parts: Record<string, unknown>[] = [{ text: `${prompt}${orientationInstruction}` }];
 
-  if (referenceImageUrl) {
-    const refRes = await fetch(referenceImageUrl);
+  for (const url of referenceImageUrls ?? []) {
+    const refRes = await fetch(url);
     if (refRes.ok) {
       const buffer = await refRes.arrayBuffer();
       const mimeType = refRes.headers.get("content-type") ?? "image/png";
@@ -95,6 +98,9 @@ async function generateWithGemini(
     }
   }
 
+  const geminiAspectRatio =
+    aspectRatio === "portrait" ? "9:16" : aspectRatio === "portrait4x5" ? "4:5" : "1:1";
+
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
     {
@@ -103,7 +109,7 @@ async function generateWithGemini(
       body: JSON.stringify({
         contents: [{ parts }],
         generationConfig: {
-          imageConfig: { aspectRatio: aspectRatio === "portrait" ? "9:16" : "1:1" },
+          imageConfig: { aspectRatio: geminiAspectRatio },
         },
       }),
     }
@@ -133,4 +139,54 @@ async function uploadGeneratedImage(base64Png: string, storagePathPrefix: string
 
   const { data } = supabase.storage.from("ad-creatives").getPublicUrl(path);
   return data.publicUrl;
+}
+
+/**
+ * Turns 1-3 uploaded product-angle photos into a model/lifestyle shot via
+ * Gemini image-to-image, using the same prompt style established for the
+ * launch catalogue's model photography (realistic young Indian model,
+ * editorial studio look, portrait 4:5). Used from /admin/add-chapter (new
+ * product) and /admin/product-images (existing product) — both just need
+ * the reference angle URLs and a gender.
+ *
+ * Every generated photo is also logged into marketing_assets tagged
+ * "generated-model" so it shows up in /admin/models for reuse in social
+ * posts, independent of whether it ends up attached to a product.
+ */
+export async function generateModelPhoto(options: {
+  referenceImageUrls: string[];
+  gender: "male" | "female";
+  /** For the marketing_assets label/tags — purely organizational, not required. */
+  productName?: string;
+  chapterSlug?: string;
+}): Promise<string> {
+  const geminiKey = await getSetting("IMAGE_GEN_API_KEY");
+  if (!geminiKey) {
+    throw new Error("IMAGE_GEN_API_KEY (Gemini) is not set — add it in /admin/settings first");
+  }
+
+  const prompt = `Here ${
+    options.referenceImageUrls.length > 1 ? "are transparent PNG cutouts" : "is a transparent PNG cutout"
+  } of a pair of sunglasses${options.productName ? `: "${options.productName}"` : ""}.
+
+Generate a realistic, professional studio/lifestyle photo of a young Indian ${options.gender} model (age 22–30) wearing this exact pair of sunglasses. Match the frame shape, color, and lens tint in the reference image(s) exactly — do not change the design in any way.
+
+Style: clean, editorial, fashion-forward, confident. Soft natural light or a simple neutral studio background (light grey or off-white), shot from the chest up, front-facing or a slight 3/4 turn, genuine smile or relaxed expression. No text, no logos, no watermarks.`;
+
+  const base64Png = await generateWithGemini(geminiKey, prompt, options.referenceImageUrls, "portrait4x5");
+  const url = await uploadGeneratedImage(base64Png, "model-photos");
+
+  try {
+    const supabase = getSupabaseServerClient();
+    await supabase.from("marketing_assets").insert({
+      url,
+      label: options.productName ? `${options.productName} — ${options.gender} model` : `Generated ${options.gender} model`,
+      tags: ["generated-model", options.gender, ...(options.chapterSlug ? [options.chapterSlug] : [])],
+    });
+  } catch (err) {
+    // Never let the asset-log fail the actual generation the admin is waiting on.
+    console.error("Failed to log generated model photo to marketing_assets", err);
+  }
+
+  return url;
 }

@@ -168,7 +168,7 @@ export async function handleIncomingMessage(
     }
     if (intent === "buying") {
       await updateConversation(convo.id, { state: "awaiting_chapter", intent });
-      await sendMessage(senderId, "Nice — which Chapter (cap) are you after? Just type the name.");
+      await sendMessage(senderId, "Nice — which pair are you after? Just type the name.");
     } else {
       await updateConversation(convo.id, { state: "awaiting_contact", intent });
       await sendMessage(

@@ -260,7 +260,7 @@ export default function AdBriefsPage() {
    * previous AI output (that's what the separate "Edit instruction" flow
    * does). Going through generateSlotImage means it re-anchors to the real
    * product reference photo every time, so a note like "make the sky more
-   * dramatic" can't slowly drift the cap's look away from the actual product
+   * dramatic" can't slowly drift the product's look away from the actual product
    * the way repeated image-to-image edits would.
    */
   async function regenerateSlotWithNote(brief: Brief, slotIndex: number) {
@@ -1228,7 +1228,7 @@ export default function AdBriefsPage() {
                       <>
                         <input
                           type="text"
-                          placeholder="Edit direction (optional) — e.g. &quot;slower pan, closer on the cap&quot;"
+                          placeholder="Edit direction (optional) — e.g. &quot;slower pan, closer on the frame&quot;"
                           value={videoEditInstructions[brief.id] ?? ""}
                           onChange={(e) =>
                             setVideoEditInstructions((prev) => ({ ...prev, [brief.id]: e.target.value }))

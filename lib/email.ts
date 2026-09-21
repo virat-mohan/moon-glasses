@@ -230,7 +230,7 @@ export async function sendBuyNow10Email(
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
-  return sendEmail(session.customer_email, `Moonglasses Caps | 10% off on what's still in your cart`, html);
+  return sendEmail(session.customer_email, `MOON GLASSES | 10% off on what's still in your cart`, html);
 }
 
 /** Sent once to each pending "notify me" lead when a sold-out Chapter's stock goes back above zero. */
@@ -317,8 +317,8 @@ export async function sendReferralInviteEmail(
       </div>
       <p style="font-size:16px;">Hi ${toName ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
-        ${referrerName ?? "A friend"} thinks you&apos;d like ${brand.brandName} — travel-inspired trucker
-        caps, ₹1,399 flat. Use their link and get ₹${discountRupees} off your first order.
+        ${referrerName ?? "A friend"} thinks you&apos;d like ${brand.brandName} — fashion-forward
+        sunglasses, ₹1,499 acetate / ₹1,999 metal. Use their link and get ₹${discountRupees} off your first order.
       </p>
       <a href="${referralUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Shop &amp; Save ₹${discountRupees}</a>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>

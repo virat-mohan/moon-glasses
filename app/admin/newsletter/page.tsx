@@ -9,6 +9,86 @@ type ArticleRow = {
   send: { recipient_count: number; sent_at: string } | null;
 };
 
+function AnnounceDropForm() {
+  const [dropName, setDropName] = useState("");
+  const [description, setDescription] = useState("");
+  const [heroImageUrl, setHeroImageUrl] = useState("");
+  const [ctaPath, setCtaPath] = useState("/limited-series");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSending(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/newsletter/drop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dropName, description, heroImageUrl, ctaPath }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not send");
+      setResult(`Sent to ${data.recipientCount} subscriber${data.recipientCount === 1 ? "" : "s"}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-6 space-y-3 border-t border-divider pt-6">
+      <p className="font-display text-body-s uppercase tracking-[0.05em] text-ink">
+        Announce A New Drop / Collab
+      </p>
+      <p className="text-caption text-secondary-text">
+        Emails every subscriber with a gold/black announcement card and reminds returning customers
+        their Good Vibes balance carries over.
+      </p>
+      <input
+        required
+        value={dropName}
+        onChange={(e) => setDropName(e.target.value)}
+        placeholder="Drop / collab name (e.g. Limited Series)"
+        className="w-full border border-divider bg-surface px-3 py-2 text-body-s text-ink"
+      />
+      <textarea
+        required
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="One or two lines about the drop"
+        rows={3}
+        className="w-full border border-divider bg-surface px-3 py-2 text-body-s text-ink"
+      />
+      <input
+        required
+        value={heroImageUrl}
+        onChange={(e) => setHeroImageUrl(e.target.value)}
+        placeholder="Hero image URL (full https://... link)"
+        className="w-full border border-divider bg-surface px-3 py-2 text-body-s text-ink"
+      />
+      <input
+        value={ctaPath}
+        onChange={(e) => setCtaPath(e.target.value)}
+        placeholder="Link path (e.g. /limited-series)"
+        className="w-full border border-divider bg-surface px-3 py-2 text-body-s text-ink"
+      />
+      {error && <p className="text-caption text-paint-orange">{error}</p>}
+      {result && <p className="text-caption text-tan-gold">{result}</p>}
+      <button
+        type="submit"
+        disabled={sending}
+        className="border border-ink px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream disabled:opacity-50"
+      >
+        {sending ? "Sending..." : "Send Announcement"}
+      </button>
+    </form>
+  );
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
 }
@@ -95,6 +175,8 @@ export default function NewsletterPage() {
           ))
         )}
       </div>
+
+      <AnnounceDropForm />
     </main>
   );
 }

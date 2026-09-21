@@ -6,10 +6,10 @@ export const metadata = { title: "Try It On" };
 
 // One of each of the 6 shapes plus a couple of standout colourways.
 const TRY_ON_SLUGS = [
-  "moon-wayfarer-black",
-  "moon-round-black",
+  "moon-wayfarer-black-green",
+  "moon-round-black-light-brown",
   "moon-rectangle-black-orange",
-  "moon-aviator-classic-black-black",
+  "moon-aviator-classic-black-yellow",
   "moon-octagon-gold-grey",
   "moon-aviator-metal-black-yellow",
   "moon-rectangle-black-blue",

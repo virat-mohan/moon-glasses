@@ -156,7 +156,7 @@ export default function ExplorerSubmissionsPage() {
                   </div>
                   <p className="mt-1 text-body-s text-ink">{sub.testimonial}</p>
                   <p className="mt-1 text-caption text-secondary-text">
-                    {chapterNames(sub.chapter_slugs) ?? "No cap tagged"}
+                    {chapterNames(sub.chapter_slugs) ?? "No product tagged"}
                   </p>
                 </div>
               </div>

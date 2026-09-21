@@ -2,9 +2,10 @@ import { getSetting, setSetting } from "@/lib/settings";
 
 const BASE_URL = "https://apiv2.shiprocket.in/v1/external";
 
-// Every Chapter is a trucker cap — uniform enough to hardcode a shipping
-// weight/box size rather than collect it per product. Adjust here if
-// packaging changes; Shiprocket uses this only for courier rate calculation.
+// Every Chapter is a pair of sunglasses in a branded case — uniform enough
+// to hardcode a shipping weight/box size rather than collect it per
+// product. Adjust here if packaging changes; Shiprocket uses this only for
+// courier rate calculation.
 const UNIT_WEIGHT_KG = 0.2;
 const BOX_DIMENSIONS_CM = { length: 25, breadth: 20, height: 10 };
 
