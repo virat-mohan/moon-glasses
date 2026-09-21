@@ -197,12 +197,11 @@ async function uploadGeneratedImage(base64Png: string, storagePathPrefix: string
  * "generated-model" so it shows up in /admin/models for reuse in social
  * posts, independent of whether it ends up attached to a product.
  */
-// Three head-angle variants so a batch of generated photos doesn't all stare
-// straight down the lens the same way — picked randomly per call so
-// "some looking left, some looking right" happens naturally across
-// repeated Generate/Regenerate clicks on different (or the same) product.
+// Picked randomly per call, 50/50, so a batch of generations doesn't all
+// stare the same direction — "some looking left, some looking right"
+// across repeated Generate/Regenerate clicks on different (or the same)
+// product.
 const GAZE_VARIANTS = [
-  "looking directly into the camera, chin slightly down, laughing with genuine joy",
   "head turned slightly to their left, gazing off past the camera, mid-laugh, hair/light catching the turn",
   "head turned slightly to their right, gazing off past the camera, mid-laugh, hair/light catching the turn",
 ];
@@ -264,7 +263,7 @@ Wardrobe: ${wardrobe}, in black, white, or another neutral tone — not matched 
 
 Framing: a tight head-and-shoulders portrait crop — head, neck, and top of the shoulders filling most of the frame, the same close zoom level every time, with the sunglasses large and clearly readable on the face. Crop just below the collarbone: no chest or décolletage on display, and if the wardrobe is low-cut or off-shoulder, crop tighter so it doesn't read that way. Shallow depth of field, with ${backdrop}. Nothing so busy it competes with the product.
 
-Lighting and color: near-black background with strong, punchy contrast and warm gold highlights on the skin — a moody, high-contrast editorial nightlife look, not a flat, dim, or washed-out one. Bright, crisp key light on the face so skin tone, sunglasses, and jewelry all read clearly; deep shadows in the background, not on the subject. Match this same brightness and contrast level consistently across every generation — no dull, gray, or low-contrast results.
+Lighting and color: near-black, true-dark background — not gray, brown, or hazy — with strong, punchy contrast and vivid, saturated warm gold highlights on the skin. A moody, high-contrast editorial nightlife look: bright, crisp, clearly-defined key light hitting the face so skin tone, sunglasses, and jewelry pop with clarity, falling off into deep black shadow in the background. Never flat, muted, desaturated, sepia-washed, foggy, or soft-diffused — every generation should have the same punchy, saturated, deep-contrast color grade as a flash-lit editorial nightlife shot, not a dim or hazy ambient one.
 
 Photography style: this must look like a real photograph taken on a professional camera at an actual party, not a rendered or AI-generated image. Natural skin texture with visible pores, fine lines, and subtle asymmetry — never airbrushed, waxy, or unnaturally smooth. Real directional lighting with natural shadow falloff, slight authentic film/sensor grain, imperfect flyaway hairs. Avoid the typical AI-image look entirely: no plastic-looking skin, no overly symmetrical features, no synthetic-looking background blur. Sharp focus on the face and sunglasses. No text, no logos, no watermarks.`;
 
