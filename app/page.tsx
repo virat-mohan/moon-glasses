@@ -7,9 +7,9 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
 import { Hero } from "@/components/hero/HeroVideo";
 import { EditorialSplit } from "@/components/hero/EditorialSplit";
-import { getCoreCollectionChapters } from "@/lib/chapters-dynamic";
+import { PayWithAPostBanner } from "@/components/hero/PayWithAPostBanner";
+import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
-import { computeWebsiteAnalytics } from "@/lib/website-analytics";
 import { getExplorerPosts } from "@/lib/community";
 import { chapters, groupByStyle } from "@/lib/chapters";
 
@@ -32,20 +32,7 @@ export default async function Home() {
   const inventory = await getInventoryMap();
 
   const explorerPosts = await getExplorerPosts();
-
-  let trending: typeof collection = [];
-  try {
-    const analytics = await computeWebsiteAnalytics(
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      new Date().toISOString()
-    );
-    trending = analytics.topViewedChapters
-      .map((v) => collection.find((c) => c.slug === v.slug))
-      .filter((c): c is (typeof collection)[number] => !!c)
-      .slice(0, 4);
-  } catch (err) {
-    console.error("Homepage: failed to compute trending chapters", err);
-  }
+  const limitedChapters = await getLimitedSeriesChapters();
 
   return (
     <>
@@ -56,13 +43,13 @@ export default async function Home() {
           <DiscountPromoBanner />
         </div>
 
-        {trending.length > 0 && (
+        {limitedChapters.length > 0 && (
           <section className="border-b border-divider pb-16 pt-8">
             <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
-              Trending Now
+              Limited Series — Small-Batch · Once Gone, Gone
             </p>
             <TileGrid
-              items={trending.map((chapter) => ({
+              items={limitedChapters.map((chapter) => ({
                 chapter,
                 stockLabel: stockLabelFor(inventory[chapter.slug]),
               }))}
@@ -86,6 +73,8 @@ export default async function Home() {
             />
           </div>
         </section>
+
+        <PayWithAPostBanner />
 
         <EditorialSplit
           image="/images/brand/editorial-01.jpg"
