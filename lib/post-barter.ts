@@ -11,6 +11,7 @@ import { shipOrder } from "@/lib/order-shipping";
 import {
   sendPostBarterOrderConfirmationEmail,
   sendPostBarterQualifiedEmail,
+  sendPostBarterProgressEmail,
   sendOrderNotificationEmail,
 } from "@/lib/email";
 
@@ -329,9 +330,15 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
  * confirms real payment) must never be able to fake progress toward a free
  * shipment. Also excludes redemptions that match the barterer's own
  * phone/email — buying from themselves with their own code must never
- * count toward their own qualification.
+ * count toward their own qualification, and never triggers a progress email
+ * either (buyerPhone/buyerEmail identify who JUST redeemed, so a
+ * self-redemption short-circuits before any email is even considered).
  */
-export async function maybeQualifyBarterOrderForCoupon(couponCode: string | null | undefined) {
+export async function maybeQualifyBarterOrderForCoupon(
+  couponCode: string | null | undefined,
+  buyerPhone?: string | null,
+  buyerEmail?: string | null
+) {
   if (!couponCode) return;
   const supabase = getSupabaseServerClient();
 
@@ -343,6 +350,11 @@ export async function maybeQualifyBarterOrderForCoupon(couponCode: string | null
     .is("barter_qualified_at", null)
     .maybeSingle();
   if (!order) return;
+
+  const buyerIsBarterer =
+    (buyerPhone && order.customer_phone && buyerPhone === order.customer_phone) ||
+    (buyerEmail && order.customer_email && buyerEmail === order.customer_email);
+  if (buyerIsBarterer) return;
 
   const { data: coupon } = await supabase.from("coupon_codes").select("id").eq("code", couponCode.toUpperCase()).maybeSingle();
   if (!coupon) return;
@@ -370,7 +382,14 @@ export async function maybeQualifyBarterOrderForCoupon(couponCode: string | null
     return !samePhone && !sameEmail;
   }).length;
 
-  if (qualifyingCount < order.barter_required_orders) return;
+  if (qualifyingCount < order.barter_required_orders) {
+    try {
+      await sendPostBarterProgressEmail(order.customer_email, qualifyingCount, order.barter_required_orders);
+    } catch (err) {
+      console.error("Failed to send barter progress email", order.id, err);
+    }
+    return;
+  }
 
   await supabase.from("orders").update({ barter_qualified_at: new Date().toISOString() }).eq("id", order.id);
   await decrementInventoryAndShip(order.id);

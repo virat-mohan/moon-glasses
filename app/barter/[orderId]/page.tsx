@@ -1,7 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
+import { getAllChapters } from "@/lib/chapters-dynamic";
+import { chapterImageSrc } from "@/lib/chapters";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
+import { ShareToInstagramButton } from "@/components/checkout/ShareToInstagramButton";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +26,19 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
   const isGiftFirst = order.barter_tier === "gift_first";
 
+  const { data: orderItem } = await supabase
+    .from("order_items")
+    .select("chapter_slug, chapter_name")
+    .eq("order_id", orderId)
+    .limit(1)
+    .maybeSingle();
+  let productImageUrl: string | null = null;
+  if (orderItem) {
+    const chapters = await getAllChapters();
+    const chapter = chapters.find((c) => c.slug === orderItem.chapter_slug);
+    if (chapter) productImageUrl = chapterImageSrc(chapter.folder, chapter.primary);
+  }
+
   let ordersSoFar = 0;
   if (order.barter_coupon_code) {
     const { data: coupon } = await supabase
@@ -36,6 +53,37 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
     <a href={instagramProfileUrl} target="_blank" rel="noreferrer" className="underline">
       {brand.instagramHandle}
     </a>
+  );
+
+  const codeBlock = order.barter_coupon_code && (
+    <div className="mt-8 border border-divider p-6">
+      <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Your Code</p>
+      <code className="mt-3 inline-block border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s tracking-[0.1em] text-ink">
+        {order.barter_coupon_code}
+      </code>
+      {!isGiftFirst && (
+        <>
+          <p className="mt-4 text-body-s text-ink">
+            {ordersSoFar} / {order.barter_required_orders} orders so far
+          </p>
+          <div className="mt-2 h-2 w-full max-w-[280px] bg-surface-alt">
+            <div
+              className="h-2 bg-tan-gold"
+              style={{ width: `${Math.min(100, (ordersSoFar / order.barter_required_orders) * 100)}%` }}
+            />
+          </div>
+        </>
+      )}
+      <div className="mt-5">
+        <ShareToInstagramButton
+          couponCode={order.barter_coupon_code}
+          brandName={brand.brandName}
+          instagramHandle={brand.instagramHandle}
+          productImageUrl={productImageUrl}
+          requiredOrders={order.barter_required_orders}
+        />
+      </div>
+    </div>
   );
 
   return (
@@ -59,6 +107,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
             Please disclose the gifted relationship where required (e.g. &ldquo;#gifted&rdquo; or a
             paid-partnership label) per Instagram&apos;s ad disclosure guidelines.
           </p>
+          {codeBlock}
           <div className="mt-8">
             <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">
               Posted already? Drop the link here
@@ -67,16 +116,27 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           </div>
         </>
       ) : order.barter_qualified_at ? (
-        <div className="mt-8 border border-divider p-6">
-          <p className="text-body-s text-ink">
-            You hit your goal — your order shipped
-            {order.shiprocket_awb_code ? ` (AWB ${order.shiprocket_awb_code})` : ""}, on us. Thank you.
+        <div className="mt-8 border-2 border-ink bg-surface-alt p-6">
+          <p className="font-sans text-body font-bold uppercase text-ink">Your Good Vibes Came Through</p>
+          <p className="mt-2 text-body-s text-ink">
+            Your network showed up for you — your order shipped
+            {order.shiprocket_awb_code ? ` (AWB ${order.shiprocket_awb_code})` : ""}, completely free.
           </p>
+          <Link
+            href={brand.siteUrl}
+            className="mt-4 inline-block border border-ink bg-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-cream hover:bg-cream hover:text-ink"
+          >
+            Spread More Good Vibes — Shop Another Pair
+          </Link>
         </div>
       ) : (
         <>
           <ol className="mt-8 list-decimal space-y-3 pl-5 text-body-s text-ink">
-            <li>Take a photo and post it on Instagram, adding {tagLink} as a collaborator (or tagging us if collaborator invites aren&apos;t available to you).</li>
+            <li>
+              Share it your way — feed post or Story, whichever you&apos;re confident can get you{" "}
+              {order.barter_required_orders} buyers. Add {tagLink} as a collaborator (or tag us if
+              collaborator invites aren&apos;t available to you).
+            </li>
             <li>
               Share your code below with your followers — anyone who checks out with it gets a
               discount, and it counts toward your goal.
@@ -91,23 +151,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
             paid-partnership label) per Instagram&apos;s ad disclosure guidelines.
           </p>
 
-          <div className="mt-8 border border-divider p-6">
-            <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Your Code</p>
-            <code className="mt-3 inline-block border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s tracking-[0.1em] text-ink">
-              {order.barter_coupon_code}
-            </code>
-            <p className="mt-4 text-body-s text-ink">
-              {ordersSoFar} / {order.barter_required_orders} orders so far
-            </p>
-            <div className="mt-2 h-2 w-full max-w-[280px] bg-surface-alt">
-              <div
-                className="h-2 bg-tan-gold"
-                style={{
-                  width: `${Math.min(100, (ordersSoFar / order.barter_required_orders) * 100)}%`,
-                }}
-              />
-            </div>
-          </div>
+          {codeBlock}
 
           <div className="mt-8">
             <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">

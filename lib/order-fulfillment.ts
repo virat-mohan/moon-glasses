@@ -213,7 +213,7 @@ export async function finalizeOrder(
     // Best-effort — a "Pay With A Post" order this redemption happened to
     // qualify must never block this (normal, paying) order from completing.
     try {
-      await maybeQualifyBarterOrderForCoupon(pricing.coupon.code);
+      await maybeQualifyBarterOrderForCoupon(pricing.coupon.code, payload.customer.phone, payload.customer.email);
     } catch (err) {
       console.error("Failed to check barter qualification", err);
     }

@@ -221,7 +221,7 @@ export async function POST(request: Request) {
     if (coupon) {
       await redeemCoupon(coupon.couponId, order.id, couponDiscountAmount, body.customer.phone, body.customer.email);
       try {
-        await maybeQualifyBarterOrderForCoupon(coupon.code);
+        await maybeQualifyBarterOrderForCoupon(coupon.code, body.customer.phone, body.customer.email);
       } catch (err) {
         console.error("Failed to check barter qualification", err);
       }

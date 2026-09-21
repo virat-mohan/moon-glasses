@@ -1070,7 +1070,17 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <div className="mt-4 border border-ink/20 bg-surface-alt p-4">
+                <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">
+                  Pay With A Post — One Item Only
+                </p>
+                <p className="mt-1 text-caption text-secondary-text">
+                  This cart has {unitCount} items. Checkout with just one to pay with a post instead of
+                  currency.
+                </p>
+              </div>
+            )}
 
             {orderSummary}
 

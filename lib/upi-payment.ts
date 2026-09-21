@@ -13,6 +13,7 @@ import { shipOrder } from "@/lib/order-shipping";
 import { markCartSessionConverted } from "@/lib/cart-session-convert";
 import { sendInvoiceEmail, sendOrderNotificationEmail } from "@/lib/email";
 import { sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
+import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
 
 /**
  * "Pay With A Post"'s stablemate for regular currency when Razorpay isn't
@@ -206,6 +207,14 @@ export async function confirmUpiOrderPayment(orderId: string) {
     const coupon = await resolveCouponDiscount(order.coupon_code_used, order.subtotal);
     if (coupon) {
       await redeemCoupon(coupon.couponId, orderId, order.coupon_discount_amount, order.customer_phone, order.customer_email);
+      // A friend paying via UPI QR with a barterer's "Pay With A Post" code
+      // is a real, paid redemption exactly like the Razorpay/manual paths —
+      // must count toward that barterer's progress too.
+      try {
+        await maybeQualifyBarterOrderForCoupon(order.coupon_code_used, order.customer_phone, order.customer_email);
+      } catch (err) {
+        console.error("Failed to check barter qualification", orderId, err);
+      }
     }
   }
 
