@@ -121,7 +121,7 @@ export default function MasterInventoryPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
-      <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Master Inventory</h1>
+      <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Inventory Master</h1>
       <p className="mt-2 max-w-2xl text-body-s text-secondary-text">
         Every product — live on site or still a draft. Generate a model photo, toggle{" "}
         <strong>Live</strong> to publish/unpublish, and pick which collection it belongs to, all
