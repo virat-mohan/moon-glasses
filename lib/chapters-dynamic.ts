@@ -135,23 +135,20 @@ export async function getLimitedSeriesChapters(): Promise<Chapter[]> {
 }
 
 /**
- * The full master inventory — every admin-added/supplier-sourced product,
- * live or not. This is what /admin/master-inventory lists; the static 16
- * are deliberately excluded since they're code-based and always live, not
- * part of the draft/publish workflow this powers.
+ * The full master inventory — literally every product, code-based or
+ * supplier-sourced, live or draft. /admin/master-inventory uses this so you
+ * can generate/regenerate a model photo for anything (including the
+ * original 16 and the Limited Series) from one screen, not just new
+ * imports. `isStatic` tells the UI which rows are code-based (always live,
+ * fixed collection — no Publish/Collection controls make sense there) vs.
+ * real `dynamic_chapters` rows (draft/publish + collection are editable).
  */
-export async function getMasterInventoryChapters(): Promise<(Chapter & { collection: ChapterCollection })[]> {
-  try {
-    const supabase = getSupabaseServerClient();
-    const { data } = await supabase
-      .from("dynamic_chapters")
-      .select("*")
-      .order("created_at", { ascending: false });
-    return (data ?? []).map((row) => mapDynamicRow(row));
-  } catch (err) {
-    console.error("getMasterInventoryChapters: Supabase fetch failed", err);
-    return [];
-  }
+export async function getMasterInventoryChapters(): Promise<
+  (Chapter & { collection: ChapterCollection; isStatic: boolean })[]
+> {
+  const staticSlugs = new Set([...staticChapters, ...limitedSeries].map((c) => c.slug));
+  const merged = await getMergedChapters();
+  return merged.map((c) => ({ ...c, isStatic: staticSlugs.has(c.slug) }));
 }
 
 export async function getChapterBySlug(slug: string): Promise<Chapter | undefined> {

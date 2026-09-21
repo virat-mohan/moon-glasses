@@ -153,16 +153,33 @@ async function uploadGeneratedImage(base64Png: string, storagePathPrefix: string
 
 /**
  * Turns 1-3 uploaded product-angle photos into a model/lifestyle shot via
- * Gemini image-to-image, using the same prompt style established for the
- * launch catalogue's model photography (realistic young Indian model,
- * editorial studio look, portrait 4:5). Used from /admin/add-chapter (new
- * product) and /admin/product-images (existing product) — both just need
- * the reference angle URLs and a gender.
+ * Gemini image-to-image (night-out, editorial mood — see the prompt below).
+ * Used from /admin/master-inventory, /admin/add-chapter (new product), and
+ * /admin/product-images (existing product) — all just need the reference
+ * angle URLs and a gender.
+ *
+ * Generated at 4:5 portrait (rendered ~1080x1350) — the aspect ratio the
+ * homepage tile flip (CollectionItem) and the product page gallery both
+ * expect, and one that also crops cleanly to a mobile full-bleed hero or a
+ * square Instagram feed post without the face/product being cut off. If a
+ * true full-bleed 9:16 mobile Story/Reel asset is ever needed instead, pass
+ * "portrait" (9:16, ~1080x1920) to generateWithGemini the way generateAdImage
+ * does — not needed for product/model photos today.
  *
  * Every generated photo is also logged into marketing_assets tagged
  * "generated-model" so it shows up in /admin/models for reuse in social
  * posts, independent of whether it ends up attached to a product.
  */
+// Three head-angle variants so a batch of generated photos doesn't all stare
+// straight down the lens the same way — picked randomly per call so
+// "some looking left, some looking right" happens naturally across
+// repeated Generate/Regenerate clicks on different (or the same) product.
+const GAZE_VARIANTS = [
+  "looking directly into the camera, chin slightly down, laughing with genuine joy",
+  "head turned slightly to their left, gazing off past the camera, mid-laugh, hair/light catching the turn",
+  "head turned slightly to their right, gazing off past the camera, mid-laugh, hair/light catching the turn",
+];
+
 export async function generateModelPhoto(options: {
   referenceImageUrls: string[];
   gender: "male" | "female";
@@ -175,13 +192,19 @@ export async function generateModelPhoto(options: {
     throw new Error("IMAGE_GEN_API_KEY (Gemini) is not set — add it in /admin/settings first");
   }
 
+  const gaze = GAZE_VARIANTS[Math.floor(Math.random() * GAZE_VARIANTS.length)];
+
   const prompt = `Here ${
     options.referenceImageUrls.length > 1 ? "are transparent PNG cutouts" : "is a transparent PNG cutout"
   } of a pair of sunglasses${options.productName ? `: "${options.productName}"` : ""}.
 
-Generate a realistic, professional studio/lifestyle photo of a young Indian ${options.gender} model (age 22–30) wearing this exact pair of sunglasses. Match the frame shape, color, and lens tint in the reference image(s) exactly — do not change the design in any way.
+Generate a realistic, professional lifestyle photo of a good-looking, well-groomed, sexy Indian ${options.gender} model (age 22–35) wearing this exact pair of sunglasses. Match the frame shape, color, and lens tint in the reference image(s) exactly — do not change the design in any way.
 
-Style: clean, editorial, fashion-forward, confident. Soft natural light or a simple neutral studio background (light grey or off-white), shot from the chest up, front-facing or a slight 3/4 turn, genuine smile or relaxed expression. No text, no logos, no watermarks.`;
+Mood: dressed up and ready for a night out — confident, joyful, laughing or genuinely smiling, full of energy. No drink, glass, or bottle in hand or anywhere in frame. ${gaze}.
+
+Wardrobe: fashionable, stylish going-out clothing (e.g. a sharp shirt, jacket, or top) in a color that ties in with the lens tint shown in the reference image — either a direct match or a complementary/adjacent tone — so the outfit and the sunglasses read as one styled look. Well-groomed hair, subtle styling, no other visible eyewear.
+
+Framing: shot from the chest up (chest, shoulders, neck, and head all visible), the sunglasses clearly readable on the face. Shallow depth of field with a softly blurred backdrop suggesting a night-out setting (city lights, warm bar/lounge ambience, or a dark moody gradient) — nothing so busy it competes with the product. Editorial quality, sharp focus on the face and sunglasses. No text, no logos, no watermarks.`;
 
   const base64Png = await generateWithGemini(geminiKey, prompt, options.referenceImageUrls, "portrait4x5");
   const url = await uploadGeneratedImage(base64Png, "model-photos");

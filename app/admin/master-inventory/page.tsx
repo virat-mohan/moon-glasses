@@ -13,6 +13,7 @@ type Row = {
   price: number;
   collection: "core" | "limited";
   live: boolean;
+  isStatic: boolean;
 };
 
 function StatusPill({ live }: { live: boolean }) {
@@ -56,6 +57,19 @@ export default function MasterInventoryPage() {
     }
   }
 
+  // Model photos are saved through the hero-override table (chapter_hero_overrides)
+  // rather than the master-inventory PATCH — that table works for BOTH code-based
+  // static/limited chapters and dynamic_chapters rows, so this one call covers
+  // every row on this page instead of only the draft imports.
+  async function saveModelImage(slug: string, url: string) {
+    setRows((prev) => prev.map((r) => (r.slug === slug ? { ...r, modelImage: url } : r)));
+    await fetch("/api/admin/hero-override", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chapterSlug: slug, modelImage: url }),
+    });
+  }
+
   async function generateModel(row: Row) {
     setBusySlug(row.slug);
     try {
@@ -66,7 +80,7 @@ export default function MasterInventoryPage() {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      await patch(row.slug, { modelImage: data.url });
+      await saveModelImage(row.slug, data.url);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Could not generate model photo");
     } finally {
@@ -80,10 +94,10 @@ export default function MasterInventoryPage() {
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
       <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Master Inventory</h1>
       <p className="mt-2 max-w-2xl text-body-s text-secondary-text">
-        Every supplier-sourced product you've imported, whether or not it's shown on the site.
-        Toggle <strong>Live</strong> to publish/unpublish, pick which collection it belongs to, and
-        generate a model photo — all without touching code. Products stay here as drafts for as
-        long as you like before you decide to show them.
+        Every product — live on site or still a draft. Generate a model photo for any of them,
+        and for supplier-sourced imports, toggle <strong>Live</strong> to publish/unpublish and pick
+        which collection it belongs to. The original 16 and Limited Series are always live and
+        keep their fixed collection, but you can still (re)generate their model photo here.
       </p>
 
       <div className="mt-6 flex gap-2">
@@ -148,26 +162,34 @@ export default function MasterInventoryPage() {
                 {busySlug === row.slug ? "…" : row.modelImage ? "Regenerate" : "Generate"} Model
               </button>
 
-              <select
-                value={row.collection}
-                onChange={(e) => patch(row.slug, { collection: e.target.value })}
-                className="flex-none border border-ink/30 bg-surface px-3 py-1.5 font-sans text-caption text-ink"
-              >
-                <option value="core">Core Collection</option>
-                <option value="limited">Limited Series</option>
-              </select>
+              {row.isStatic ? (
+                <span className="flex-none border border-divider px-3 py-1.5 font-sans text-caption text-secondary-text">
+                  {row.collection === "limited" ? "Limited Series" : "Core Collection"}
+                </span>
+              ) : (
+                <select
+                  value={row.collection}
+                  onChange={(e) => patch(row.slug, { collection: e.target.value })}
+                  className="flex-none border border-ink/30 bg-surface px-3 py-1.5 font-sans text-caption text-ink"
+                >
+                  <option value="core">Core Collection</option>
+                  <option value="limited">Limited Series</option>
+                </select>
+              )}
 
-              <button
-                type="button"
-                onClick={() => patch(row.slug, { live: !row.live })}
-                className={`flex-none border px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] transition-colors ${
-                  row.live
-                    ? "border-divider text-secondary-text hover:border-ink hover:text-ink"
-                    : "border-ink bg-ink text-cream hover:bg-cream hover:text-ink"
-                }`}
-              >
-                {row.live ? "Unpublish" : "Publish"}
-              </button>
+              {!row.isStatic && (
+                <button
+                  type="button"
+                  onClick={() => patch(row.slug, { live: !row.live })}
+                  className={`flex-none border px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] transition-colors ${
+                    row.live
+                      ? "border-divider text-secondary-text hover:border-ink hover:text-ink"
+                      : "border-ink bg-ink text-cream hover:bg-cream hover:text-ink"
+                  }`}
+                >
+                  {row.live ? "Unpublish" : "Publish"}
+                </button>
+              )}
 
               {row.live && (
                 <Link
