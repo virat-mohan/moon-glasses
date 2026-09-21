@@ -4,6 +4,8 @@ import { useState } from "react";
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1350; // 4:5 — Instagram's max feed portrait; posts fine to a Story too (with letterboxing)
+const HERO_IMAGE = "/images/chapters/moon-octagon-silver-light-brown/lifestyle.jpg";
+const LOGO_IMAGE = "/images/brand/moon-glasses-logo.png";
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -13,6 +15,15 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
     img.onerror = () => resolve(null);
     img.src = src;
   });
+}
+
+function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const scale = Math.max(w / img.width, h / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  const dx = x + (w - dw) / 2;
+  const dy = y + (h - dh) / 2;
+  ctx.drawImage(img, dx, dy, dw, dh);
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -32,71 +43,68 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-/** Builds the actual shareable image — a branded card (product photo, logo, headline, the offer explained, and the unique code) rather than a bare text caption, since that's what makes a share worth posting. */
-async function buildShareCard(params: {
-  brandName: string;
-  instagramHandle: string;
-  couponCode: string;
-  productImageUrl: string | null;
-  requiredOrders: number;
-}): Promise<Blob | null> {
+/**
+ * Builds the actual post — a real, screenshot-worthy piece of content
+ * (editorial hero shot, brand logo, headline, and the code) rather than a
+ * sheet of instructions. Deliberately carries NO "post this / tag us"
+ * meta-instructions — those belong on the page around the button, since a
+ * genuine Instagram post should never read like a how-to.
+ */
+async function buildShareCard(couponCode: string): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  // Background: near-black with a soft warm glow behind the product, matching the site's dark editorial palette.
   ctx.fillStyle = "#0b0b0d";
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-  const glow = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H * 0.42, 60, CANVAS_W / 2, CANVAS_H * 0.42, CANVAS_W * 0.6);
-  glow.addColorStop(0, "rgba(217, 169, 76, 0.16)");
-  glow.addColorStop(1, "rgba(217, 169, 76, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // Logo wordmark (text-based — reliable regardless of the source PNG's exact crop/whitespace).
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#d9a94c";
-  ctx.font = "600 40px 'Space Grotesk', Arial, sans-serif";
-  ctx.fillText(brandNameSpaced(params.brandName), CANVAS_W / 2, 110);
+  const [hero, logo] = await Promise.all([loadImage(HERO_IMAGE), loadImage(LOGO_IMAGE)]);
+  if (hero) drawCover(ctx, hero, 0, 0, CANVAS_W, CANVAS_H);
 
-  // Product photo, centered.
-  if (params.productImageUrl) {
-    const img = await loadImage(params.productImageUrl);
-    if (img) {
-      const maxW = CANVAS_W * 0.72;
-      const maxH = 560;
-      const scale = Math.min(maxW / img.width, maxH / img.height);
-      const w = img.width * scale;
-      const h = img.height * scale;
-      const x = (CANVAS_W - w) / 2;
-      const y = 170;
-      ctx.drawImage(img, x, y, w, h);
-    }
+  // Top gradient — just enough to seat the logo legibly over the photo.
+  const topGrad = ctx.createLinearGradient(0, 0, 0, 260);
+  topGrad.addColorStop(0, "rgba(5,5,5,0.75)");
+  topGrad.addColorStop(1, "rgba(5,5,5,0)");
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, CANVAS_W, 260);
+
+  // Bottom gradient — the editorial-poster treatment that seats headline/code.
+  const bottomGrad = ctx.createLinearGradient(0, CANVAS_H - 620, 0, CANVAS_H);
+  bottomGrad.addColorStop(0, "rgba(5,5,5,0)");
+  bottomGrad.addColorStop(0.45, "rgba(5,5,5,0.82)");
+  bottomGrad.addColorStop(1, "rgba(5,5,5,0.96)");
+  ctx.fillStyle = bottomGrad;
+  ctx.fillRect(0, CANVAS_H - 620, CANVAS_W, 620);
+
+  if (logo) {
+    const logoH = 64;
+    const logoW = (logo.width / logo.height) * logoH;
+    ctx.drawImage(logo, (CANVAS_W - logoW) / 2, 56, logoW, logoH);
   }
+
+  ctx.textAlign = "center";
 
   // Headline.
   ctx.fillStyle = "#f2efe6";
-  ctx.font = "800 76px 'Space Grotesk', Arial, sans-serif";
-  ctx.fillText("GET FREE SHADES", CANVAS_W / 2, 830);
+  ctx.font = "800 84px 'Space Grotesk', Arial, sans-serif";
+  ctx.fillText("SPREAD THE", CANVAS_W / 2, CANVAS_H - 470);
+  ctx.fillStyle = "#d9a94c";
+  ctx.fillText("GOOD VIBES", CANVAS_W / 2, CANVAS_H - 380);
 
-  // Sub-copy explaining the offer.
-  ctx.fillStyle = "#c9c5ba";
+  // Sub-copy, written for whoever is looking at the post, not the poster.
+  ctx.fillStyle = "#e4e1d8";
   ctx.font = "400 32px Arial, sans-serif";
-  const lines = wrapText(
-    ctx,
-    `Post this. Get ${params.requiredOrders} friends to buy with my code. My pair ships free — no catch.`,
-    CANVAS_W - 200
-  );
-  let ly = 890;
+  const lines = wrapText(ctx, "Shades made to be seen. Use the code below for something special.", CANVAS_W - 220);
+  let ly = CANVAS_H - 310;
   for (const line of lines) {
     ctx.fillText(line, CANVAS_W / 2, ly);
     ly += 42;
   }
 
   // Code pill.
-  const pillY = ly + 40;
+  const pillY = ly + 30;
   const pillW = 460;
   const pillH = 96;
   const pillX = (CANVAS_W - pillW) / 2;
@@ -105,42 +113,34 @@ async function buildShareCard(params: {
   ctx.strokeRect(pillX, pillY, pillW, pillH);
   ctx.fillStyle = "#f2efe6";
   ctx.font = "700 44px 'Space Grotesk', Arial, sans-serif";
-  ctx.fillText(params.couponCode, CANVAS_W / 2, pillY + pillH / 2 + 16);
-
-  // Footer.
-  ctx.fillStyle = "#9a968c";
-  ctx.font = "400 28px Arial, sans-serif";
-  ctx.fillText(`Tag ${params.instagramHandle} as collaborator`, CANVAS_W / 2, CANVAS_H - 60);
+  ctx.fillText(couponCode, CANVAS_W / 2, pillY + pillH / 2 + 16);
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png", 0.95));
-}
-
-function brandNameSpaced(name: string) {
-  return name.toUpperCase();
 }
 
 export function ShareToInstagramButton({
   couponCode,
   brandName,
   instagramHandle,
-  productImageUrl,
   requiredOrders,
 }: {
   couponCode: string;
   brandName: string;
   instagramHandle: string;
-  productImageUrl: string | null;
   requiredOrders: number;
 }) {
   const [status, setStatus] = useState<"idle" | "building" | "shared" | "downloaded" | "copied">("idle");
-  const caption = `I can get free ${brandName} shades just by posting 🌙 Use my code ${couponCode} — tag ${instagramHandle} as collaborator, and if ${requiredOrders} people shop with it, mine ships free. No catch.`;
+  // The accompanying share text — informational for the poster (some share
+  // targets prefill it as the caption, some don't), kept separate from the
+  // image itself, which carries none of this.
+  const caption = `Spreading the Good Vibes 🌙 Use my ${brandName} code ${couponCode} — tag ${instagramHandle} as collaborator when you post.`;
 
   async function share() {
     setStatus("building");
-    const blob = await buildShareCard({ brandName, instagramHandle, couponCode, productImageUrl, requiredOrders });
+    const blob = await buildShareCard(couponCode);
 
     if (blob) {
-      const file = new File([blob], "moon-glasses-pay-with-a-post.png", { type: "image/png" });
+      const file = new File([blob], "moon-glasses-good-vibes.png", { type: "image/png" });
       // Web Share API (level 2, files) is the real "share to Instagram" path
       // on a phone — iOS Safari 15+ and Android Chrome both list Instagram
       // as a target, and Instagram itself then offers Post or Story. There
@@ -161,7 +161,7 @@ export function ShareToInstagramButton({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "moon-glasses-pay-with-a-post.png";
+      a.download = "moon-glasses-good-vibes.png";
       a.click();
       URL.revokeObjectURL(url);
       setStatus("downloaded");
@@ -198,7 +198,8 @@ export function ShareToInstagramButton({
       </button>
       <p className="mt-2 max-w-[360px] text-caption text-secondary-text">
         Post or Story — whichever you&apos;re confident can get you {requiredOrders} sales. Same image works
-        for both.
+        for both. When you post it, add {instagramHandle} as a collaborator (or tag us if collaborator
+        invites aren&apos;t available to you).
       </p>
     </div>
   );

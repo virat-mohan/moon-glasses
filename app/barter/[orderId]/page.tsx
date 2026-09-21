@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
-import { getAllChapters } from "@/lib/chapters-dynamic";
-import { chapterImageSrc } from "@/lib/chapters";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { ShareToInstagramButton } from "@/components/checkout/ShareToInstagramButton";
 
@@ -25,19 +23,6 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   const brand = await getBrandProfile();
   const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
   const isGiftFirst = order.barter_tier === "gift_first";
-
-  const { data: orderItem } = await supabase
-    .from("order_items")
-    .select("chapter_slug, chapter_name")
-    .eq("order_id", orderId)
-    .limit(1)
-    .maybeSingle();
-  let productImageUrl: string | null = null;
-  if (orderItem) {
-    const chapters = await getAllChapters();
-    const chapter = chapters.find((c) => c.slug === orderItem.chapter_slug);
-    if (chapter) productImageUrl = chapterImageSrc(chapter.folder, chapter.primary);
-  }
 
   let ordersSoFar = 0;
   if (order.barter_coupon_code) {
@@ -79,7 +64,6 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           couponCode={order.barter_coupon_code}
           brandName={brand.brandName}
           instagramHandle={brand.instagramHandle}
-          productImageUrl={productImageUrl}
           requiredOrders={order.barter_required_orders}
         />
       </div>
