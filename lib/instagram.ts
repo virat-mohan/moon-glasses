@@ -201,6 +201,16 @@ export async function getRecentPostPerformance(limit = 12): Promise<InstagramPos
  * which Business Discovery simply can't see, or Meta isn't configured
  * locally. Callers must treat null as "couldn't verify," not zero.
  */
+/** Accepts a bare handle ("@name" or "name") or a full profile URL (any of instagram.com/name, instagram.com/name/, https://www.instagram.com/name?hl=en) and returns the clean username. Used everywhere a shopper types or pastes their Instagram identity, since asking for exactly one format is a needless way to lose people. */
+export function parseInstagramHandle(input: string): string {
+  return input
+    .trim()
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+    .replace(/^@/, "")
+    .split(/[/?#]/)[0]
+    .trim();
+}
+
 export async function getPublicFollowerCount(instagramHandle: string): Promise<number | null> {
   const profile = await getBusinessDiscoveryProfile(instagramHandle);
   return profile?.followersCount ?? null;
@@ -221,7 +231,7 @@ export async function getBusinessDiscoveryProfile(
 ): Promise<{ followersCount: number; biography: string } | null> {
   try {
     const { accessToken, igUserId } = await getInstagramAuth();
-    const username = instagramHandle.replace(/^@/, "").trim();
+    const username = parseInstagramHandle(instagramHandle);
     if (!username) return null;
 
     const res = await fetch(

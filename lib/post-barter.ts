@@ -1,7 +1,7 @@
 import { createHmac } from "crypto";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
-import { getPublicFollowerCount, getBusinessDiscoveryProfile } from "@/lib/instagram";
+import { getPublicFollowerCount, getBusinessDiscoveryProfile, parseInstagramHandle } from "@/lib/instagram";
 import { computeTrustedOrderTotal } from "@/lib/order-pricing";
 import { findOrCreateCustomerForGuest } from "@/lib/auth";
 import { applyNewsletterOptIn } from "@/lib/newsletter";
@@ -111,14 +111,14 @@ function codeForWindow(handle: string, windowStart: number): string {
  * current 15-minute window, so verifying it later is just recomputing it.
  */
 export function generateGiftFirstVerificationCode(instagramHandle: string): string {
-  const handle = instagramHandle.replace(/^@/, "").trim().toLowerCase();
+  const handle = parseInstagramHandle(instagramHandle).toLowerCase();
   const windowStart = Math.floor(Date.now() / VERIFICATION_WINDOW_MS) * VERIFICATION_WINDOW_MS;
   return codeForWindow(handle, windowStart);
 }
 
 /** Confirms the given code is genuinely sitting in that handle's live Instagram bio right now — checked against the current window and the one before it, so a code generated a few minutes ago (right before the window rolled over) still verifies. */
 export async function verifyGiftFirstOwnership(instagramHandle: string, code: string): Promise<boolean> {
-  const handle = instagramHandle.replace(/^@/, "").trim().toLowerCase();
+  const handle = parseInstagramHandle(instagramHandle).toLowerCase();
   if (!handle || !code) return false;
 
   const now = Date.now();
@@ -138,7 +138,7 @@ function randomSuffix() {
 /** Mints a shareable coupon code for this barter order — same shape as a creator's coupon (lib/creators.ts), reusing the exact checkout coupon engine so a friend's redemption is a completely ordinary coupon redemption. */
 async function createBarterCouponCode(instagramHandle: string, friendDiscountRupees: number): Promise<string> {
   const supabase = getSupabaseServerClient();
-  const base = instagramHandle.replace(/^@/, "").replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase() || "CREATOR";
+  const base = parseInstagramHandle(instagramHandle).replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase() || "CREATOR";
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = `${base}${attempt === 0 ? "" : randomSuffix()}`;
@@ -269,7 +269,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
       status: "confirmed",
       is_post_barter: true,
       barter_tier: tier,
-      barter_instagram_handle: payload.instagramHandle.replace(/^@/, ""),
+      barter_instagram_handle: parseInstagramHandle(payload.instagramHandle),
       barter_follower_count: followerCount,
       barter_coupon_code: couponCode,
       barter_required_orders: requiredOrders,

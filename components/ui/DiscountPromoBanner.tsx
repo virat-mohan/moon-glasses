@@ -17,10 +17,10 @@ export function DiscountPromoBanner({ className = "" }: { className?: string }) 
     <div
       className={`inline-flex max-w-full flex-col items-center justify-center rounded-full border border-[#d4d4d1] bg-[#e9e9e6] px-5 py-2 text-center shadow-[0_4px_14px_rgba(0,0,0,0.15)] ${className}`}
     >
-      <p className="overflow-hidden text-ellipsis whitespace-nowrap font-sans text-micro font-bold uppercase tracking-[0.06em] text-ink md:text-caption">
+      <p className="overflow-hidden text-ellipsis whitespace-nowrap font-sans text-micro font-bold uppercase tracking-[0.06em] text-cream md:text-caption">
         Limited Time Offer: {describeDiscountRule(rule)}
       </p>
-      <p className="font-sans text-micro normal-case text-ink/70">(applied automatically at checkout)</p>
+      <p className="font-sans text-micro normal-case text-cream/70">(applied automatically at checkout)</p>
     </div>
   );
 }

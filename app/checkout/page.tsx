@@ -766,7 +766,7 @@ export default function CheckoutPage() {
       )}
       <div className="flex items-center justify-between pt-3 font-display text-heading-s text-ink">
         <span>Total</span>
-        <span>{paymentType === "post_barter" ? "Paid with a post" : `₹${total.toLocaleString("en-IN")}`}</span>
+        <span>{paymentType === "post_barter" ? "To Be Paid With A Post" : `₹${total.toLocaleString("en-IN")}`}</span>
       </div>
     </div>
   );
@@ -983,28 +983,6 @@ export default function CheckoutPage() {
 
                 {paymentType === "post_barter" && (
                   <div className="mt-4 space-y-4">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="border border-ink/20 bg-surface-alt p-3">
-                        <p className="font-sans text-caption font-bold uppercase tracking-[0.03em] text-ink">
-                          Just starting out
-                        </p>
-                        <p className="mt-1 text-micro leading-relaxed text-secondary-text">
-                          Post about us and share your own code. The moment 3 people shop with it, your
-                          pair ships — free.
-                        </p>
-                      </div>
-                      <div className="border border-ink/20 bg-surface-alt p-3">
-                        <p className="font-sans text-caption font-bold uppercase tracking-[0.03em] text-ink">
-                          5,000+ followers
-                        </p>
-                        <p className="mt-1 text-micro leading-relaxed text-secondary-text">
-                          We ship your pair right away — you post once it arrives. No waiting.
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-caption text-secondary-text">
-                      Enter your Instagram handle below and we&apos;ll tell you which one&apos;s yours.
-                    </p>
                     <div className="flex gap-2">
                       <input
                         value={barterHandle}
@@ -1013,50 +991,76 @@ export default function CheckoutPage() {
                           setBarterPreview(null);
                           setOwnershipVerified(false);
                         }}
-                        placeholder="Your Instagram handle (e.g. @yourname)"
-                        className="min-w-0 flex-1 border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
+                        placeholder="Instagram profile link or @handle"
+                        className="min-w-0 flex-1 border border-ink/30 bg-surface px-4 py-3 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
                       />
                       <button
                         type="button"
                         onClick={checkBarterTier}
                         disabled={!barterHandle.trim() || barterChecking}
-                        className="shrink-0 border border-ink/30 px-3 py-2 font-sans text-caption uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
+                        className="shrink-0 border border-ink px-4 py-3 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-40"
                       >
                         {barterChecking ? "Checking…" : "Check"}
                       </button>
                     </div>
-                    {barterPreview && (
-                      <p className="text-caption text-tan-gold">
-                        {barterPreview.tier === "gift_first"
-                          ? `You're in the 5,000+ tier (${barterPreview.followerCount?.toLocaleString("en-IN")} followers) — we'll ship it to you right away, once we confirm it's really you below.`
-                          : barterPreview.followerCount != null
-                            ? `${barterPreview.followerCount.toLocaleString("en-IN")} followers — you're in the "just starting out" tier, so this ships once your code brings in 3 orders.`
-                            : "Couldn't verify your follower count (make sure your Instagram is Business or Creator, not Personal) — you're in the \"just starting out\" tier, so this ships once your code brings in 3 orders."}
+
+                    {!barterPreview && (
+                      <p className="text-caption text-secondary-text">
+                        Enter your Instagram and we&apos;ll tell you exactly what to do.
                       </p>
                     )}
+
+                    {barterPreview && (
+                      <div className="border-2 border-ink bg-surface-alt p-4">
+                        {barterPreview.tier === "gift_first" ? (
+                          <>
+                            <p className="font-sans text-body font-bold uppercase text-ink">
+                              You Qualify — We Ship Now
+                            </p>
+                            <p className="mt-1 text-body-s text-secondary-text">
+                              {barterPreview.followerCount?.toLocaleString("en-IN")} followers. Confirm it&apos;s
+                              you below, and we ship today — you post once it arrives.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-sans text-body font-bold uppercase text-ink">
+                              Post First, Ship After 3 Sales
+                            </p>
+                            <p className="mt-1 text-body-s text-secondary-text">
+                              {barterPreview.followerCount != null
+                                ? `${barterPreview.followerCount.toLocaleString("en-IN")} followers — under 5,000.`
+                                : "Couldn't verify your follower count (make sure your Instagram is Business or Creator, not Personal)."}{" "}
+                              Share your code — the moment 3 people buy with it, your pair ships free.
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     {barterPreview?.tier === "gift_first" && barterPreview.verificationCode && (
                       <div className="border border-ink/20 bg-surface-alt p-3">
-                        <p className="text-caption text-ink">
-                          Quick check — add this to your Instagram bio for a minute, then verify:
+                        <p className="text-body-s font-bold text-ink">
+                          Prove it&apos;s you — add this to your Instagram bio for a minute:
                         </p>
-                        <code className="mt-2 inline-block border border-ink/30 bg-surface px-3 py-1.5 font-sans text-caption tracking-[0.08em] text-ink">
+                        <code className="mt-2 inline-block border border-ink/30 bg-surface px-3 py-1.5 font-sans text-body-s tracking-[0.08em] text-ink">
                           {barterPreview.verificationCode}
                         </code>
                         <div className="mt-2">
                           {ownershipVerified ? (
-                            <span className="text-caption text-tan-gold">Verified — you&apos;re good to go.</span>
+                            <span className="text-caption font-bold text-tan-gold">Verified — you&apos;re good to go.</span>
                           ) : (
                             <button
                               type="button"
                               onClick={verifyOwnership}
                               disabled={ownershipChecking}
-                              className="border border-ink/30 px-3 py-1.5 font-sans text-caption uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
+                              className="border border-ink px-3 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-40"
                             >
-                              {ownershipChecking ? "Checking…" : "I&apos;ve added it — Verify"}
+                              {ownershipChecking ? "Checking…" : "I've Added It — Verify"}
                             </button>
                           )}
                         </div>
-                        <p className="mt-2 text-micro text-secondary-text">
+                        <p className="mt-2 text-caption text-secondary-text">
                           Skip this and we&apos;ll still take your order — it just ships once your code
                           drives 3 real orders instead of right away.
                         </p>
