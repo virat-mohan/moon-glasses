@@ -66,7 +66,7 @@ export function CollectionItem({
   }
 
   return (
-    <div className="group relative aspect-square overflow-hidden bg-white">
+    <div className="group relative aspect-square overflow-hidden bg-[var(--moon-black)]">
       <div
         role="button"
         aria-label={`Show ${flipped ? "product" : "model"} photo for ${chapter.name}`}
