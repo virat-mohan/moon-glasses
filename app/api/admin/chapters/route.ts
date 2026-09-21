@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 function slugify(name: string) {
@@ -30,6 +31,11 @@ export async function POST(request: Request) {
       primary_image: body.primaryImage,
       model_image: body.modelImage ?? null,
       collection: body.collection === "limited" ? "limited" : "core",
+      // This form existed before the draft/publish (`live`) column did, and
+      // always meant "publish this now" — default to live so it keeps that
+      // behavior. Explicitly pass live:false to add it as a draft instead
+      // (e.g. from a future "save as draft" option on this same form).
+      live: body.live !== false,
     });
 
     if (error) throw error;
@@ -38,6 +44,13 @@ export async function POST(request: Request) {
     await supabase
       .from("inventory")
       .upsert({ chapter_slug: slug, stock_on_hand: body.stockOnHand ?? 0 });
+
+    // "/" and /limited-series are ISR-cached (revalidate: 3600) — without
+    // this, a newly-added LIVE product wouldn't show up on the site for up
+    // to an hour.
+    revalidatePath("/");
+    revalidatePath("/limited-series");
+    revalidatePath(`/chapter/${slug}`);
 
     return NextResponse.json({ slug });
   } catch (err) {

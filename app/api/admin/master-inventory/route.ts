@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getMasterInventoryChapters } from "@/lib/chapters-dynamic";
 
@@ -26,6 +27,14 @@ export async function PATCH(request: Request) {
     const supabase = getSupabaseServerClient();
     const { error } = await supabase.from("dynamic_chapters").update(patch).eq("slug", body.slug);
     if (error) throw error;
+
+    // "/" and /limited-series are ISR-cached (revalidate: 3600) — without
+    // this, a Publish/Unpublish here wouldn't show up on the live site for
+    // up to an hour.
+    revalidatePath("/");
+    revalidatePath("/limited-series");
+    revalidatePath(`/chapter/${body.slug}`);
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Failed to update master inventory row", err);

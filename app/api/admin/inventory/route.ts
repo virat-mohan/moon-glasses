@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendRestockEmail } from "@/lib/email";
 import { sendRestockWhatsApp } from "@/lib/whatsapp-notify";
@@ -32,6 +33,14 @@ export async function PATCH(request: Request) {
     if (error) throw error;
 
     await checkAndAlertLowStock(body.chapterSlug, stockOnHand);
+
+    // "/" and /limited-series are ISR-cached (revalidate: 3600) and render
+    // the "Sold Out"/"Selling Fast" badge from this same stock number —
+    // without this, a stock change here wouldn't show up there for up to
+    // an hour.
+    revalidatePath("/");
+    revalidatePath("/limited-series");
+    revalidatePath(`/chapter/${body.chapterSlug}`);
 
     // Restock notifications — best-effort, a failed send must never fail
     // the inventory update itself.
