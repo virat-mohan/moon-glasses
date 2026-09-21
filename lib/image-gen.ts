@@ -1,5 +1,6 @@
 import { getSetting } from "@/lib/settings";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { getBrandProfile } from "@/lib/brand";
 
 /**
  * Single entry point for turning an ad-brief image prompt into a stored,
@@ -97,8 +98,19 @@ async function generateWithGemini(
         : "";
   const parts: Record<string, unknown>[] = [{ text: `${prompt}${orientationInstruction}` }];
 
+  // Static chapters' reference images resolve to site-relative paths
+  // (e.g. "/images/chapters/.../front_no_bg.png") — fine for next/image in
+  // the browser, but Node's server-side fetch() throws "Failed to parse
+  // URL" on anything that isn't absolute. Supplier-sourced products already
+  // store full Supabase URLs, so this only ever kicks in for the former.
+  let siteUrl: string | null = null;
   for (const url of referenceImageUrls ?? []) {
-    const refRes = await fetch(url);
+    let absoluteUrl = url;
+    if (!/^https?:\/\//.test(url)) {
+      siteUrl ??= (await getBrandProfile()).siteUrl.replace(/\/$/, "");
+      absoluteUrl = `${siteUrl}${url}`;
+    }
+    const refRes = await fetch(absoluteUrl);
     if (refRes.ok) {
       const buffer = await refRes.arrayBuffer();
       const mimeType = refRes.headers.get("content-type") ?? "image/png";
