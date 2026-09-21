@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Chapter } from "@/types/chapter";
@@ -11,15 +11,17 @@ import type { StockLabel } from "@/lib/inventory";
 /**
  * Collage-style tile: product shot and lifestyle shot live on opposite faces
  * of a 3D-flipped card (real rotateY, not a cross-fade). No auto-flip timer —
- * the visitor drives it entirely:
- *  - Grid opens on an alternating product/model pattern (even index starts
- *    on the product face, odd starts on the model face), so a full 16-tile
- *    grid reads as 8 products / 8 models rather than a uniform wall.
- *  - Desktop: hovering previews the other face; moving off reverts to
- *    whichever face is "locked in".
- *  - Any device: a tap/click locks in a flip to the other face (this is how
- *    touch users flip, and how mouse users can settle on a face without
- *    having to keep hovering).
+ * the visitor drives it entirely, and every interaction PERMANENTLY flips
+ * (nothing reverts on its own):
+ *  - Desktop: moving the mouse onto the tile flips it once; moving off does
+ *    NOT revert it — it stays on whatever face is now showing.
+ *  - Touch/keyboard: a tap or Enter/Space flips it (this is the only
+ *    interaction touch gets, since there's no hover).
+ * `initialFlipped` (falls back to an index-based alternation) sets which
+ * face a tile opens on — the caller decides this so a full grid opens with
+ * a deliberate product/model mix rather than every tile defaulting to the
+ * product face. `onSelect` fires whenever the visible face changes, so a
+ * parent can drive a mobile "now viewing" preview bar off it.
  * Name/price and Buy Now sit on a static overlay that never flips, so
  * they're always reachable no matter which face is showing. Silently stays
  * product-only if no lifestyle shot exists yet at
@@ -29,26 +31,38 @@ export function CollectionItem({
   chapter,
   stockLabel = null,
   index = 0,
+  initialFlipped,
+  onSelect,
 }: {
   chapter: Chapter;
   stockLabel?: StockLabel;
   index?: number;
+  initialFlipped?: boolean;
+  onSelect?: (chapter: Chapter, modelShowing: boolean) => void;
 }) {
   const [hasLifestyle, setHasLifestyle] = useState(true);
-  const [baseFlipped, setBaseFlipped] = useState(index % 2 === 1);
-  const [hoverPreview, setHoverPreview] = useState(false);
+  const [flipped, setFlipped] = useState(initialFlipped ?? index % 2 === 1);
+  const lastPointerTypeRef = useRef<string>("mouse");
 
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
   const lifestyleImage =
     chapter.modelImage ?? `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;
   const disabled = stockLabel === "out-of-stock";
 
-  const flipped = hasLifestyle && (hoverPreview ? !baseFlipped : baseFlipped);
+  const shown = hasLifestyle && flipped;
+
+  useEffect(() => {
+    onSelect?.(chapter, shown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleFlip() {
     if (!hasLifestyle) return;
-    setBaseFlipped((f) => !f);
-    setHoverPreview(false);
+    setFlipped((f) => {
+      const next = !f;
+      onSelect?.(chapter, next);
+      return next;
+    });
   }
 
   return (
@@ -58,13 +72,18 @@ export function CollectionItem({
         aria-label={`Show ${flipped ? "product" : "model"} photo for ${chapter.name}`}
         tabIndex={0}
         onPointerEnter={(e) => {
-          if (e.pointerType === "mouse" && hasLifestyle) setHoverPreview(true);
+          lastPointerTypeRef.current = e.pointerType;
+          if (e.pointerType === "mouse" && hasLifestyle) toggleFlip();
         }}
-        onPointerLeave={(e) => {
-          if (e.pointerType === "mouse") setHoverPreview(false);
+        onPointerDown={(e) => {
+          lastPointerTypeRef.current = e.pointerType;
         }}
         onClick={(e) => {
           e.preventDefault();
+          // Mouse already flips on hover-enter — a click right after would
+          // just flip it straight back. Touch (no hover) and keyboard
+          // activation both need the click/Enter to do the flipping.
+          if (lastPointerTypeRef.current === "mouse") return;
           toggleFlip();
         }}
         onKeyDown={(e) => {
@@ -76,8 +95,8 @@ export function CollectionItem({
         className="absolute inset-0 cursor-pointer [perspective:1200px]"
       >
         <div
-          className="relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(.22,.61,.36,1)] [transform-style:preserve-3d]"
-          style={{ transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}
+          className="relative h-full w-full transition-transform duration-1000 ease-[cubic-bezier(.22,.61,.36,1)] [transform-style:preserve-3d]"
+          style={{ transform: shown ? "rotateY(180deg)" : "rotateY(0deg)" }}
         >
           {/* Front face — product, on white */}
           <div className="absolute inset-0 bg-white [backface-visibility:hidden]">
@@ -120,8 +139,10 @@ export function CollectionItem({
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
         <Link href={`/chapter/${chapter.slug}`} className="min-w-0">
-          <p className="truncate font-sans text-caption text-white">{shortProductName(chapter.name)}</p>
-          <p className="mt-0.5 font-sans text-caption text-white/70">
+          <p className="font-sans text-body-s leading-snug text-white md:text-caption">
+            {shortProductName(chapter.name)}
+          </p>
+          <p className="mt-0.5 font-sans text-body-s text-white/70 md:text-caption">
             ₹{chapter.price.toLocaleString("en-IN")}
           </p>
         </Link>

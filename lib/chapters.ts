@@ -17,6 +17,7 @@ export const chapters: Chapter[] = [
     story: "Wayfarer frame in acetate, black green lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-wayfarer-demi-brown-light-brown",
@@ -29,6 +30,7 @@ export const chapters: Chapter[] = [
     story: "Wayfarer frame in acetate, demi-brown light brown lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "female",
   },
   {
     slug: "moon-round-black-light-brown",
@@ -41,6 +43,7 @@ export const chapters: Chapter[] = [
     story: "Round frame in acetate, black light brown lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-round-demi-brown-blue-graded",
@@ -53,6 +56,7 @@ export const chapters: Chapter[] = [
     story: "Round frame in acetate, demi-brown blue graded lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "female",
   },
   {
     slug: "moon-rectangle-black-orange",
@@ -65,6 +69,7 @@ export const chapters: Chapter[] = [
     story: "Rectangle frame in acetate, black orange lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-rectangle-black-blue",
@@ -77,6 +82,7 @@ export const chapters: Chapter[] = [
     story: "Rectangle frame in acetate, black blue lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "female",
   },
   {
     slug: "moon-rectangle-black-purple",
@@ -89,6 +95,7 @@ export const chapters: Chapter[] = [
     story: "Rectangle frame in acetate, black purple lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-aviator-classic-demi-brown-grey-graded",
@@ -101,6 +108,7 @@ export const chapters: Chapter[] = [
     story: "Aviator frame in acetate, demi-brown grey graded lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "female",
   },
   {
     slug: "moon-aviator-classic-black-yellow",
@@ -113,6 +121,7 @@ export const chapters: Chapter[] = [
     story: "Aviator frame in acetate, black yellow lens tint.",
     price: 1499,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-octagon-silver-light-brown",
@@ -125,6 +134,7 @@ export const chapters: Chapter[] = [
     story: "Octagon frame in metal, silver light brown lens tint.",
     price: 1999,
     verifiedOnSite: true,
+    modelGender: "female",
   },
   {
     slug: "moon-octagon-gold-grey",
@@ -137,6 +147,7 @@ export const chapters: Chapter[] = [
     story: "Octagon frame in metal, gold grey lens tint.",
     price: 1999,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-octagon-silver-grey",
@@ -149,6 +160,7 @@ export const chapters: Chapter[] = [
     story: "Octagon frame in metal, silver grey lens tint.",
     price: 1999,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-octagon-black-blue",
@@ -161,6 +173,7 @@ export const chapters: Chapter[] = [
     story: "Octagon frame in metal, black blue lens tint.",
     price: 1999,
     verifiedOnSite: true,
+    modelGender: "male",
   },
   {
     slug: "moon-aviator-metal-black-yellow",
@@ -173,6 +186,7 @@ export const chapters: Chapter[] = [
     story: "Aviator (Metal) frame in metal, black yellow lens tint.",
     price: 1999,
     verifiedOnSite: true,
+    modelGender: "female",
   },
   {
     slug: "moon-aviator-metal-gunmetal-brown",
@@ -197,6 +211,7 @@ export const chapters: Chapter[] = [
     story: "Aviator (Metal) frame in metal, gold green lens tint.",
     price: 1999,
     verifiedOnSite: true,
+    modelGender: "male",
   },
 ];
 
@@ -265,4 +280,47 @@ export function groupByStyle<T extends Chapter>(items: T[]): T[] {
     .map((item, i) => ({ item, i }))
     .sort((a, b) => rank(a.item) - rank(b.item) || a.i - b.i)
     .map(({ item }) => item);
+}
+
+/**
+ * Which tiles in a grid should open on their model face (the rest open on
+ * product). Doesn't try to keep a strict product/model rhythm — it just
+ * makes sure a grid never opens with every visible model the same gender by
+ * coincidence of catalogue order. Walks the list in pairs, defaulting to
+ * showing the second item of each pair (same rhythm as the old plain
+ * alternation), but swaps to the first item of the pair instead whenever
+ * the default choice would repeat the same gender as the last one shown.
+ * Items with no known modelGender (no model photo yet) never show.
+ */
+export function pickDiverseModelFlips(items: Chapter[]): boolean[] {
+  const flips = new Array(items.length).fill(false);
+  let lastGender: string | undefined;
+
+  for (let i = 0; i + 1 < items.length; i += 2) {
+    const first = items[i];
+    const second = items[i + 1];
+    let chosenIndex: number | null = null;
+    let chosenGender: string | undefined;
+
+    if (second.modelGender && second.modelGender !== lastGender) {
+      chosenIndex = i + 1;
+      chosenGender = second.modelGender;
+    } else if (first.modelGender && first.modelGender !== lastGender) {
+      chosenIndex = i;
+      chosenGender = first.modelGender;
+    } else if (second.modelGender) {
+      chosenIndex = i + 1;
+      chosenGender = second.modelGender;
+    } else if (first.modelGender) {
+      chosenIndex = i;
+      chosenGender = first.modelGender;
+    }
+
+    if (chosenIndex !== null) {
+      flips[chosenIndex] = true;
+      lastGender = chosenGender;
+    }
+  }
+
+  return flips;
 }

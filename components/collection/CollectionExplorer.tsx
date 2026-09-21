@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CollectionItem } from "@/components/collection/CollectionItem";
+import { TileGrid } from "@/components/collection/TileGrid";
 import { STYLE_ORDER, styleRimLens } from "@/lib/chapters";
 import type { Chapter } from "@/types/chapter";
 import type { StockLabel } from "@/lib/inventory";
@@ -65,10 +65,10 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
   const hasFilter = !!style;
 
   function chipClass(active: boolean) {
-    return `flex-none border px-4 py-2 text-caption uppercase tracking-[0.05em] transition-colors ${
+    return `flex-none border px-4 py-2 text-caption uppercase tracking-[0.05em] transition-colors outline-none focus-visible:ring-1 focus-visible:ring-[var(--moon-gold)] ${
       active
-        ? "border-ink bg-ink text-white"
-        : "border-divider text-secondary-text hover:border-ink hover:text-ink"
+        ? "border-[var(--moon-gold)] bg-[var(--moon-gold)] text-black"
+        : "border-divider text-secondary-text hover:border-[var(--moon-gold)] hover:text-ink"
     }`;
   }
 
@@ -155,10 +155,8 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
       {filtered.length === 0 ? (
         <p className="mt-10 text-body-s text-secondary-text">No pairs match that combination yet.</p>
       ) : (
-        <div className="mt-10 grid grid-cols-2 gap-0 md:grid-cols-4">
-          {filtered.map(({ chapter, stockLabel }, i) => (
-            <CollectionItem key={chapter.slug} chapter={chapter} index={i} stockLabel={stockLabel} />
-          ))}
+        <div className="mt-10">
+          <TileGrid items={filtered.map(({ chapter, stockLabel }) => ({ chapter, stockLabel }))} />
         </div>
       )}
     </div>

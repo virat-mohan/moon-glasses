@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CollectionItem } from "@/components/collection/CollectionItem";
+import { TileGrid } from "@/components/collection/TileGrid";
 import { CollectionExplorer } from "@/components/collection/CollectionExplorer";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
@@ -61,16 +61,12 @@ export default async function Home() {
             <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
               Trending Now
             </p>
-            <div className="grid grid-cols-2 gap-0 md:grid-cols-4">
-              {trending.map((chapter, i) => (
-                <CollectionItem
-                  key={chapter.slug}
-                  chapter={chapter}
-                  index={i}
-                  stockLabel={stockLabelFor(inventory[chapter.slug])}
-                />
-              ))}
-            </div>
+            <TileGrid
+              items={trending.map((chapter) => ({
+                chapter,
+                stockLabel: stockLabelFor(inventory[chapter.slug]),
+              }))}
+            />
           </section>
         )}
 

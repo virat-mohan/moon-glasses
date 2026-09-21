@@ -38,8 +38,8 @@ export function BuyNowButton({
       disabled={loading}
       className={
         variant === "minimal"
-          ? "font-sans text-caption font-medium uppercase tracking-[0.12em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
-          : "font-sans text-caption font-medium uppercase tracking-[0.12em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
+          ? "font-sans text-caption font-medium tracking-[0.02em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
+          : "font-sans text-caption font-medium tracking-[0.02em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
       }
     >
       {loading ? "..." : "Buy Now"}
