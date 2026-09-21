@@ -223,3 +223,47 @@ Framing: shot from the chest up (chest, shoulders, neck, and head all visible), 
 
   return url;
 }
+
+/**
+ * Refines an already-generated model photo using a free-text instruction
+ * (e.g. "make the jacket red", "have her look straight at the camera") —
+ * the /admin/master-inventory lightbox's "Apply Edit" action. Unlike
+ * generateModelPhoto, the reference image here is the EXISTING generated
+ * photo itself (not the product cutout), so Gemini edits in place rather
+ * than starting over from the product reference.
+ */
+export async function editModelPhoto(options: {
+  imageUrl: string;
+  instructions: string;
+  productName?: string;
+  chapterSlug?: string;
+}): Promise<string> {
+  const geminiKey = await getSetting("IMAGE_GEN_API_KEY");
+  if (!geminiKey) {
+    throw new Error("IMAGE_GEN_API_KEY (Gemini) is not set — add it in /admin/settings first");
+  }
+
+  const prompt = `Here is a lifestyle photo of a model wearing a pair of sunglasses${
+    options.productName ? ` ("${options.productName}")` : ""
+  }.
+
+Apply this edit: ${options.instructions.trim()}
+
+Keep everything else about the photo — the model's identity, the sunglasses (frame shape, color, lens tint), the framing, and the overall lighting/mood — exactly as it is unless the edit explicitly asks to change it. No text, no logos, no watermarks.`;
+
+  const base64Png = await generateWithGemini(geminiKey, prompt, [options.imageUrl], "portrait4x5");
+  const url = await uploadGeneratedImage(base64Png, "model-photos");
+
+  try {
+    const supabase = getSupabaseServerClient();
+    await supabase.from("marketing_assets").insert({
+      url,
+      label: options.productName ? `${options.productName} — edited model` : "Edited model photo",
+      tags: ["generated-model", "edited", ...(options.chapterSlug ? [options.chapterSlug] : [])],
+    });
+  } catch (err) {
+    console.error("Failed to log edited model photo to marketing_assets", err);
+  }
+
+  return url;
+}

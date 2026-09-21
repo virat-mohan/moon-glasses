@@ -36,6 +36,10 @@ export default function MasterInventoryPage() {
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [lightboxSlug, setLightboxSlug] = useState<string | null>(null);
+  const [editInstructions, setEditInstructions] = useState("");
+  const [applyingEdit, setApplyingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   function load() {
     fetch("/api/admin/master-inventory")
@@ -117,7 +121,35 @@ export default function MasterInventoryPage() {
     }
   }
 
+  async function applyEdit() {
+    const row = rows.find((r) => r.slug === lightboxSlug);
+    if (!row?.modelImage || !editInstructions.trim()) return;
+    setApplyingEdit(true);
+    setEditError(null);
+    try {
+      const res = await fetch("/api/admin/edit-model-photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: row.modelImage,
+          instructions: editInstructions,
+          productName: row.name,
+          chapterSlug: row.slug,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      await updateRow(row, { modelImage: data.url });
+      setEditInstructions("");
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Could not apply that edit");
+    } finally {
+      setApplyingEdit(false);
+    }
+  }
+
   const filtered = rows.filter((r) => (filter === "all" ? true : filter === "live" ? r.live : !r.live));
+  const lightboxRow = rows.find((r) => r.slug === lightboxSlug) ?? null;
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
@@ -201,7 +233,13 @@ export default function MasterInventoryPage() {
                 </div>
               </div>
 
-              <div className="relative h-20 w-20 flex-none overflow-hidden bg-[var(--moon-black)]">
+              <button
+                type="button"
+                onClick={() => row.modelImage && setLightboxSlug(row.slug)}
+                disabled={!row.modelImage}
+                className="relative h-20 w-20 flex-none overflow-hidden bg-[var(--moon-black)] disabled:cursor-default"
+                title={row.modelImage ? "Click to zoom and edit" : undefined}
+              >
                 {row.modelImage ? (
                   <Image src={row.modelImage} alt="" fill sizes="80px" className="object-cover" />
                 ) : (
@@ -209,7 +247,7 @@ export default function MasterInventoryPage() {
                     No model photo
                   </div>
                 )}
-              </div>
+              </button>
 
               <button
                 type="button"
@@ -251,6 +289,59 @@ export default function MasterInventoryPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {lightboxRow?.modelImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+          onClick={() => setLightboxSlug(null)}
+        >
+          <div
+            className="flex w-full max-w-3xl flex-col gap-4 bg-surface p-5 md:flex-row"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative aspect-[4/5] w-full flex-none bg-[var(--moon-black)] md:w-80">
+              <Image src={lightboxRow.modelImage} alt="" fill sizes="320px" className="object-cover" />
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-body-s text-ink">{lightboxRow.name}</p>
+                <button
+                  type="button"
+                  onClick={() => setLightboxSlug(null)}
+                  className="flex-none font-sans text-caption text-secondary-text hover:text-ink"
+                >
+                  Close
+                </button>
+              </div>
+
+              <p className="mt-4 text-micro uppercase tracking-[0.05em] text-secondary-text">
+                Edit instructions
+              </p>
+              <textarea
+                value={editInstructions}
+                onChange={(e) => setEditInstructions(e.target.value)}
+                placeholder="e.g. make the jacket red, have her look straight at the camera, softer lighting…"
+                rows={4}
+                className="mt-1.5 w-full resize-none border border-ink/30 bg-surface px-3 py-2 font-sans text-caption text-ink"
+              />
+              {editError && <p className="mt-1.5 text-caption text-paint-orange">{editError}</p>}
+              <button
+                type="button"
+                onClick={applyEdit}
+                disabled={applyingEdit || !editInstructions.trim()}
+                className="mt-3 self-start border border-ink px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-ink hover:text-cream disabled:opacity-50"
+              >
+                {applyingEdit ? "Applying…" : "Apply Edit"}
+              </button>
+              <p className="mt-2 text-micro text-secondary-text">
+                Each edit generates a new version from the current photo — the model, sunglasses, and
+                framing stay the same unless your instructions say otherwise.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </main>
