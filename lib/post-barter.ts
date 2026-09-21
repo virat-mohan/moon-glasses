@@ -140,12 +140,23 @@ function randomSuffix() {
   return Math.random().toString(36).slice(2, 6).toUpperCase();
 }
 
-// Rotated onto the sharer's first name (e.g. "ZARA" -> "ZARANIGHT") so the
-// code reads like something worth sharing rather than a random string —
+// Rotated onto the sharer's first name (e.g. "ANUN" -> "ANUNAFTERGLOW") so
+// the code reads like something worth sharing rather than a random string —
 // echoes the brand's night-out positioning instead of being purely
-// functional. Picked by hashing the name rather than randomly, so the same
-// person always lands on the same word if a code ever needs regenerating.
-const THEME_WORDS = ["NIGHT", "MOON", "GLOW", "AFTERDARK", "DROP", "VIBES"];
+// functional. Picked randomly per mint (not hashed) since a nicer-sounding
+// code is worth more than the same person always landing on the same word.
+const THEME_WORDS = [
+  "AFTERGLOW",
+  "MIDNIGHT",
+  "MOONLIT",
+  "NIGHTFALL",
+  "STARLIT",
+  "NEONNIGHTS",
+  "AFTERDARK",
+  "DUSKFALL",
+  "GLOWUP",
+  "NIGHTOWL",
+];
 
 /** Mints a shareable coupon code for this barter order — same shape as a creator's coupon (lib/creators.ts), reusing the exact checkout coupon engine so a friend's redemption is a completely ordinary coupon redemption. Full price for the friend — see discount_value below — this is attribution, not a discount mechanic. */
 async function createBarterCouponCode(customerName: string, instagramHandle: string, friendDiscountRupees: number): Promise<string> {
@@ -155,10 +166,9 @@ async function createBarterCouponCode(customerName: string, instagramHandle: str
     firstName ||
     parseInstagramHandle(instagramHandle).replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase() ||
     "CREATOR";
-  const nameHash = Array.from(base).reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  const theme = THEME_WORDS[nameHash % THEME_WORDS.length];
 
   for (let attempt = 0; attempt < 5; attempt++) {
+    const theme = THEME_WORDS[Math.floor(Math.random() * THEME_WORDS.length)];
     const code = `${base}${theme}${attempt === 0 ? "" : randomSuffix()}`;
     const { error } = await supabase.from("coupon_codes").insert({
       code,

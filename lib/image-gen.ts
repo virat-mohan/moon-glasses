@@ -210,16 +210,50 @@ const GAZE_VARIANTS = [
 // generating model photos for several products back to back tends to
 // produce the same model and the same outfit each time, since the rest of
 // the prompt barely changes call to call. This is what actually makes
-// "wardrobe" a variable instead of an incidental constant.
-const WARDROBE_VARIANTS = [
+// "wardrobe" a variable instead of an incidental constant. Split by gender
+// — a single shared list previously let a "satin slip top" or "off-shoulder
+// top" land on a male model, since the pick never accounted for who was
+// wearing it.
+const MALE_WARDROBE_VARIANTS = [
   "a sharp open-collar shirt, sleeves loosely rolled",
-  "a fitted blazer worn open over a simple top",
+  "a fitted blazer worn open over a plain crew-neck tee",
+  "a leather jacket over a fitted tee",
+  "a turtleneck sweater",
+  "a bomber jacket over a simple shirt",
+  "an unbuttoned linen shirt over a plain tee",
+  "a fitted button-down with the top two buttons open",
+  "a structured overshirt layered over a tee",
+];
+
+const FEMALE_WARDROBE_VARIANTS = [
   "a satin or silk slip top",
-  "a leather jacket over a fitted top",
-  "a turtleneck paired with statement gold jewelry",
+  "a fitted blazer worn open over a simple top",
   "an off-shoulder or halter top",
+  "a turtleneck paired with statement gold jewelry",
   "a relaxed oversized shirt tucked in at the front",
   "a fitted knit top with a delicate chain necklace",
+  "a corset-style top",
+  "a wrap top",
+];
+
+// Same gender split as wardrobe — otherwise every generation defaults to
+// roughly the same hair regardless of who's supposed to be wearing it.
+const MALE_HAIRSTYLE_VARIANTS = [
+  "short textured crop",
+  "textured quiff",
+  "slicked-back hair",
+  "medium-length waves",
+  "buzz cut with light stubble",
+  "cropped curly hair",
+];
+
+const FEMALE_HAIRSTYLE_VARIANTS = [
+  "loose beachy waves",
+  "sleek straight hair",
+  "a high ponytail",
+  "voluminous curls",
+  "a soft updo with flyaways",
+  "middle-parted long hair",
 ];
 
 // Same reasoning as GAZE_VARIANTS/WARDROBE_VARIANTS — left as one fixed
@@ -248,18 +282,21 @@ export async function generateModelPhoto(options: {
   }
 
   const gaze = GAZE_VARIANTS[Math.floor(Math.random() * GAZE_VARIANTS.length)];
-  const wardrobe = WARDROBE_VARIANTS[Math.floor(Math.random() * WARDROBE_VARIANTS.length)];
+  const wardrobeList = options.gender === "male" ? MALE_WARDROBE_VARIANTS : FEMALE_WARDROBE_VARIANTS;
+  const wardrobe = wardrobeList[Math.floor(Math.random() * wardrobeList.length)];
+  const hairstyleList = options.gender === "male" ? MALE_HAIRSTYLE_VARIANTS : FEMALE_HAIRSTYLE_VARIANTS;
+  const hairstyle = hairstyleList[Math.floor(Math.random() * hairstyleList.length)];
   const backdrop = BACKDROP_VARIANTS[Math.floor(Math.random() * BACKDROP_VARIANTS.length)];
 
   const prompt = `Here ${
     options.referenceImageUrls.length > 1 ? "are transparent PNG cutouts" : "is a transparent PNG cutout"
   } of a pair of sunglasses${options.productName ? `: "${options.productName}"` : ""}.
 
-Generate a realistic, professional lifestyle photo of a good-looking, well-groomed, sexy Indian ${options.gender} model (age 22–35) wearing this exact pair of sunglasses. This is a real product photo for an e-commerce listing, not a general styled shoot — a customer will compare this image directly against the reference photo(s), so the sunglasses must be reproduced with total accuracy: the exact frame outline and geometry (e.g. angular/geometric corners stay sharp and angular, round stays round — never soften, round off, or reshape the silhouette), the exact frame material and color (e.g. gunmetal/black metal must stay dark metal, not shift toward gold or a lighter tone), the exact lens tint, gradient direction, and shape, and the exact bridge and temple design. Do not substitute a similar-looking or "close enough" frame — reproduce this precise pair, unchanged, on the model's face. Give this model their own distinct look — a different face, hairstyle, and styling than you would default to — rather than repeating the same model identity across separate generations.
+Generate a realistic, professional lifestyle photo of a good-looking, well-groomed, sexy Indian ${options.gender} model (age 22–35) wearing this exact pair of sunglasses. This is a real product photo for an e-commerce listing, not a general styled shoot — a customer will compare this image directly against the reference photo(s), so the sunglasses must be reproduced with total accuracy: the exact frame outline and geometry (e.g. angular/geometric corners stay sharp and angular, round stays round — never soften, round off, or reshape the silhouette), the exact frame material and color (e.g. gunmetal/black metal must stay dark metal, not shift toward gold or a lighter tone), the exact lens tint, gradient direction, and shape, and the exact bridge and temple design. Do not substitute a similar-looking or "close enough" frame — reproduce this precise pair, unchanged, on the model's face. Give this model their own distinct look — a different face, hairstyle, and styling than you would default to — rather than repeating the same model identity across separate generations. The model must present as clearly ${options.gender} — masculine styling, clothing, and grooming for a male model, feminine styling, clothing, and grooming for a female model — never a mismatch between the requested gender and how the model reads.
 
 Mood: at a lively party — genuinely joyful, mid-laugh or grinning, full of energy, having a great time. No drink, glass, or bottle in hand or anywhere in frame. ${gaze}.
 
-Wardrobe: ${wardrobe}, in black, white, or another neutral tone — not matched to the lens tint. At most a small accent (a piece of jewelry, a subtle trim) can echo the lens color; the outfit itself should never be a color-to-color match with the lenses, since that reads as styled/staged rather than an actual night out. Well-groomed hair, subtle styling, no other visible eyewear.
+Wardrobe: ${wardrobe} — clearly ${options.gender === "male" ? "menswear, cut and styled for a man" : "womenswear, cut and styled for a woman"}. Choose whatever color makes the shot look best: a direct or complementary match to the lens tint shown in the reference image(s), a neutral (black, white, or grey), or another stylish color entirely — any of these is fine as long as the outfit reads as fashionable and put-together. Hair: ${hairstyle}. No other visible eyewear.
 
 Framing: a tight head-and-shoulders portrait crop — head, neck, and top of the shoulders filling most of the frame, the same close zoom level every time, with the sunglasses large and clearly readable on the face. Crop just below the collarbone: no chest or décolletage on display, and if the wardrobe is low-cut or off-shoulder, crop tighter so it doesn't read that way. Shallow depth of field, with ${backdrop}. Nothing so busy it competes with the product.
 

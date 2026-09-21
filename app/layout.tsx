@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Space_Grotesk, Inter, Bodoni_Moda } from "next/font/google";
 import { Navbar } from "@/components/navigation/Navbar";
 import { ScrollToTop } from "@/components/navigation/ScrollToTop";
 import { MetaPixelTracker } from "@/components/tracking/MetaPixel";
@@ -22,6 +22,17 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
+});
+
+// Reserved exclusively for the "Pay With A Post" wordmark (PayWithAPostMark)
+// — a high-contrast editorial serif, deliberately distinct from the site's
+// sans-serif display/body faces, so the trademarked term reads as its own
+// named feature rather than emphasized body copy.
+const bodoniModa = Bodoni_Moda({
+  variable: "--font-bodoni-moda",
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  style: ["italic"],
 });
 
 const SITE_URL = "https://moon-glasses.store";
@@ -71,7 +82,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} h-full scroll-smooth antialiased`}
+      className={`${inter.variable} ${spaceGrotesk.variable} ${bodoniModa.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
         <script

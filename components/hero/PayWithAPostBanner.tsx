@@ -15,7 +15,7 @@ export function PayWithAPostBanner() {
       <div className="mx-auto max-w-[720px] text-center">
         <p className="font-sans text-micro uppercase tracking-[0.3em] text-tan-gold">New</p>
         <h2 className="mt-4 text-display-m">
-          <PayWithAPostMark />
+          <PayWithAPostMark withHint />
         </h2>
         <p className="mt-4 font-sans text-body-s text-secondary-text">
           Skip the payment — post about us on Instagram instead. Choose it right at checkout, no
