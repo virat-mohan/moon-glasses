@@ -65,6 +65,7 @@ const NAV_SECTIONS = [
     links: [
       { href: "/admin/inventory", label: "Inventory" },
       { href: "/admin/edit-chapter", label: "Edit Products" },
+      { href: "/admin/master-inventory", label: "Master Inventory" },
       { href: "/admin/add-chapter", label: "Add Product" },
       { href: "/admin/product-images", label: "Product Images" },
       { href: "/admin/models", label: "Models" },

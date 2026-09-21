@@ -22,4 +22,6 @@ export type Chapter = {
   price: number;
   /** False for Chapters not confirmed live at brief time — flagged, not guessed. */
   verifiedOnSite: boolean;
+  /** Gates whether this Chapter shows anywhere on the public site (homepage, Limited Series, its own /chapter/<slug> page). Always true for the static 16 — only meaningful for admin-added master-inventory products, which default to false (draft) until explicitly published from /admin/master-inventory. */
+  live?: boolean;
 };

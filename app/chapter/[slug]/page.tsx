@@ -45,6 +45,10 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
   const allChapters = await getAllChapters();
   const chapter = allChapters.find((c) => c.slug === slug);
   if (!chapter) notFound();
+  // Draft master-inventory products (live === false) aren't published yet —
+  // treat their URL as not found rather than leaking an unfinished/unpriced
+  // product to anyone who guesses the slug.
+  if (chapter.live === false) notFound();
 
   const others = allChapters
     .filter((c) => c.series === chapter.series)

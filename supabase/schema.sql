@@ -1054,3 +1054,16 @@ update inventory set stock_on_hand = 50 where chapter_slug in (
 -- ============================================================
 alter table dynamic_chapters add column if not exists model_image text;
 alter table dynamic_chapters add column if not exists collection text not null default 'core' check (collection in ('core', 'limited'));
+
+-- ============================================================
+-- Master inventory: every supplier-sourced product becomes a
+-- dynamic_chapters row immediately (via /admin/master-inventory or the
+-- purchase-log import), whether or not it's shown on the site yet.
+-- `live` gates visibility — getCoreCollectionChapters/getLimitedSeriesChapters
+-- only return rows where live = true, so a product can sit in the backend
+-- as a draft (photographed, price set, awaiting a model shot or a
+-- decision) without ever reaching the public site. Defaults to false so
+-- every newly-imported product starts as a draft, not published by
+-- accident.
+-- ============================================================
+alter table dynamic_chapters add column if not exists live boolean not null default false;

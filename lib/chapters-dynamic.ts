@@ -14,6 +14,38 @@ type Override = {
 
 type ChapterCollection = "core" | "limited";
 
+function mapDynamicRow(row: {
+  slug: string;
+  name: string;
+  series: string;
+  images: string[];
+  primary_image: string;
+  model_image: string | null;
+  story: string;
+  price: number;
+  verified_on_site: boolean;
+  collection: string | null;
+  live: boolean | null;
+}): Chapter & { collection: ChapterCollection } {
+  return {
+    slug: row.slug,
+    name: row.name,
+    series: row.series as Chapter["series"],
+    folder: "", // unused — dynamic chapters store full URLs in `images`/`primary`
+    images: row.images,
+    primary: row.primary_image,
+    // Admin-added Chapters don't have a separate side-angle pick yet —
+    // fall back to whatever was set as the hero image.
+    sideImage: row.primary_image,
+    modelImage: row.model_image ?? undefined,
+    story: row.story,
+    price: row.price,
+    verifiedOnSite: row.verified_on_site,
+    collection: (row.collection as ChapterCollection) ?? "core",
+    live: row.live ?? false,
+  };
+}
+
 /**
  * Static 16 + anything added from /admin/add-chapter, with per-field edits
  * from /admin/edit-chapter applied. Server-only (uses the Supabase service
@@ -36,22 +68,7 @@ async function getMergedChapters(): Promise<(Chapter & { collection: ChapterColl
         .select("chapter_slug, primary_image, price, story, images, model_image, name"),
     ]);
 
-    dynamicChapters = (dynamicRows ?? []).map((row) => ({
-      slug: row.slug,
-      name: row.name,
-      series: row.series,
-      folder: "", // unused — dynamic chapters store full URLs in `images`/`primary`
-      images: row.images,
-      primary: row.primary_image,
-      // Admin-added Chapters don't have a separate side-angle pick yet —
-      // fall back to whatever was set as the hero image.
-      sideImage: row.primary_image,
-      modelImage: row.model_image ?? undefined,
-      story: row.story,
-      price: row.price,
-      verifiedOnSite: row.verified_on_site,
-      collection: (row.collection as ChapterCollection) ?? "core",
-    }));
+    dynamicChapters = (dynamicRows ?? []).map((row) => mapDynamicRow(row));
 
     overrides = Object.fromEntries(
       (overrideRows ?? []).map((r) => [
@@ -71,8 +88,8 @@ async function getMergedChapters(): Promise<(Chapter & { collection: ChapterColl
   }
 
   const staticWithCollection = [
-    ...staticChapters.map((c) => ({ ...c, collection: "core" as ChapterCollection })),
-    ...limitedSeries.map((c) => ({ ...c, collection: "limited" as ChapterCollection })),
+    ...staticChapters.map((c) => ({ ...c, collection: "core" as ChapterCollection, live: true })),
+    ...limitedSeries.map((c) => ({ ...c, collection: "limited" as ChapterCollection, live: true })),
   ];
 
   const merged = [...staticWithCollection, ...dynamicChapters];
@@ -97,19 +114,44 @@ async function getMergedChapters(): Promise<(Chapter & { collection: ChapterColl
   });
 }
 
-/** Every chapter, both collections — used by /chapter/[slug] and the admin editing tools. */
+/**
+ * Every chapter, both collections, REGARDLESS of live status — used by
+ * /chapter/[slug] (which does its own live check before rendering, so a
+ * draft's URL doesn't 404 for admins previewing it — see that page) and
+ * the admin editing tools that need to find any product by slug.
+ */
 export async function getAllChapters(): Promise<Chapter[]> {
   return getMergedChapters();
 }
 
-/** Just the core/everyday lineup — what the homepage grid renders. */
+/** Just the core/everyday lineup that's actually published — what the homepage grid renders. */
 export async function getCoreCollectionChapters(): Promise<Chapter[]> {
-  return (await getMergedChapters()).filter((c) => c.collection === "core");
+  return (await getMergedChapters()).filter((c) => c.collection === "core" && c.live !== false);
 }
 
-/** Just the Limited Series drop line — what /limited-series renders. */
+/** Just the published Limited Series drop line — what /limited-series renders. */
 export async function getLimitedSeriesChapters(): Promise<Chapter[]> {
-  return (await getMergedChapters()).filter((c) => c.collection === "limited");
+  return (await getMergedChapters()).filter((c) => c.collection === "limited" && c.live !== false);
+}
+
+/**
+ * The full master inventory — every admin-added/supplier-sourced product,
+ * live or not. This is what /admin/master-inventory lists; the static 16
+ * are deliberately excluded since they're code-based and always live, not
+ * part of the draft/publish workflow this powers.
+ */
+export async function getMasterInventoryChapters(): Promise<(Chapter & { collection: ChapterCollection })[]> {
+  try {
+    const supabase = getSupabaseServerClient();
+    const { data } = await supabase
+      .from("dynamic_chapters")
+      .select("*")
+      .order("created_at", { ascending: false });
+    return (data ?? []).map((row) => mapDynamicRow(row));
+  } catch (err) {
+    console.error("getMasterInventoryChapters: Supabase fetch failed", err);
+    return [];
+  }
 }
 
 export async function getChapterBySlug(slug: string): Promise<Chapter | undefined> {
