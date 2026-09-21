@@ -233,21 +233,16 @@ export default function MasterInventoryPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => row.modelImage && setLightboxSlug(row.slug)}
-                disabled={!row.modelImage}
-                className="relative h-20 w-20 flex-none overflow-hidden bg-[var(--moon-black)] disabled:cursor-default"
-                title={row.modelImage ? "Click to zoom and edit" : undefined}
-              >
-                {row.modelImage ? (
+              {row.modelImage && (
+                <button
+                  type="button"
+                  onClick={() => setLightboxSlug(row.slug)}
+                  className="relative h-20 w-20 flex-none overflow-hidden bg-[var(--moon-black)]"
+                  title="Click to zoom and edit"
+                >
                   <Image src={row.modelImage} alt="" fill sizes="80px" className="object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-center text-micro text-secondary-text">
-                    No model photo
-                  </div>
-                )}
-              </button>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -255,7 +250,7 @@ export default function MasterInventoryPage() {
                 disabled={busySlug === row.slug}
                 className="flex-none border border-ink px-3 py-1.5 font-sans text-caption text-ink transition-colors hover:bg-ink hover:text-cream disabled:opacity-50"
               >
-                {busySlug === row.slug ? "…" : row.modelImage ? "Regenerate" : "Generate"} Model
+                {busySlug === row.slug ? "Working…" : row.modelImage ? "Regenerate Model" : "Generate Model"}
               </button>
 
               <select
