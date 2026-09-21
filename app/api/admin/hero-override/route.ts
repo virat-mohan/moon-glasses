@@ -15,7 +15,7 @@ export async function PATCH(request: Request) {
     // picker doesn't wipe out a price/story edit made separately (and vice versa).
     const { data: existing } = await supabase
       .from("chapter_hero_overrides")
-      .select("primary_image, price, story, images, model_image, name")
+      .select("primary_image, price, story, images, model_image, name, collection, live")
       .eq("chapter_slug", body.chapterSlug)
       .maybeSingle();
 
@@ -27,6 +27,8 @@ export async function PATCH(request: Request) {
       images: body.images ?? existing?.images ?? null,
       model_image: body.modelImage ?? existing?.model_image ?? null,
       name: body.name ?? existing?.name ?? null,
+      collection: body.collection ?? existing?.collection ?? null,
+      live: typeof body.live === "boolean" ? body.live : (existing?.live ?? null),
       updated_at: new Date().toISOString(),
     });
 
@@ -37,6 +39,7 @@ export async function PATCH(request: Request) {
     // invisible in the DB until the next code deploy happened to rebuild
     // them — revalidatePath forces Next to regenerate them on next visit.
     revalidatePath("/");
+    revalidatePath("/limited-series");
     revalidatePath(`/chapter/${body.chapterSlug}`);
 
     return NextResponse.json({ ok: true });

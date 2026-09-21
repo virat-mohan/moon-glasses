@@ -320,6 +320,15 @@ alter table chapter_hero_overrides add column if not exists model_image text;
 -- static name from lib/chapters.ts".
 alter table chapter_hero_overrides add column if not exists name text;
 
+-- Lets /admin/master-inventory move a CODE-BASED chapter (the static 16 or
+-- Limited Series, whose collection/live status is otherwise hardcoded in
+-- lib/chapters.ts / lib/limited-series.ts) between Core and Limited, or
+-- unpublish it, without a redeploy. Null means "use the hardcoded default"
+-- — dynamic_chapters rows (supplier drafts) already have their own
+-- collection/live columns and never need this override.
+alter table chapter_hero_overrides add column if not exists collection text;
+alter table chapter_hero_overrides add column if not exists live boolean;
+
 create table if not exists whatsapp_conversation_messages (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references whatsapp_conversations (id),
@@ -1067,3 +1076,95 @@ alter table dynamic_chapters add column if not exists collection text not null d
 -- accident.
 -- ============================================================
 alter table dynamic_chapters add column if not exists live boolean not null default false;
+
+-- ============================================================
+-- Creator program: gifting/collab applications from Instagram creators.
+-- Deliberately one table for "creator" and "application" — for a simple
+-- gifting program these are the same real-world thing, not separate
+-- entities, so this stays one row per creator rather than a creator/
+-- application join. follower_count is picked up server-side via Instagram
+-- Graph API Business Discovery at apply time (see getPublicFollowerCount in
+-- lib/instagram.ts) — the brand's own connected account reading the
+-- creator's PUBLIC stats by handle, never a per-creator OAuth/connect flow.
+-- Falls back to 0 (with a note in score_reasons) if the account can't be
+-- resolved, e.g. a personal rather than Business/Creator account.
+-- score/score_reasons/recommendation are written once by the automated
+-- evaluation agent (lib/creator-scoring.ts) right after apply; an admin
+-- still makes the real approve/reject call in /admin/creators — the agent
+-- only recommends. status is a simple controlled lifecycle (not a DB enum,
+-- validated in lib/creators.ts): applied | approved | rejected |
+-- agreement_sent | agreed | product_shipped | content_received | completed.
+-- why_join is unused going forward (the apply form no longer asks it) —
+-- left in place rather than dropped, since an unused nullable column costs
+-- nothing and a handful of already-submitted rows may still have it set.
+-- ============================================================
+create table if not exists creators (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  phone text,
+  instagram_handle text not null,
+  follower_count integer not null default 0,
+  category text,
+  city text,
+  why_join text,
+  status text not null default 'applied',
+  score integer,
+  score_reasons text[],
+  recommendation text, -- approve | review | reject
+  product_name text,
+  product_shipped_at timestamptz,
+  coupon_code text,
+  admin_notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists creators_status_idx on creators (status);
+create unique index if not exists creators_instagram_handle_idx on creators (lower(instagram_handle));
+
+-- One signed record per creator (a creator only ever signs once for the
+-- simple single-agreement-per-creator flow this ships with — a real
+-- multi-campaign system would key this per-campaign instead).
+-- agreement_html is a snapshot of exactly what was shown/signed, so a
+-- later edit to the live template never changes what an already-signed
+-- creator agreed to. No third-party e-signature vendor — signed_name +
+-- signer_ip + signed_at + the generated PDF at pdf_url together are the
+-- full signed record.
+create table if not exists creator_agreements (
+  id uuid primary key default gen_random_uuid(),
+  creator_id uuid not null references creators(id) on delete cascade,
+  version text not null default 'v1',
+  agreement_html text not null,
+  signed_name text,
+  signed_at timestamptz,
+  signer_ip text,
+  pdf_url text,
+  created_at timestamptz not null default now()
+);
+create index if not exists creator_agreements_creator_idx on creator_agreements (creator_id);
+
+-- Content a creator posted tagging/collaborating with the brand. Deliberately
+-- NOT auto-discovered by scraping or polling third-party accounts — source
+-- 'instagram_tags' rows come from the brand's OWN connected Instagram
+-- account's tagged-media list (see getTaggedMedia in lib/instagram.ts,
+-- which only ever reads media where the connected business account itself
+-- is tagged/collaborator-added), picked up and linked to a creator by an
+-- admin in /admin/creators. 'manual' rows are typed in directly when a post
+-- is seen some other way (e.g. a Story mention, which the API can't list).
+create table if not exists creator_content (
+  id uuid primary key default gen_random_uuid(),
+  creator_id uuid not null references creators(id) on delete cascade,
+  platform text not null default 'instagram',
+  post_url text,
+  media_type text, -- feed | reel | story | tag
+  caption text,
+  likes integer,
+  comments integer,
+  reach integer,
+  posted_at timestamptz,
+  captured_at timestamptz not null default now(),
+  source text not null default 'manual', -- manual | instagram_tags
+  notes text,
+  created_at timestamptz not null default now()
+);
+create index if not exists creator_content_creator_idx on creator_content (creator_id);

@@ -1,4 +1,4 @@
-import { chapters as staticChapters } from "@/lib/chapters";
+import { chapters as staticChapters, chapterImageSrc } from "@/lib/chapters";
 import { limitedSeries } from "@/lib/limited-series";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import type { Chapter } from "@/types/chapter";
@@ -10,6 +10,8 @@ type Override = {
   images: string[] | null;
   model_image: string | null;
   name: string | null;
+  collection: string | null;
+  live: boolean | null;
 };
 
 type ChapterCollection = "core" | "limited";
@@ -65,7 +67,7 @@ async function getMergedChapters(): Promise<(Chapter & { collection: ChapterColl
       supabase.from("dynamic_chapters").select("*"),
       supabase
         .from("chapter_hero_overrides")
-        .select("chapter_slug, primary_image, price, story, images, model_image, name"),
+        .select("chapter_slug, primary_image, price, story, images, model_image, name, collection, live"),
     ]);
 
     dynamicChapters = (dynamicRows ?? []).map((row) => mapDynamicRow(row));
@@ -80,6 +82,8 @@ async function getMergedChapters(): Promise<(Chapter & { collection: ChapterColl
           images: r.images,
           model_image: r.model_image,
           name: r.name,
+          collection: r.collection,
+          live: r.live,
         },
       ])
     );
@@ -110,6 +114,8 @@ async function getMergedChapters(): Promise<(Chapter & { collection: ChapterColl
       story: o.story ?? c.story,
       images: o.images && o.images.length > 0 ? o.images : c.images,
       modelImage: o.model_image ?? c.modelImage,
+      collection: (o.collection as ChapterCollection) ?? c.collection,
+      live: o.live ?? c.live,
     };
   });
 }
@@ -148,7 +154,16 @@ export async function getMasterInventoryChapters(): Promise<
 > {
   const staticSlugs = new Set([...staticChapters, ...limitedSeries].map((c) => c.slug));
   const merged = await getMergedChapters();
-  return merged.map((c) => ({ ...c, isStatic: staticSlugs.has(c.slug) }));
+  return merged.map((c) => {
+    const isStatic = staticSlugs.has(c.slug);
+    // Static/limited chapters store `primary` as a bare filename (e.g.
+    // "front.jpg") resolved against `folder` at render time everywhere else
+    // on the site — dynamic_chapters rows already store a full Supabase URL.
+    // The master-inventory list has no folder-aware <Image> component of its
+    // own, so resolve it into a real URL here instead of leaking the raw
+    // filename to a plain <img src>.
+    return { ...c, primary: isStatic ? chapterImageSrc(c.folder, c.primary) : c.primary, isStatic };
+  });
 }
 
 export async function getChapterBySlug(slug: string): Promise<Chapter | undefined> {

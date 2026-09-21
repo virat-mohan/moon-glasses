@@ -33,6 +33,9 @@ export default function MasterInventoryPage() {
   const [loading, setLoading] = useState(true);
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "live" | "draft">("all");
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
 
   function load() {
     fetch("/api/admin/master-inventory")
@@ -43,31 +46,57 @@ export default function MasterInventoryPage() {
 
   useEffect(load, []);
 
-  async function patch(slug: string, body: Record<string, unknown>) {
-    setBusySlug(slug);
-    setRows((prev) => prev.map((r) => (r.slug === slug ? { ...r, ...body } : r)));
+  async function importFromUrl() {
+    if (!importUrl.trim()) return;
+    setImporting(true);
+    setImportMessage(null);
     try {
-      await fetch("/api/admin/master-inventory", {
-        method: "PATCH",
+      const res = await fetch("/api/admin/import-from-url", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, ...body }),
+        body: JSON.stringify({ url: importUrl.trim() }),
       });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const parts = [`Added ${data.imported.length} new draft${data.imported.length === 1 ? "" : "s"}`];
+      if (data.singlePhotoOnly?.length > 0) parts.push(`${data.singlePhotoOnly.length} with only one photo — add an angle shot manually`);
+      if (data.skipped?.length > 0) parts.push(`skipped ${data.skipped.length} already in the catalogue`);
+      setImportMessage(parts.join(" — ") + ".");
+      setImportUrl("");
+      load();
+    } catch (err) {
+      setImportMessage(err instanceof Error ? err.message : "Could not import from that URL");
     } finally {
-      setBusySlug(null);
+      setImporting(false);
     }
   }
 
-  // Model photos are saved through the hero-override table (chapter_hero_overrides)
-  // rather than the master-inventory PATCH — that table works for BOTH code-based
-  // static/limited chapters and dynamic_chapters rows, so this one call covers
-  // every row on this page instead of only the draft imports.
-  async function saveModelImage(slug: string, url: string) {
-    setRows((prev) => prev.map((r) => (r.slug === slug ? { ...r, modelImage: url } : r)));
-    await fetch("/api/admin/hero-override", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chapterSlug: slug, modelImage: url }),
-    });
+  // Static/Limited-Series rows have no dynamic_chapters row to update, so
+  // their live/collection/modelImage edits go through the hero-override
+  // table instead (chapter_hero_overrides — same one /admin/edit-chapter
+  // already uses to tweak the hardcoded catalogue without a redeploy).
+  // Dynamic (supplier-draft) rows keep going through the master-inventory
+  // route, which writes directly to their own dynamic_chapters row.
+  async function updateRow(row: Row, body: Record<string, unknown>) {
+    setBusySlug(row.slug);
+    setRows((prev) => prev.map((r) => (r.slug === row.slug ? { ...r, ...body } : r)));
+    try {
+      if (row.isStatic) {
+        await fetch("/api/admin/hero-override", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chapterSlug: row.slug, ...body }),
+        });
+      } else {
+        await fetch("/api/admin/master-inventory", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: row.slug, ...body }),
+        });
+      }
+    } finally {
+      setBusySlug(null);
+    }
   }
 
   async function generateModel(row: Row) {
@@ -80,7 +109,7 @@ export default function MasterInventoryPage() {
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      await saveModelImage(row.slug, data.url);
+      await updateRow(row, { modelImage: data.url });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Could not generate model photo");
     } finally {
@@ -94,11 +123,40 @@ export default function MasterInventoryPage() {
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
       <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Master Inventory</h1>
       <p className="mt-2 max-w-2xl text-body-s text-secondary-text">
-        Every product — live on site or still a draft. Generate a model photo for any of them,
-        and for supplier-sourced imports, toggle <strong>Live</strong> to publish/unpublish and pick
-        which collection it belongs to. The original 16 and Limited Series are always live and
-        keep their fixed collection, but you can still (re)generate their model photo here.
+        Every product — live on site or still a draft. Generate a model photo, toggle{" "}
+        <strong>Live</strong> to publish/unpublish, and pick which collection it belongs to, all
+        from here — for supplier drafts and for the original 16 / Limited Series alike.
       </p>
+
+      <div className="mt-6 max-w-xl">
+        <p className="mb-1.5 text-micro uppercase tracking-[0.05em] text-secondary-text">
+          Import from a supplier&apos;s Shopify page
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && importFromUrl()}
+            placeholder="e.g. https://thetedsmith.com/products/cavier"
+            className="min-w-0 flex-1 border border-ink/30 bg-surface px-3 py-1.5 font-sans text-caption text-ink"
+          />
+          <button
+            type="button"
+            onClick={importFromUrl}
+            disabled={importing || !importUrl.trim()}
+            className="flex-none border border-ink px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-ink hover:text-cream disabled:opacity-50"
+          >
+            {importing ? "Importing…" : "Import"}
+          </button>
+        </div>
+        {importMessage && <p className="mt-1.5 text-caption text-secondary-text">{importMessage}</p>}
+        <p className="mt-1.5 text-micro text-secondary-text">
+          Paste a product or collection page from a supplier&apos;s Shopify storefront (e.g.
+          thetedsmith.com) — pulls every color variant and adds whichever ones aren&apos;t already
+          in the catalogue as new drafts below.
+        </p>
+      </div>
 
       <div className="mt-6 flex gap-2">
         {(["all", "live", "draft"] as const).map((f) => (
@@ -162,34 +220,26 @@ export default function MasterInventoryPage() {
                 {busySlug === row.slug ? "…" : row.modelImage ? "Regenerate" : "Generate"} Model
               </button>
 
-              {row.isStatic ? (
-                <span className="flex-none border border-divider px-3 py-1.5 font-sans text-caption text-secondary-text">
-                  {row.collection === "limited" ? "Limited Series" : "Core Collection"}
-                </span>
-              ) : (
-                <select
-                  value={row.collection}
-                  onChange={(e) => patch(row.slug, { collection: e.target.value })}
-                  className="flex-none border border-ink/30 bg-surface px-3 py-1.5 font-sans text-caption text-ink"
-                >
-                  <option value="core">Core Collection</option>
-                  <option value="limited">Limited Series</option>
-                </select>
-              )}
+              <select
+                value={row.collection}
+                onChange={(e) => updateRow(row, { collection: e.target.value })}
+                className="flex-none border border-ink/30 bg-surface px-3 py-1.5 font-sans text-caption text-ink"
+              >
+                <option value="core">Core Collection</option>
+                <option value="limited">Limited Series</option>
+              </select>
 
-              {!row.isStatic && (
-                <button
-                  type="button"
-                  onClick={() => patch(row.slug, { live: !row.live })}
-                  className={`flex-none border px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] transition-colors ${
-                    row.live
-                      ? "border-divider text-secondary-text hover:border-ink hover:text-ink"
-                      : "border-ink bg-ink text-cream hover:bg-cream hover:text-ink"
-                  }`}
-                >
-                  {row.live ? "Unpublish" : "Publish"}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => updateRow(row, { live: !row.live })}
+                className={`flex-none border px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] transition-colors ${
+                  row.live
+                    ? "border-divider text-secondary-text hover:border-ink hover:text-ink"
+                    : "border-ink bg-ink text-cream hover:bg-cream hover:text-ink"
+                }`}
+              >
+                {row.live ? "Unpublish" : "Publish"}
+              </button>
 
               {row.live && (
                 <Link
