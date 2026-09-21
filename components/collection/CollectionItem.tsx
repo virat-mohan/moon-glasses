@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Chapter } from "@/types/chapter";
-import { chapterImageSrc, shortProductName } from "@/lib/chapters";
+import { chapterImageSrc } from "@/lib/chapters";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import type { StockLabel } from "@/lib/inventory";
 
@@ -20,25 +20,24 @@ import type { StockLabel } from "@/lib/inventory";
  * `initialFlipped` (falls back to an index-based alternation) sets which
  * face a tile opens on — the caller decides this so a full grid opens with
  * a deliberate product/model mix rather than every tile defaulting to the
- * product face. `onSelect` fires whenever the visible face changes, so a
- * parent can drive a mobile "now viewing" preview bar off it.
- * Name/price and Buy Now sit on a static overlay that never flips, so
- * they're always reachable no matter which face is showing. Silently stays
- * product-only if no lifestyle shot exists yet at
- * public/images/chapters/<folder>/lifestyle.jpg.
+ * product face.
+ * The tile itself deliberately carries no name/price — just a small flip
+ * hint (also a link through to the product page, since Buy Now skips
+ * straight to checkout and nothing else on the tile reaches the PDP) and
+ * Buy Now, both on a static overlay that never flips. Full name/price/story
+ * live on the product page. Silently stays product-only if no lifestyle
+ * shot exists yet at public/images/chapters/<folder>/lifestyle.jpg.
  */
 export function CollectionItem({
   chapter,
   stockLabel = null,
   index = 0,
   initialFlipped,
-  onSelect,
 }: {
   chapter: Chapter;
   stockLabel?: StockLabel;
   index?: number;
   initialFlipped?: boolean;
-  onSelect?: (chapter: Chapter, modelShowing: boolean) => void;
 }) {
   const [hasLifestyle, setHasLifestyle] = useState(true);
   const [flipped, setFlipped] = useState(initialFlipped ?? index % 2 === 1);
@@ -51,18 +50,9 @@ export function CollectionItem({
 
   const shown = hasLifestyle && flipped;
 
-  useEffect(() => {
-    onSelect?.(chapter, shown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function toggleFlip() {
     if (!hasLifestyle) return;
-    setFlipped((f) => {
-      const next = !f;
-      onSelect?.(chapter, next);
-      return next;
-    });
+    setFlipped((f) => !f);
   }
 
   return (
@@ -98,8 +88,14 @@ export function CollectionItem({
           className="relative h-full w-full transition-transform duration-1000 ease-[cubic-bezier(.22,.61,.36,1)] [transform-style:preserve-3d]"
           style={{ transform: shown ? "rotateY(180deg)" : "rotateY(0deg)" }}
         >
-          {/* Front face — product, on white */}
-          <div className="absolute inset-0 bg-white [backface-visibility:hidden]">
+          {/* Front face — product, on a subtle warm spotlight-on-black */}
+          <div
+            className="absolute inset-0 [backface-visibility:hidden]"
+            style={{
+              background:
+                "radial-gradient(ellipse 60% 55% at 50% 42%, rgba(255,246,228,0.20) 0%, rgba(255,246,228,0.07) 40%, var(--moon-black) 78%)",
+            }}
+          >
             <Image
               src={productImage}
               alt={chapter.name}
@@ -138,13 +134,11 @@ export function CollectionItem({
       )}
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
-        <Link href={`/chapter/${chapter.slug}`} className="min-w-0">
-          <p className="font-sans text-body-s leading-snug text-white md:text-caption">
-            {shortProductName(chapter.name)}
-          </p>
-          <p className="mt-0.5 font-sans text-body-s text-white/70 md:text-caption">
-            ₹{chapter.price.toLocaleString("en-IN")}
-          </p>
+        <Link
+          href={`/chapter/${chapter.slug}`}
+          className="min-w-0 font-sans text-micro uppercase tracking-[0.05em] text-white/70 hover:text-white"
+        >
+          {hasLifestyle ? "Tap Or Hover To Flip" : "View Details"}
         </Link>
 
         {!disabled && (
