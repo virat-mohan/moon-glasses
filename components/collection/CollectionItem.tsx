@@ -10,16 +10,15 @@ import type { StockLabel } from "@/lib/inventory";
 
 /**
  * Collage-style tile: product shot and lifestyle shot live on opposite faces
- * of a 3D-flipped card (real rotateY, not a cross-fade). No auto-flip timer —
- * the visitor drives it entirely, and every flip PERMANENTLY sticks
- * (nothing reverts on its own). The interaction model (explained once, in
- * TileGrid, not per-tile):
- *  - Desktop: moving the mouse onto the tile flips it. A click navigates to
+ * of a 3D-flipped card (real rotateY, not a cross-fade). The interaction
+ * model (explained once, in TileGrid, not per-tile):
+ *  - Desktop: moving the mouse onto the tile flips it to its other face; the
+ *    tile reverts to its original ("first") face the moment the mouse
+ *    leaves — a hover preview, not a sticky toggle. A click navigates to
  *    the product page — hover already owns flipping, so click is free for
  *    navigation.
- *  - Touch: the first tap flips the tile; a second tap navigates to the
- *    product page (there's no hover to separate the two gestures, so tap
- *    does double duty by count).
+ *  - Touch: the first tap flips the tile and it stays flipped (no hover to
+ *    revert it on); a second tap navigates to the product page.
  *  - Keyboard: Enter/Space flips, matching the no-hover touch behavior.
  * Buy Now sits on a static overlay that never flips, always reachable.
  * The tile itself carries no name/price/hint text — full details live on
@@ -39,7 +38,11 @@ export function CollectionItem({
 }) {
   const router = useRouter();
   const [hasLifestyle, setHasLifestyle] = useState(true);
-  const [flipped, setFlipped] = useState(initialFlipped ?? index % 2 === 1);
+  // The tile's resting face — TileGrid may pre-pick some tiles to rest on
+  // their model face (pickDiverseModelFlips) so a grid doesn't load all-product.
+  // Hover previews the OTHER face and always reverts to this one on mouse-out.
+  const firstState = useRef(initialFlipped ?? index % 2 === 1).current;
+  const [flipped, setFlipped] = useState(firstState);
   const lastPointerTypeRef = useRef<string>("mouse");
   const tappedOnceRef = useRef(false);
 
@@ -70,7 +73,10 @@ export function CollectionItem({
         tabIndex={0}
         onPointerEnter={(e) => {
           lastPointerTypeRef.current = e.pointerType;
-          if (e.pointerType === "mouse" && hasLifestyle) toggleFlip();
+          if (e.pointerType === "mouse" && hasLifestyle) setFlipped(!firstState);
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType === "mouse") setFlipped(firstState);
         }}
         onPointerDown={(e) => {
           lastPointerTypeRef.current = e.pointerType;
