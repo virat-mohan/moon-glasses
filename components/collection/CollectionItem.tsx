@@ -61,15 +61,8 @@ export function CollectionItem({
 
   return (
     <div
-      className="group relative aspect-square overflow-hidden"
-      style={{
-        // Masks a sub-pixel seam artifact from the 3D transform (confirmed
-        // via getBoundingClientRect that grid layout itself has zero gap)
-        // — has to match whichever face is currently showing (white product
-        // vs black model), or it just becomes a seam of its own colour.
-        backgroundColor: shown ? "var(--moon-black)" : "#fff",
-        boxShadow: `0 0 0 1px ${shown ? "var(--moon-black)" : "#fff"}`,
-      }}
+      className="group relative aspect-square overflow-hidden border border-[rgba(231,199,122,0.35)]"
+      style={{ backgroundColor: shown ? "var(--moon-black)" : "#fff" }}
     >
       <div
         role="button"
