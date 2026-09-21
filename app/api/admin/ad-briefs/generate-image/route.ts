@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { generateAdImage } from "@/lib/image-gen";
 import { chapters, chapterImageSrc } from "@/lib/chapters";
+import { buildBrandPostPrompt } from "@/lib/ad-brief";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -24,15 +25,35 @@ export async function POST(request: Request) {
       typeof body.slotIndex === "number" && brief?.chapter_slugs
         ? brief.chapter_slugs[body.slotIndex]
         : brief?.chapter_slug;
-    const chapter = chapters.find((c) => c.slug === slugForSlot);
-    const referenceImageUrl = chapter ? chapterImageSrc(chapter.folder, chapter.primary) : undefined;
-    const absoluteReference =
-      referenceImageUrl && referenceImageUrl.startsWith("/")
+    // A brief tied to a real product must never generate its image without
+    // that product's actual uploaded photo as reference — without this
+    // check, a missing/renamed slug silently fell through to Gemini/OpenAI
+    // generating the product from the text prompt alone, i.e. hallucinating
+    // a design that was never manually uploaded. Only a genuine brand
+    // awareness brief (slugForSlot itself is falsy — see productLine in
+    // lib/ad-brief.ts) is allowed to generate without one, and that path
+    // gets brand-design-language guidance instead (see buildBrandPostPrompt).
+    let promptToUse = body.imagePrompt as string;
+    let absoluteReference: string | undefined;
+
+    if (slugForSlot) {
+      const chapter = chapters.find((c) => c.slug === slugForSlot);
+      if (!chapter) {
+        return NextResponse.json(
+          { error: `No uploaded product photo found for "${slugForSlot}" — cannot generate an image for this product without one.` },
+          { status: 400 }
+        );
+      }
+      const referenceImageUrl = chapterImageSrc(chapter.folder, chapter.primary);
+      absoluteReference = referenceImageUrl.startsWith("/")
         ? new URL(referenceImageUrl, request.url).toString()
         : referenceImageUrl;
+    } else {
+      promptToUse = await buildBrandPostPrompt(body.imagePrompt);
+    }
 
     const imageUrl = await generateAdImage({
-      prompt: body.imagePrompt,
+      prompt: promptToUse,
       referenceImageUrl: absoluteReference,
       storagePathPrefix: "generated",
       aspectRatio: brief?.creative_format === "story" ? "portrait" : "square",

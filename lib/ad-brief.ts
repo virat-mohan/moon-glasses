@@ -2,6 +2,25 @@ import { getSetting } from "@/lib/settings";
 import { getBrandProfile } from "@/lib/brand";
 import type { ChapterSales } from "@/lib/sales-metrics";
 
+/**
+ * For a generic brand-awareness image (no specific chapter/product tied to
+ * it, so there's no real uploaded photo to ground the generation in) —
+ * wraps the scene description with the brand's visual design language and
+ * an explicit instruction not to invent a specific product design. This is
+ * the "brand post" path; it is deliberately separate from model-photo
+ * generation (generateModelPhoto in lib/image-gen.ts), which always
+ * requires a real uploaded reference photo and never runs off the design
+ * language alone.
+ */
+export async function buildBrandPostPrompt(scenePrompt: string): Promise<string> {
+  const brand = await getBrandProfile();
+  return `${scenePrompt}
+
+Brand visual design language (apply this to the whole image): ${brand.visualLanguage}
+
+Important: this is a generic brand-awareness image, not a shot of a specific product. Do not invent, design, or closely render any specific pair of sunglasses — if eyewear appears at all, keep it generic, out of sharp focus, or partially obscured, since no real product photo exists to ground its design. The mood, lighting and setting matter far more here than any product detail.`;
+}
+
 export type CreativeStyle = "ai_photo" | "real_photo_text_overlay";
 
 export type AdBrief = {

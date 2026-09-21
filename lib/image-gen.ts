@@ -33,10 +33,20 @@ export async function generateAdImage(options: {
       const refs = options.referenceImageUrl ? [options.referenceImageUrl] : undefined;
       base64Png = await generateWithGemini(geminiKey, options.prompt, refs, aspectRatio);
     } catch (err) {
-      if (!openaiKey) throw err;
+      // OpenAI's images API is text-to-image only — it can't respect a
+      // reference photo. Falling back to it for a product-specific request
+      // (referenceImageUrl set) would silently hallucinate the product's
+      // design instead of rendering the real uploaded one, so that case
+      // must fail loudly rather than fall back.
+      if (!openaiKey || options.referenceImageUrl) throw err;
       base64Png = await generateWithOpenAI(openaiKey, options.prompt, aspectRatio);
     }
   } else if (openaiKey) {
+    if (options.referenceImageUrl) {
+      throw new Error(
+        "Only Gemini (IMAGE_GEN_API_KEY) can generate from a real product reference photo — OpenAI's image API is text-to-image only. Add a Gemini key in /admin/settings to generate product-specific images."
+      );
+    }
     base64Png = await generateWithOpenAI(openaiKey, options.prompt, aspectRatio);
   } else {
     throw new Error(

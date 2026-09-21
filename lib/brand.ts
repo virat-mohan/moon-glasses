@@ -8,6 +8,17 @@ export type BrandProfile = {
   currencySymbol: string;
   siteUrl: string;
   instagramHandle: string;
+  /**
+   * The visual design language — palette, lighting, mood, composition —
+   * for AI-generated imagery that isn't grounded in a real product photo
+   * (brand-awareness ad creative, drop-announcement art, etc). Any image
+   * generation that DOES depict a specific product must instead use that
+   * product's real uploaded photo as an image-to-image reference (see
+   * generateAdImage's referenceImageUrl and generateModelPhoto in
+   * lib/image-gen.ts) — this field is only for imagery that never renders
+   * a specific, un-uploaded product design.
+   */
+  visualLanguage: string;
 };
 
 const BRAND_PROFILE_KEY = "BRAND_PROFILE";
@@ -21,6 +32,8 @@ export const DEFAULT_BRAND_PROFILE: BrandProfile = {
   currencySymbol: "₹",
   siteUrl: "https://moon-glasses.store",
   instagramHandle: "@moonglassesonline",
+  visualLanguage:
+    "Near-black backgrounds, high contrast, warm gold (#e0b84a) as the sole accent colour. Editorial nightlife photography — gigs, sets, city-at-night energy — never daytime/beach/outdoor lifestyle. Minimal, uncluttered composition; confident subjects, genuine expressions, no stock-photo posing. Typography-led when text appears: bold, uppercase, generous letter-spacing.",
 };
 
 /**
