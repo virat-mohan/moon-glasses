@@ -17,6 +17,10 @@ type BarterOrder = {
   barter_qualified_at: string | null;
   total: number;
   orders_so_far: number;
+  delivered_at: string | null;
+  barter_charge_deadline_at: string | null;
+  barter_charge_link_sent_at: string | null;
+  barter_charged_at: string | null;
 };
 
 type LeaderboardRow = {
@@ -254,6 +258,65 @@ function BarterRow({ order }: { order: BarterOrder }) {
       ) : (
         <p className="mt-1 text-caption text-secondary-text">No post link submitted yet.</p>
       )}
+      {order.barter_tier === "gift_first" && !order.barter_post_url && <DeadlineStatus order={order} />}
     </div>
+  );
+}
+
+function DeadlineStatus({ order }: { order: BarterOrder }) {
+  if (order.barter_charged_at) {
+    return <p className="mt-1 text-caption text-tan-gold">Charged full price ✓ ({formatDate(order.barter_charged_at)})</p>;
+  }
+  if (order.barter_charge_link_sent_at) {
+    return (
+      <div className="mt-1 flex items-center gap-2">
+        <p className="text-caption text-paint-orange">
+          Deadline missed — charge link sent {formatDate(order.barter_charge_link_sent_at)}
+        </p>
+        <MarkBarterChargedButton orderId={order.id} />
+      </div>
+    );
+  }
+  if (order.barter_charge_deadline_at) {
+    const passed = new Date(order.barter_charge_deadline_at) < new Date();
+    return (
+      <p className={`mt-1 text-caption ${passed ? "text-paint-orange" : "text-secondary-text"}`}>
+        {passed ? "Deadline passed — " : "Must post by "}
+        {new Date(order.barter_charge_deadline_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+      </p>
+    );
+  }
+  if (!order.delivered_at) {
+    return <p className="mt-1 text-caption text-secondary-text">Not yet delivered — 12h window starts on delivery.</p>;
+  }
+  return null;
+}
+
+function MarkBarterChargedButton({ orderId }: { orderId: string }) {
+  const [state, setState] = useState<"idle" | "confirming" | "done" | "error">("idle");
+
+  async function confirm() {
+    if (!window.confirm("Confirm you've actually seen this payment land in your account?")) return;
+    setState("confirming");
+    try {
+      const res = await fetch(`/api/admin/post-barter/${orderId}/mark-charged`, { method: "POST" });
+      if (!res.ok) throw new Error();
+      setState("done");
+      window.location.reload();
+    } catch {
+      setState("error");
+    }
+  }
+
+  if (state === "done") return <span className="text-micro text-tan-gold">Charged ✓</span>;
+
+  return (
+    <button
+      onClick={confirm}
+      disabled={state === "confirming"}
+      className="border border-ink px-2 py-1 font-sans text-micro font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-50"
+    >
+      {state === "confirming" ? "Confirming…" : state === "error" ? "Retry Mark Charged" : "Mark Charged"}
+    </button>
   );
 }

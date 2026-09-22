@@ -6,6 +6,7 @@
     { "path": "/api/cron/sales-signal-briefs", "schedule": "0 8 * * 1" },
     { "path": "/api/cron/ops-digest", "schedule": "0 4 * * *" },
     { "path": "/api/cron/publish-queue", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/track-sweep", "schedule": "0 15 * * *" }
+    { "path": "/api/cron/track-sweep", "schedule": "0 15 * * *" },
+    { "path": "/api/cron/barter-charge-sweep", "schedule": "0 * * * *" }
   ]
 }

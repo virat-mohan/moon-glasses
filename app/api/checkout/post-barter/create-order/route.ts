@@ -13,6 +13,7 @@ export async function POST(request: Request) {
       items: body.items,
       instagramHandle: body.instagramHandle,
       ownershipCode: body.ownershipCode,
+      termsAccepted: !!body.termsAccepted,
       isGift: body.isGift,
       giftNote: body.giftNote,
       sessionKey: body.sessionKey,

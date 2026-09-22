@@ -213,6 +213,8 @@ export type PostBarterOrderPayload = {
   instagramHandle: string;
   /** Only meaningful when the applicant classifies as gift_first — see verifyGiftFirstOwnership. Missing or wrong just means a safe downgrade to sell_first, never a hard rejection. */
   ownershipCode?: string;
+  /** Required (server-enforced) whenever the order actually resolves to gift_first — explicit acceptance of the post-within-12-hours-of-delivery condition. Meaningless for sell_first, where nothing ships before a post exists anyway. */
+  termsAccepted?: boolean;
   isGift?: boolean;
   giftNote?: string | null;
   sessionKey?: string;
@@ -270,6 +272,15 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     if (!verified) tier = "sell_first";
   }
 
+  // Binding condition for shipping on trust: explicit acceptance of the
+  // post-within-12-hours-of-delivery term (see barter_charge_deadline_at,
+  // set once Shiprocket confirms delivery). Never silently downgrade this
+  // one — a shopper who didn't see/accept the term must be told plainly,
+  // not quietly re-routed into sell_first.
+  if (tier === "gift_first" && !payload.termsAccepted) {
+    throw new Error("Please accept the Pay With A Post terms to ship now — or continue without checking the box to post first instead.");
+  }
+
   const pricing = await computeTrustedOrderTotal(payload.items, 0, payload.customer.pincode, null, payload.customer.phone, null, "prepaid");
 
   const guestCustomer = await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name);
@@ -305,6 +316,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
       // "qualify" for, so this is stamped immediately rather than left for
       // maybeQualifyBarterOrderForCoupon to set later.
       barter_qualified_at: isGiftFirst ? new Date().toISOString() : null,
+      barter_terms_accepted_at: isGiftFirst ? new Date().toISOString() : null,
     })
     .select()
     .single();

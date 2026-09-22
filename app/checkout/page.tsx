@@ -116,12 +116,17 @@ export default function CheckoutPage() {
   // sell_first automatically if it can't confirm ownership at submit time.
   const [ownershipChecking, setOwnershipChecking] = useState(false);
   const [ownershipVerified, setOwnershipVerified] = useState(false);
+  // Binding condition for gift_first shipping on trust — required before
+  // submit whenever the preview says gift_first; meaningless for sell_first,
+  // where nothing ships before a post exists anyway.
+  const [giftFirstTermsAccepted, setGiftFirstTermsAccepted] = useState(false);
 
   async function checkBarterTier() {
     if (!barterHandle.trim()) return;
     setBarterChecking(true);
     setBarterPreview(null);
     setOwnershipVerified(false);
+    setGiftFirstTermsAccepted(false);
     try {
       const res = await fetch("/api/checkout/post-barter/check-eligibility", {
         method: "POST",
@@ -167,6 +172,10 @@ export default function CheckoutPage() {
       setBarterError("Pay With A Post covers one item per order — adjust your cart to a single item.");
       return;
     }
+    if (barterPreview?.tier === "gift_first" && ownershipVerified && !giftFirstTermsAccepted) {
+      setBarterError("Please accept the terms above to ship now.");
+      return;
+    }
     setBarterSubmitting(true);
     try {
       const res = await fetch("/api/checkout/post-barter/create-order", {
@@ -177,6 +186,7 @@ export default function CheckoutPage() {
           items: items.map((i) => ({ slug: i.slug, quantity: i.quantity })),
           instagramHandle: barterHandle.trim(),
           ownershipCode: ownershipVerified ? barterPreview?.verificationCode : undefined,
+          termsAccepted: giftFirstTermsAccepted,
           isGift,
           giftNote: isGift ? giftNote : null,
           sessionKey: getSessionKey(),
@@ -1012,6 +1022,7 @@ export default function CheckoutPage() {
                           setBarterHandle(e.target.value);
                           setBarterPreview(null);
                           setOwnershipVerified(false);
+                          setGiftFirstTermsAccepted(false);
                         }}
                         placeholder="Instagram profile link or @handle"
                         className="min-w-0 flex-1 border border-ink/30 bg-surface px-4 py-3 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
@@ -1087,6 +1098,24 @@ export default function CheckoutPage() {
                           drives 3 real orders instead of right away.
                         </p>
                       </div>
+                    )}
+
+                    {barterPreview?.tier === "gift_first" && ownershipVerified && (
+                      <label className="flex items-start gap-2.5 border border-ink/20 bg-surface-alt p-3 text-caption text-ink">
+                        <input
+                          type="checkbox"
+                          checked={giftFirstTermsAccepted}
+                          onChange={(e) => setGiftFirstTermsAccepted(e.target.checked)}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <span>
+                          I agree to post about MOON GLASSES on Instagram within{" "}
+                          <strong>12 hours of delivery</strong> (delivery confirmed via our courier). If I
+                          don&apos;t, I understand I&apos;ll be sent a payment link and charged the full
+                          price of this order. This is a binding condition of shipping on trust ahead of
+                          payment.
+                        </span>
+                      </label>
                     )}
                     {barterError && <p className="text-caption text-paint-orange">{barterError}</p>}
                   </div>

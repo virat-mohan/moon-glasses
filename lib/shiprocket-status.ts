@@ -43,7 +43,7 @@ export async function applyShipmentStatusUpdate(input: {
   let lookup = supabase
     .from("orders")
     .select(
-      "id, customer_name, customer_phone, customer_email, shipment_status, review_requested_at, total, shipping_charge, refunded_amount, razorpay_payment_id, rto_notified_at, rto_processed_at, delivered_at"
+      "id, customer_name, customer_phone, customer_email, shipment_status, review_requested_at, total, shipping_charge, refunded_amount, razorpay_payment_id, rto_notified_at, rto_processed_at, delivered_at, is_post_barter, barter_tier, barter_post_url"
     );
   if (orderId) lookup = lookup.eq("id", orderId);
   else if (shipmentId) lookup = lookup.eq("shiprocket_shipment_id", shipmentId);
@@ -175,7 +175,17 @@ export async function applyShipmentStatusUpdate(input: {
   // once, on the real transition, never overwritten by a later
   // duplicate/retried "delivered" hit.
   if (isDelivered && !wasDelivered && !existing.delivered_at) {
-    await supabase.from("orders").update({ delivered_at: new Date().toISOString() }).eq("id", existing.id);
+    const deliveredAt = new Date().toISOString();
+    const patch: Record<string, string> = { delivered_at: deliveredAt };
+    // The gift-first T&C's binding condition: post within 12 hours of
+    // delivery (accepted at checkout — see barter_terms_accepted_at) or a
+    // full-price charge link goes out (app/api/cron/barter-charge-sweep).
+    // Only relevant if they haven't already posted before delivery even
+    // completed.
+    if (existing.is_post_barter && existing.barter_tier === "gift_first" && !existing.barter_post_url) {
+      patch.barter_charge_deadline_at = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
+    }
+    await supabase.from("orders").update(patch).eq("id", existing.id);
   }
 
   // Same transition-only guard, plus review_requested_at as a second safety

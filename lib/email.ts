@@ -721,6 +721,31 @@ export async function sendPostBarterProgressEmail(toEmail: string, ordersSoFar: 
   return sendEmail(toEmail, `${ordersSoFar}/${required} — you're getting close`, html);
 }
 
+/** Sent once by app/api/cron/barter-charge-sweep when a gift_first order's 12-hour post-after-delivery deadline (accepted at checkout) passes with no post link submitted. */
+export async function sendBarterChargeLinkEmail(toEmail: string, name: string, orderId: string, amountRupees: number) {
+  const brand = await getBrandProfile();
+  const payUrl = `${brand.siteUrl.replace(/\/$/, "")}/barter/${orderId}/pay`;
+  const html = `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <p style="text-align:center;text-transform:uppercase;letter-spacing:0.15em;font-size:12px;color:#666;">${brand.brandName}</p>
+      <h1 style="font-size:22px;margin:24px 0 8px;">The 12-Hour Window Has Passed.</h1>
+      <p style="font-size:14px;color:#444;line-height:1.6;">Hi ${name},</p>
+      <p style="font-size:14px;color:#444;line-height:1.6;">
+        Your order shipped on trust, and the 12-hour window to post about it after delivery — agreed to at
+        checkout — has passed without a post link submitted. As agreed, here's the payment link for the
+        full order value of <strong>₹${amountRupees.toLocaleString("en-IN")}</strong>.
+      </p>
+      <p style="font-size:14px;color:#444;line-height:1.6;">
+        Already posted, or about to? Drop the link on your order page instead and this charge won't go
+        through.
+      </p>
+      <a href="${payUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Pay Now</a>
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+  return sendEmail(toEmail, `Payment needed — the 12-hour window has passed`, html);
+}
+
 /** Sent right after a creator signs their agreement — confirms it, hands over their tracking/discount code. */
 export async function sendCreatorAgreementSignedEmail(toEmail: string, name: string, couponCode: string | null) {
   const brand = await getBrandProfile();

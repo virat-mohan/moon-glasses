@@ -1200,3 +1200,14 @@ alter table orders add column if not exists barter_required_orders integer not n
 alter table orders add column if not exists barter_post_url text;
 alter table orders add column if not exists barter_qualified_at timestamptz;
 create index if not exists orders_is_post_barter_idx on orders (is_post_barter) where is_post_barter;
+
+-- Gift-first ships on trust with a binding, explicit condition: post within
+-- 12 hours of delivery (see barter_charge_deadline_at, set from
+-- delivered_at in lib/shiprocket-status.ts), or get charged full price via a
+-- payment link (app/api/cron/barter-charge-sweep). barter_terms_accepted_at
+-- is the shopper's checkout-time acceptance of that condition — captured
+-- only for gift_first, since sell_first never ships before a post exists.
+alter table orders add column if not exists barter_terms_accepted_at timestamptz;
+alter table orders add column if not exists barter_charge_deadline_at timestamptz;
+alter table orders add column if not exists barter_charge_link_sent_at timestamptz;
+alter table orders add column if not exists barter_charged_at timestamptz;

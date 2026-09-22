@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const { data: allOrders, error } = await supabase
       .from("orders")
       .select(
-        "id, created_at, customer_name, customer_phone, barter_tier, barter_instagram_handle, barter_follower_count, barter_coupon_code, barter_required_orders, barter_post_url, barter_qualified_at, total"
+        "id, created_at, customer_name, customer_phone, barter_tier, barter_instagram_handle, barter_follower_count, barter_coupon_code, barter_required_orders, barter_post_url, barter_qualified_at, total, delivered_at, barter_charge_deadline_at, barter_charge_link_sent_at, barter_charged_at"
       )
       .eq("is_post_barter", true)
       .order("created_at", { ascending: false });
