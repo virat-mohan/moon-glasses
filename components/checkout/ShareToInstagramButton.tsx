@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 const CANVAS_W = 1080;
 const CANVAS_H = 1350; // 4:5 — Instagram's max feed portrait; posts fine to a Story too (with letterboxing)
-const HERO_IMAGE = "/images/chapters/moon-octagon-silver-light-brown/lifestyle.jpg";
 const LOGO_IMAGE = "/images/brand/moon-glasses-logo.png";
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
@@ -63,9 +63,18 @@ function drawCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: numb
  * (editorial hero shot, brand logo, headline, and the code) rather than a
  * sheet of instructions. Deliberately carries NO "post this / tag us"
  * meta-instructions — those belong on the page around the button, since a
- * genuine Instagram post should never read like a how-to.
+ * genuine Instagram post should never read like a how-to. `heroImageUrl` and
+ * `productName` are picked per-order server-side (see lib/share-card-pool.ts)
+ * so different barterers' posts feature different products — a stream of
+ * these, once tagged/collaborator-added, reads as a varied lookbook rather
+ * than the same single photo shared by everyone.
  */
-async function buildShareCard(couponCode: string, siteDomain: string): Promise<Blob | null> {
+async function buildShareCard(
+  couponCode: string,
+  siteDomain: string,
+  heroImageUrl: string,
+  productName: string
+): Promise<Blob | null> {
   const canvas = document.createElement("canvas");
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
@@ -79,7 +88,7 @@ async function buildShareCard(couponCode: string, siteDomain: string): Promise<B
 
   const TOP_BAND = 260; // solid black — logo lives here, never over the photo
   const [hero, logo] = await Promise.all([
-    loadImage(HERO_IMAGE),
+    loadImage(heroImageUrl),
     loadImage(LOGO_IMAGE),
     ensureFontsReady(HEADLINE_FONT, BODY_FONT, DISPLAY_FONT),
   ]);
@@ -89,6 +98,28 @@ async function buildShareCard(couponCode: string, siteDomain: string): Promise<B
     const logoH = 168;
     const logoW = (logo.width / logo.height) * logoH;
     ctx.drawImage(logo, 56, (TOP_BAND - logoH) / 2, logoW, logoH);
+  }
+
+  // Product name tag, lookbook-style — small pill over the top-left of the
+  // photo, quiet enough not to compete with the model/product themselves.
+  if (productName) {
+    ctx.font = `700 22px ${BODY_FONT}`;
+    ctx.letterSpacing = "1px";
+    const label = productName.toUpperCase();
+    const padX = 16;
+    const textW = ctx.measureText(label).width;
+    const pillW = textW + padX * 2;
+    const pillH = 42;
+    const pillX = 56;
+    const pillY = TOP_BAND + 24;
+    ctx.fillStyle = "rgba(5,5,5,0.55)";
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, pillH / 2);
+    ctx.fill();
+    ctx.fillStyle = "#f7f7f4";
+    ctx.textAlign = "left";
+    ctx.fillText(label, pillX + padX, pillY + pillH / 2 + 7);
+    ctx.letterSpacing = "0px";
   }
 
   // Bottom gradient — the editorial-poster treatment that seats the tagline/code.
@@ -153,20 +184,24 @@ async function buildShareCard(couponCode: string, siteDomain: string): Promise<B
 
 export function ShareToInstagramButton({
   couponCode,
-  brandName,
   instagramHandle,
   siteUrl,
   requiredOrders,
+  heroImageUrl,
+  productName,
 }: {
   couponCode: string;
-  brandName: string;
   instagramHandle: string;
   siteUrl: string;
   requiredOrders: number;
+  heroImageUrl: string;
+  productName: string;
 }) {
   const [status, setStatus] = useState<"idle" | "building" | "shared" | "downloaded" | "copied">("idle");
   const [linkCopied, setLinkCopied] = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const blobRef = useRef<Blob | null>(null);
 
   const siteDomain = siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
   // The actual clickable mechanism: Instagram never makes caption text or an
@@ -177,9 +212,25 @@ export function ShareToInstagramButton({
   const shopLink = `${siteUrl.replace(/\/$/, "")}/?coupon=${couponCode}`;
   const caption = `See a brighter you 🌙 Shop ${siteDomain} and use my code ${couponCode} at checkout — tag ${instagramHandle} as collaborator when you post.`;
 
+  // Build the card once on mount so there's a real preview on the page —
+  // both so the barterer knows exactly what they're about to post before
+  // tapping Share, and so it isn't a total unknown hidden behind a click.
+  useEffect(() => {
+    let cancelled = false;
+    buildShareCard(couponCode, siteDomain, heroImageUrl, productName).then((blob) => {
+      if (cancelled || !blob) return;
+      blobRef.current = blob;
+      setPreviewUrl(URL.createObjectURL(blob));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couponCode, heroImageUrl, productName]);
+
   async function share() {
     setStatus("building");
-    const blob = await buildShareCard(couponCode, siteDomain);
+    const blob = blobRef.current ?? (await buildShareCard(couponCode, siteDomain, heroImageUrl, productName));
 
     if (blob) {
       const file = new File([blob], "moon-glasses-good-vibes.png", { type: "image/png" });
@@ -250,6 +301,15 @@ export function ShareToInstagramButton({
 
   return (
     <div>
+      {previewUrl && (
+        <div className="mb-4 max-w-[280px]">
+          <p className="mb-2 text-caption uppercase tracking-[0.1em] text-secondary-text">This is what gets posted</p>
+          <div className="relative aspect-[4/5] w-full overflow-hidden border border-ink/20">
+            <Image src={previewUrl} alt="Preview of your Instagram post" fill unoptimized className="object-cover" />
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={share}
@@ -258,11 +318,32 @@ export function ShareToInstagramButton({
       >
         {label}
       </button>
-      <p className="mt-2 max-w-[360px] text-caption text-secondary-text">
-        Post or Story — whichever you&apos;re confident can get you {requiredOrders} sales. Same image works
-        for both. When you post it, add {instagramHandle} as a collaborator (or tag us if collaborator
-        invites aren&apos;t available to you).
-      </p>
+
+      <div className="mt-4 border-t border-ink/10 pt-4">
+        <p className="text-caption font-bold uppercase tracking-[0.05em] text-ink">On Mobile</p>
+        <p className="mt-1 text-caption text-secondary-text">
+          Tap Share To Instagram — your phone&apos;s share sheet opens with Instagram as an option. Pick it,
+          then choose Post or Story (same image works for both, whichever you&apos;re confident can get you{" "}
+          {requiredOrders} sales). The caption below is added automatically; edit it if you like.
+        </p>
+      </div>
+
+      <div className="mt-3 border-t border-ink/10 pt-4">
+        <p className="text-caption font-bold uppercase tracking-[0.05em] text-ink">On Desktop</p>
+        <p className="mt-1 text-caption text-secondary-text">
+          Tap Share To Instagram — the image downloads and the caption is copied to your clipboard. Upload
+          the image from the Instagram app or instagram.com, then paste the caption in.
+        </p>
+      </div>
+
+      <div className="mt-3 border-t border-ink/10 pt-4">
+        <p className="text-caption font-bold uppercase tracking-[0.05em] text-ink">Adding Us As Collaborator</p>
+        <p className="mt-1 text-caption text-secondary-text">
+          While composing the post, tap &ldquo;Tag People&rdquo; → &ldquo;Invite Collaborator&rdquo; and add{" "}
+          {instagramHandle}. If that option isn&apos;t available to you, tag {instagramHandle} normally instead —
+          either way, it&apos;s what lets your post appear on our page too.
+        </p>
+      </div>
 
       <div className="mt-4 border-t border-ink/10 pt-4">
         <p className="text-caption text-secondary-text">Caption — copy it straight into the post:</p>

@@ -5,6 +5,7 @@ import { getBrandProfile } from "@/lib/brand";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { ShareToInstagramButton } from "@/components/checkout/ShareToInstagramButton";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import { getShareCardProductPool, pickShareCardProduct } from "@/lib/share-card-pool";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,13 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   const brand = await getBrandProfile();
   const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
   const isGiftFirst = order.barter_tier === "gift_first";
+
+  // A different model/product per order (seeded on the order id, so the
+  // same order always shows the same pick) — the point being that a stream
+  // of these posts, once tagged/collaborator-added, reads as a varied
+  // lookbook rather than the same single photo shared by every barterer.
+  const productPool = await getShareCardProductPool();
+  const shareProduct = pickShareCardProduct(productPool, order.id);
 
   let ordersSoFar = 0;
   if (order.barter_coupon_code) {
@@ -61,13 +69,20 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
         </>
       )}
       <div className="mt-5">
-        <ShareToInstagramButton
-          couponCode={order.barter_coupon_code}
-          brandName={brand.brandName}
-          instagramHandle={brand.instagramHandle}
-          siteUrl={brand.siteUrl}
-          requiredOrders={order.barter_required_orders}
-        />
+        {shareProduct ? (
+          <ShareToInstagramButton
+            couponCode={order.barter_coupon_code}
+            instagramHandle={brand.instagramHandle}
+            siteUrl={brand.siteUrl}
+            requiredOrders={order.barter_required_orders}
+            heroImageUrl={shareProduct.imageUrl}
+            productName={shareProduct.productName}
+          />
+        ) : (
+          <p className="text-caption text-secondary-text">
+            Share image isn&apos;t ready yet — check back in a moment.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -89,7 +104,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           </div>
           <ol className="mt-8 list-decimal space-y-3 pl-5 text-body-s text-ink">
             <li>Once it arrives, wear it and take a photo or Reel.</li>
-            <li>Post it on Instagram and add {tagLink} as a collaborator (or tag us if collaborator invites aren&apos;t available to you).</li>
+            <li>Post it on Instagram — full steps (mobile, desktop, and adding {tagLink} as a collaborator) are below.</li>
           </ol>
           <p className="mt-4 text-caption text-secondary-text">
             Please disclose the gifted relationship where required (e.g. &ldquo;#gifted&rdquo; or a
@@ -122,8 +137,8 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           <ol className="mt-8 list-decimal space-y-3 pl-5 text-body-s text-ink">
             <li>
               Share it your way — feed post or Story, whichever you&apos;re confident can get you{" "}
-              {order.barter_required_orders} buyers. Add {tagLink} as a collaborator (or tag us if
-              collaborator invites aren&apos;t available to you).
+              {order.barter_required_orders} buyers. Full steps (mobile, desktop, and adding {tagLink} as a
+              collaborator) are below.
             </li>
             <li>
               Share your code below with your followers — anyone who checks out with it counts
