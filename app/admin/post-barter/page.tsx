@@ -19,20 +19,59 @@ type BarterOrder = {
   orders_so_far: number;
 };
 
+type LeaderboardRow = {
+  handle: string | null;
+  tier: "gift_first" | "sell_first";
+  followerCount: number | null;
+  code: string | null;
+  ordersDriven: number;
+  qualified: boolean;
+};
+
+type Stats = {
+  from: string | null;
+  to: string | null;
+  totalBarterers: number;
+  tierCounts: { sell_first: number; gift_first: number };
+  qualifiedCount: number;
+  redeemedOrderCount: number;
+  revenueTotal: number;
+  feeRatePercent: number;
+  feeAmount: number;
+  leaderboard: LeaderboardRow[];
+};
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
 }
 
+function rupees(n: number) {
+  return `₹${n.toLocaleString("en-IN")}`;
+}
+
 export default function AdminPostBarterPage() {
   const [orders, setOrders] = useState<BarterOrder[]>([]);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
-  useEffect(() => {
-    fetch("/api/admin/post-barter")
+  function load() {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    setLoading(true);
+    fetch(`/api/admin/post-barter?${params.toString()}`)
       .then((res) => res.json())
-      .then((data) => setOrders(data.orders ?? []))
+      .then((data) => {
+        setOrders(data.orders ?? []);
+        setStats(data.stats ?? null);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- refetching from the API on filter change, not derived state
+  useEffect(load, [from, to]);
 
   const pending = orders.filter((o) => !o.barter_qualified_at);
   const qualified = orders.filter((o) => o.barter_qualified_at);
@@ -46,6 +85,97 @@ export default function AdminPostBarterPage() {
         Orders paid for with an Instagram post instead of currency. Ships automatically once a
         customer&apos;s code clears its required-orders line — nothing to approve manually.
       </p>
+
+      <div className="mt-6 flex flex-wrap items-end gap-3 border border-divider bg-surface-alt p-4">
+        <label className="flex flex-col gap-1 text-caption text-secondary-text">
+          From
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="border border-ink/30 bg-surface px-2 py-1.5 text-body-s text-ink"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-caption text-secondary-text">
+          To
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="border border-ink/30 bg-surface px-2 py-1.5 text-body-s text-ink"
+          />
+        </label>
+        {(from || to) && (
+          <button
+            type="button"
+            onClick={() => {
+              setFrom("");
+              setTo("");
+            }}
+            className="border border-ink/30 px-3 py-1.5 font-sans text-micro uppercase tracking-[0.05em] text-ink hover:border-ink"
+          >
+            Clear — All Time
+          </button>
+        )}
+      </div>
+
+      {stats && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Used This Range" value={stats.totalBarterers.toLocaleString("en-IN")} />
+          <StatCard
+            label="Under 5,000 / 5,000+"
+            value={`${stats.tierCounts.sell_first} / ${stats.tierCounts.gift_first}`}
+          />
+          <StatCard label="Paid Orders Via Codes" value={stats.redeemedOrderCount.toLocaleString("en-IN")} />
+          <StatCard label="Revenue Via Codes" value={rupees(stats.revenueTotal)} />
+          <StatCard
+            label={`Platform Service Fee (${stats.feeRatePercent}%)`}
+            value={rupees(stats.feeAmount)}
+            highlight
+          />
+          <StatCard label="Qualified & Shipped" value={stats.qualifiedCount.toLocaleString("en-IN")} />
+        </div>
+      )}
+
+      {stats && stats.leaderboard.length > 0 && (
+        <div className="mt-10">
+          <h2 className="font-display text-heading-s uppercase text-ink">Leaderboard — By Orders Driven</h2>
+          <div className="mt-4 overflow-x-auto border border-divider">
+            <table className="w-full text-left text-caption">
+              <thead>
+                <tr className="border-b border-divider text-secondary-text">
+                  <th className="px-3 py-2">#</th>
+                  <th className="px-3 py-2">Handle</th>
+                  <th className="px-3 py-2">Tier</th>
+                  <th className="px-3 py-2">Followers</th>
+                  <th className="px-3 py-2">Code</th>
+                  <th className="px-3 py-2">Orders Driven</th>
+                  <th className="px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.leaderboard.map((row, i) => (
+                  <tr key={`${row.code}-${i}`} className="border-b border-divider/50 last:border-0">
+                    <td className="px-3 py-2 text-secondary-text">{i + 1}</td>
+                    <td className="px-3 py-2 text-ink">@{row.handle}</td>
+                    <td className="px-3 py-2">
+                      <span className={row.tier === "gift_first" ? "text-tan-gold" : "text-secondary-text"}>
+                        {row.tier === "gift_first" ? "Gift first" : "Sell first"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-secondary-text">
+                      {row.followerCount?.toLocaleString("en-IN") ?? "?"}
+                    </td>
+                    <td className="px-3 py-2 text-ink">{row.code}</td>
+                    <td className="px-3 py-2 font-bold text-ink">{row.ordersDriven}</td>
+                    <td className="px-3 py-2 text-secondary-text">{row.qualified ? "Qualified" : "In progress"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <p className="mt-8 text-body-s text-secondary-text">Loading…</p>
@@ -69,6 +199,15 @@ export default function AdminPostBarterPage() {
         </>
       )}
     </main>
+  );
+}
+
+function StatCard({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={`border p-4 ${highlight ? "border-tan-gold bg-surface-alt" : "border-divider"}`}>
+      <p className="text-micro uppercase tracking-[0.1em] text-secondary-text">{label}</p>
+      <p className={`mt-1.5 font-display text-heading-s ${highlight ? "text-tan-gold" : "text-ink"}`}>{value}</p>
+    </div>
   );
 }
 
