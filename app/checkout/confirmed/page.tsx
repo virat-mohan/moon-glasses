@@ -133,7 +133,7 @@ export default function OrderConfirmedPage() {
     <>
       <main className="mx-auto w-full max-w-[600px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
         <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">
-          {upiPending ? "Awaiting Payment" : barter ? <PayWithAPostMark withHint /> : paid ? "Order Confirmed" : "Order Sent"}
+          {upiPending ? "Awaiting Payment" : barter ? <PayWithAPostMark linked /> : paid ? "Order Confirmed" : "Order Sent"}
         </p>
         <CheckoutSteps current="confirmed" />
         <h1 className="mt-6 font-display text-heading-xl uppercase text-ink md:text-display-m">

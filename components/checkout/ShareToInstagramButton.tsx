@@ -101,33 +101,52 @@ async function buildShareCard(couponCode: string, siteDomain: string): Promise<B
 
   ctx.textAlign = "center";
 
-  // Elegant single line — established brand copy (see EditorialSplit's
-  // "Made For After Dark" eyebrow) instead of a generic "shop the drop". Set
-  // in the same editorial serif as the PayWithAPostMark wordmark (see
-  // app/layout.tsx) — smaller and quieter than the domain below it, which is
-  // the actual thing a viewer needs to act on.
+  // The site's own tagline ("MOON GLASSES™ — See A Brighter You") instead of
+  // a generic mood line — set in the editorial serif reserved for the
+  // PayWithAPostMark wordmark (see app/layout.tsx).
   ctx.fillStyle = "#e7c77a";
   ctx.font = `italic 700 30px ${DISPLAY_FONT}`;
   ctx.letterSpacing = "3px";
-  ctx.fillText("MADE FOR AFTER DARK", CANVAS_W / 2, CANVAS_H - 320);
+  ctx.fillText("SEE A BRIGHTER YOU", CANVAS_W / 2, CANVAS_H - 356);
+  ctx.letterSpacing = "0px";
+
+  // The domain, set in the same face as the logo/brand wordmark (Space
+  // Grotesk — see Navbar's "MOON GLASSES" treatment) instead of the body
+  // font, so it reads as the brand name rather than plain link text.
+  ctx.fillStyle = "#f7f7f4";
+  ctx.font = `700 44px ${HEADLINE_FONT}`;
+  ctx.letterSpacing = "2px";
+  ctx.fillText(siteDomain.toUpperCase(), CANVAS_W / 2, CANVAS_H - 296);
+  ctx.letterSpacing = "0px";
+
+  // Code — its own voucher-style panel (gold-bordered box + label) instead
+  // of loose centered text, so it reads as a real redeemable code rather
+  // than another line of copy.
+  const boxW = 640;
+  const boxH = 132;
+  const boxX = (CANVAS_W - boxW) / 2;
+  const boxY = CANVAS_H - 218;
+  ctx.strokeStyle = "#e7c77a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, boxW, boxH, 6);
+  ctx.stroke();
+
+  ctx.fillStyle = "#e7c77a";
+  ctx.font = `700 22px ${BODY_FONT}`;
+  ctx.letterSpacing = "5px";
+  ctx.fillText("YOUR CODE", CANVAS_W / 2, boxY + 38);
   ctx.letterSpacing = "0px";
 
   ctx.fillStyle = "#f7f7f4";
-  ctx.font = `700 46px ${BODY_FONT}`;
-  ctx.fillText(siteDomain, CANVAS_W / 2, CANVAS_H - 262);
-
-  // Code — the focal point, set in the body font (not the display face) so
-  // it reads as a distinct, typed-in element rather than more headline type.
-  const codeY = CANVAS_H - 150;
-  ctx.fillStyle = "#f7f7f4";
-  ctx.font = `700 64px ${BODY_FONT}`;
-  ctx.letterSpacing = "10px";
-  ctx.fillText(couponCode, CANVAS_W / 2, codeY);
+  ctx.font = `700 56px ${BODY_FONT}`;
+  ctx.letterSpacing = "9px";
+  ctx.fillText(couponCode, CANVAS_W / 2, boxY + 96);
   ctx.letterSpacing = "0px";
 
   ctx.fillStyle = "#8b8b86";
-  ctx.font = `400 28px ${BODY_FONT}`;
-  ctx.fillText("Use my code at checkout", CANVAS_W / 2, codeY + 56);
+  ctx.font = `400 26px ${BODY_FONT}`;
+  ctx.fillText("Use my code at checkout", CANVAS_W / 2, boxY + boxH + 46);
 
   return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png", 0.95));
 }

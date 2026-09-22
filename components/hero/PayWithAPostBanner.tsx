@@ -15,7 +15,7 @@ export function PayWithAPostBanner() {
       <div className="mx-auto max-w-[720px] text-center">
         <p className="font-sans text-micro uppercase tracking-[0.3em] text-tan-gold">New</p>
         <h2 className="mt-4 text-display-m">
-          <PayWithAPostMark withHint />
+          <PayWithAPostMark />
         </h2>
         <p className="mt-4 font-sans text-body-s text-secondary-text">
           Skip the payment — post about us on Instagram instead. Choose it right at checkout, no
@@ -41,12 +41,20 @@ export function PayWithAPostBanner() {
           </div>
         </div>
 
-        <Link
-          href="/#shop"
-          className="mt-10 inline-block border border-ink bg-ink px-8 py-3.5 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink"
-        >
-          Shop &amp; <PayWithAPostMark />
-        </Link>
+        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/#shop"
+            className="inline-block border border-ink bg-ink px-8 py-3.5 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink"
+          >
+            Shop &amp; <PayWithAPostMark />
+          </Link>
+          <Link
+            href="/"
+            className="font-sans text-body-s text-secondary-text underline underline-offset-4 transition-colors duration-200 hover:text-ink"
+          >
+            Continue Shopping
+          </Link>
+        </div>
       </div>
     </section>
   );
