@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import { GiftFirstUrgencyBadge } from "@/components/checkout/GiftFirstUrgencyBadge";
 
 /**
  * Homepage teaser for the Pay With A Post checkout mechanic — its own
@@ -40,6 +41,8 @@ export function PayWithAPostBanner() {
             </p>
           </div>
         </div>
+
+        <GiftFirstUrgencyBadge className="mt-6" />
 
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link

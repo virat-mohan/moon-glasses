@@ -48,7 +48,8 @@ function startOfTodayIst(): string {
   return new Date(`${istDateStr}T00:00:00+05:30`).toISOString();
 }
 
-async function giftFirstCountToday(): Promise<number> {
+/** Exported for the public availability endpoint (app/api/checkout/post-barter/gift-first-availability) that powers the on-site urgency countdown — how many Gift First spots are left today. */
+export async function giftFirstCountToday(): Promise<number> {
   const supabase = getSupabaseServerClient();
   const { count } = await supabase
     .from("orders")

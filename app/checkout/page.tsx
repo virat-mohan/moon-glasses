@@ -14,6 +14,7 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import { GiftFirstUrgencyBadge } from "@/components/checkout/GiftFirstUrgencyBadge";
 
 const WHATSAPP_NUMBER = "918800339125";
 
@@ -998,6 +999,7 @@ export default function CheckoutPage() {
 
             {unitCount === 1 ? (
               <div className="mt-4 border border-ink/30 p-4">
+                <GiftFirstUrgencyBadge className="mb-2" />
                 <button
                   type="button"
                   onClick={() => setPaymentType(paymentType === "post_barter" ? "prepaid" : "post_barter")}

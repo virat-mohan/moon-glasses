@@ -87,6 +87,15 @@ const GROUPS: { label: string; fields: Field[] }[] = [
     ],
   },
   {
+    label: "Pay With A Post",
+    fields: [
+      { key: "POST_BARTER_MIN_FOLLOWERS", label: "Gift First Follower Threshold", hint: "Instagram accounts at or above this follower count qualify for Gift First (ship now, post after) instead of Post First. Defaults to 5,000 if unset." },
+      { key: "POST_BARTER_GIFT_FIRST_DAILY_CAP", label: "Gift First Daily Cap", hint: "Max number of Gift First orders (real inventory shipped on trust, before payment) accepted per calendar day (IST). Anyone over the follower threshold once this is hit for the day is safely routed to Post First instead. Also drives the \"Only N spots left today\" urgency badge shown on the homepage and at checkout. Defaults to 10 if unset." },
+      { key: "POST_BARTER_REQUIRED_ORDERS", label: "Post First — Orders Required To Qualify", hint: "How many real, paid orders a Post First shopper's code needs to drive before their own order ships free. Defaults to 3 if unset." },
+      { key: "POST_BARTER_FRIEND_DISCOUNT_RUPEES", label: "Friend Discount On Redemption (₹)", hint: "Discount a friend gets for checking out with someone's Pay With A Post code — codes are attribution-only by design, so this is 0 (full price) unless changed. Defaults to 0 if unset." },
+    ],
+  },
+  {
     label: "Finance",
     fields: [
       { key: "COGS_PER_UNIT_RUPEES", label: "Cost Per Unit (₹)", hint: "What you pay the vendor per pair, used to compute COGS on the P&L page. Defaults to ₹250 if unset." },
