@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { confirmUpiOrderPayment } from "@/lib/upi-payment";
 
-/** Manual confirmation step — an admin checks their bank/UPI app for the transfer, then clicks this. No webhook exists for a raw UPI transfer, so this is the only thing that ever moves a upi_qr order from unpaid to paid. */
+/** Manual confirmation step — an admin checks their bank/UPI app (or a flagged screenshot in /admin/payment-confirmations) for the transfer, then clicks this. The only other path to "paid" is lib/payment-auto-confirm.ts's automatic match on a WhatsApp screenshot; this route is the human backstop for everything that doesn't clear that bar. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {

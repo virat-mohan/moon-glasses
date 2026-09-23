@@ -6,6 +6,7 @@ const NAV_SECTIONS = [
     links: [
       { href: "/admin/orders", label: "Orders" },
       { href: "/admin/orders/new", label: "Add Manual Order" },
+      { href: "/admin/payment-confirmations", label: "WhatsApp Payment Confirmations" },
       { href: "/admin/preorders", label: "Pre-Orders (Drop)" },
     ],
   },

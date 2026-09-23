@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSetting } from "@/lib/settings";
 import { logInboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
+import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
 
 /**
  * MSG91's inbound-WhatsApp webhook — configure this URL under MSG91
@@ -40,13 +41,25 @@ export async function POST(request: Request) {
   }
 
   try {
-    await logInboundWhatsAppMessage({
+    const { messageId } = await logInboundWhatsAppMessage({
       phone: String(phone),
       body: text ?? "",
       customerName: name,
       mediaUrl,
       providerMessageId: providerMessageId ? String(providerMessageId) : null,
     });
+
+    // Awaited (not fire-and-forget) deliberately — on a serverless runtime
+    // the process can be frozen/killed right after the response is sent,
+    // which would silently drop a payment-critical check. A few extra
+    // seconds on the webhook response is the safer trade. Errors are
+    // caught and logged inside processInboundPaymentScreenshot itself,
+    // never thrown here.
+    if (mediaUrl) {
+      await processInboundPaymentScreenshot({ phone: String(phone), mediaUrl: String(mediaUrl), conversationMessageId: messageId }).catch(
+        (err) => console.error("payment-auto-confirm: unhandled error", err)
+      );
+    }
   } catch (err) {
     console.error("Failed to log inbound WhatsApp message", err);
   }

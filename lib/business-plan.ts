@@ -1,9 +1,18 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
 import { getAllChapters } from "@/lib/chapters-dynamic";
-import type { BusinessPlanDrivers } from "@/lib/business-plan-calc";
+import type { BusinessPlanDrivers, CategoryDriver, ShippingPolicy } from "@/lib/business-plan-calc";
 
-export { computePlanFromDrivers, DRIVER_FIELDS, type BusinessPlanDrivers, type MonthPlan, type ComputedPlan } from "@/lib/business-plan-calc";
+export { computePlanFromDrivers, DRIVER_FIELDS } from "@/lib/business-plan-calc";
+export type {
+  BusinessPlanDrivers,
+  MonthPlan,
+  ComputedPlan,
+  CategoryDriver,
+  CityDriver,
+  ShippingPolicy,
+  FixedCostLine,
+} from "@/lib/business-plan-calc";
 
 // ============================================================
 // Forward-looking, driver-based quarterly benchmark P&L — distinct from
@@ -19,15 +28,29 @@ export { computePlanFromDrivers, DRIVER_FIELDS, type BusinessPlanDrivers, type M
 // not built yet.
 // ============================================================
 
+/** Deterministic setup a human chooses BEFORE generation — never researched, always passed straight through. */
+export type PlanSetup = {
+  targetCities: string[];
+  shippingPolicy: ShippingPolicy;
+};
+
 // ---- Deterministic grounding (fetched BEFORE any model call) ----
 
-async function fetchCatalogSummary() {
+/** Groups the real catalog by material/price tier — the only real "categories" this store has. Ground truth, never guessed. */
+async function fetchCategoryGroundTruth(): Promise<Omit<CategoryDriver, "shareOfOrdersPct" | "productCostPct">[]> {
   const chapters = await getAllChapters();
-  const prices = chapters.map((c) => c.price).filter((p): p is number => typeof p === "number" && p > 0);
-  const min = prices.length ? Math.min(...prices) : null;
-  const max = prices.length ? Math.max(...prices) : null;
-  const avg = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : null;
-  return { productCount: chapters.length, minPrice: min, maxPrice: max, avgPrice: avg };
+  const bySeries = new Map<"Plastic" | "Metal", { price: number; count: number }>();
+  for (const c of chapters) {
+    const existing = bySeries.get(c.series);
+    if (existing) existing.count += 1;
+    else bySeries.set(c.series, { price: c.price, count: 1 });
+  }
+  return Array.from(bySeries.entries()).map(([series, { price, count }]) => ({
+    series,
+    label: `${series === "Plastic" ? "Acetate" : "Metal"} — ₹${price}`,
+    priceRupees: price,
+    skuCount: count,
+  }));
 }
 
 /** Real trailing-90-day performance, if any — a live store's own history beats a researched benchmark. */
@@ -65,12 +88,29 @@ async function fetchActualBaseline() {
   };
 }
 
-function extractDriversFromToolUse(content: { type: string; name?: string; input?: unknown }[]): BusinessPlanDrivers {
+type ModelDrivers = {
+  categories: { series: "Plastic" | "Metal"; shareOfOrdersPct: number; productCostPct: number }[];
+  cities: { name: string; monthlyOrders: [number, number, number]; cacRupeesPerOrder: number; rationale: string }[];
+  packagingCostPerOrderRupees: number;
+  adminTechPct: number;
+  codSharePct: number;
+  paymentGatewayFeePct: number;
+  codHandlingFeePct: number;
+  rtoRatePct: number;
+  rtoCostPerOrderRupees: number;
+  ndrCostPerOrderRupees: number;
+  shippingCostPerOrderRupees: number;
+  postBarterSharePct: number;
+  fixedCostLines: { label: string; amountRupees: number }[];
+  rationale: BusinessPlanDrivers["rationale"];
+};
+
+function extractDriversFromToolUse(content: { type: string; name?: string; input?: unknown }[]): ModelDrivers {
   const toolUse = content.find((b) => b.type === "tool_use" && b.name === "submit_business_plan_drivers");
   if (!toolUse) {
     throw new Error("Claude did not call submit_business_plan_drivers — no structured drivers returned");
   }
-  return toolUse.input as BusinessPlanDrivers;
+  return toolUse.input as ModelDrivers;
 }
 
 const SUBMIT_TOOL = {
@@ -80,110 +120,161 @@ const SUBMIT_TOOL = {
   input_schema: {
     type: "object" as const,
     properties: {
-      months: {
+      categories: {
         type: "array",
-        minItems: 3,
-        maxItems: 3,
-        items: { type: "object", properties: { orders: { type: "number" } }, required: ["orders"] },
-        description: "Orders for month 1, 2, 3 of the quarter — a realistic ramp, not a flat number.",
+        description: "One entry for EVERY category listed in the prompt (by series), no more, no fewer.",
+        items: {
+          type: "object",
+          properties: {
+            series: { type: "string", enum: ["Plastic", "Metal"] },
+            shareOfOrdersPct: { type: "number", description: "% of total orders this category makes up. All categories together should sum to 100." },
+            productCostPct: { type: "number", description: "Raw product/manufacturing cost as % of THIS category's price — materials differ, so this can differ from other categories." },
+          },
+          required: ["series", "shareOfOrdersPct", "productCostPct"],
+        },
       },
-      aovRupees: { type: "number" },
-      cogsPct: { type: "number" },
-      cacPct: { type: "number" },
+      cities: {
+        type: "array",
+        description: "One entry for EVERY city listed in the prompt as a target city, no more, no fewer.",
+        items: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            monthlyOrders: {
+              type: "array",
+              minItems: 3,
+              maxItems: 3,
+              items: { type: "number" },
+              description: "Orders from this city for month 1, 2, 3 — a realistic ramp.",
+            },
+            cacRupeesPerOrder: { type: "number", description: "Blended paid customer acquisition cost per order, in rupees, specific to this city's competition/CPMs." },
+            rationale: { type: "string" },
+          },
+          required: ["name", "monthlyOrders", "cacRupeesPerOrder", "rationale"],
+        },
+      },
+      packagingCostPerOrderRupees: { type: "number" },
       adminTechPct: { type: "number" },
       codSharePct: { type: "number" },
       paymentGatewayFeePct: { type: "number" },
       codHandlingFeePct: { type: "number" },
       rtoRatePct: { type: "number" },
       rtoCostPerOrderRupees: { type: "number" },
+      ndrCostPerOrderRupees: { type: "number" },
       shippingCostPerOrderRupees: { type: "number" },
-      packagingCostPerOrderRupees: { type: "number" },
-      fixedMonthlyCostRupees: { type: "number" },
       postBarterSharePct: { type: "number" },
+      fixedCostLines: {
+        type: "array",
+        description:
+          "Named monthly fixed costs — e.g. a performance marketing agency/freelancer retainer (distinct from the per-order CAC spend itself), tooling/SaaS, ops freelancers, a base 3PL/warehouse fee. Propose realistic named lines and amounts for an early-stage Indian D2C brand, don't just lump into one number.",
+        items: {
+          type: "object",
+          properties: { label: { type: "string" }, amountRupees: { type: "number" } },
+          required: ["label", "amountRupees"],
+        },
+      },
       rationale: {
         type: "object",
         properties: {
-          ordersRamp: { type: "string" },
-          aov: { type: "string" },
-          cogs: { type: "string" },
-          cac: { type: "string" },
+          categoryMix: { type: "string" },
           adminTech: { type: "string" },
           codShare: { type: "string" },
           paymentGatewayFee: { type: "string" },
           codHandlingFee: { type: "string" },
           rtoRate: { type: "string" },
           rtoCost: { type: "string" },
+          ndrCost: { type: "string" },
           shippingCost: { type: "string" },
           packagingCost: { type: "string" },
           postBarter: { type: "string" },
+          fixedCosts: { type: "string" },
         },
         required: [
-          "ordersRamp",
-          "aov",
-          "cogs",
-          "cac",
+          "categoryMix",
           "adminTech",
           "codShare",
           "paymentGatewayFee",
           "codHandlingFee",
           "rtoRate",
           "rtoCost",
+          "ndrCost",
           "shippingCost",
           "packagingCost",
           "postBarter",
+          "fixedCosts",
         ],
       },
     },
     required: [
-      "months",
-      "aovRupees",
-      "cogsPct",
-      "cacPct",
+      "categories",
+      "cities",
+      "packagingCostPerOrderRupees",
       "adminTechPct",
       "codSharePct",
       "paymentGatewayFeePct",
       "codHandlingFeePct",
       "rtoRatePct",
       "rtoCostPerOrderRupees",
+      "ndrCostPerOrderRupees",
       "shippingCostPerOrderRupees",
-      "packagingCostPerOrderRupees",
-      "fixedMonthlyCostRupees",
       "postBarterSharePct",
+      "fixedCostLines",
       "rationale",
     ],
   },
 };
 
-export async function generateBusinessPlanDrivers(quarterStart: string): Promise<BusinessPlanDrivers> {
+export async function generateBusinessPlanDrivers(quarterStart: string, setup: PlanSetup): Promise<BusinessPlanDrivers> {
   const apiKey = await getSetting("ANTHROPIC_API_KEY");
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY is not set — add it in /admin/settings first");
   }
+  if (setup.targetCities.length === 0) {
+    throw new Error("Add at least one target city before generating");
+  }
 
   // 1. Deterministic grounding — fetched before any model call, never guessed at.
-  const [catalog, baseline] = await Promise.all([fetchCatalogSummary(), fetchActualBaseline()]);
+  const [categoryTruth, baseline] = await Promise.all([fetchCategoryGroundTruth(), fetchActualBaseline()]);
 
   const baselineBlock = baseline.hasData
-    ? `ACTUAL RECENT PERFORMANCE (trailing 90 days, ${baseline.orderCount} real orders — use this as your grounded starting point, and only deviate from it where your research gives a specific reason, e.g. a planned ramp):
-- Orders/month (recent run-rate): ${baseline.ordersPerMonth}
+    ? `ACTUAL RECENT PERFORMANCE (trailing 90 days, ${baseline.orderCount} real orders — use this as a grounded starting point, and only deviate from it where your research gives a specific reason, e.g. a planned ramp or new target cities):
+- Orders/month (recent run-rate, all cities combined): ${baseline.ordersPerMonth}
 - Average order value: ₹${baseline.avgOrderValueRupees}
 - COD share of all orders: ${baseline.codSharePctOfAllOrders}%
 - "Pay With A Post" share of all orders: ${baseline.postBarterSharePct}%
 - RTO rate of COD orders: ${baseline.rtoRatePctOfCod}%`
     : `No meaningful order history yet (${baseline.orderCount} orders in the last 90 days) — treat this as a new/early-stage store and rely on researched category benchmarks instead of an internal baseline.`;
 
-  const prompt = `You are building a 3-month benchmark P&L forecast for MOON GLASSES, a direct-to-consumer sunglasses brand selling in India (₹1,499 price point, sold via its own website — moon-glasses.store — not a marketplace). The quarter being forecast starts ${quarterStart}.
+  const categoryBlock = categoryTruth
+    .map((c) => `- ${c.label} (${c.skuCount} SKUs) — series key: "${c.series}"`)
+    .join("\n");
 
-OUR PRODUCT CATALOG (real, from our own database — ground truth, not for you to estimate):
-- ${catalog.productCount} SKUs, priced ₹${catalog.minPrice}–₹${catalog.maxPrice} (average ₹${catalog.avgPrice})
+  const shippingBlock = `SHIPPING & PAYMENT POLICY (fixed by the business, not for you to change):
+- Prepaid orders: ${setup.shippingPolicy.prepaidMode === "free" ? "shipping is FREE to the customer" : `customer is charged ₹${setup.shippingPolicy.prepaidChargeRupees} shipping`}.
+- Cash on Delivery: ${
+    setup.shippingPolicy.codEnabled
+      ? setup.shippingPolicy.codMode === "free"
+        ? "ENABLED, shipping is FREE to the customer"
+        : `ENABLED, customer is charged ₹${setup.shippingPolicy.codChargeRupees} shipping`
+      : "NOT offered at all this quarter — set codSharePct to 0 and give every COD-related driver (codSharePct, codHandlingFeePct, rtoRatePct, rtoCostPerOrderRupees, ndrCostPerOrderRupees) a value of 0."
+  }`;
+
+  const prompt = `You are building a 3-month benchmark P&L forecast for MOON GLASSES, a direct-to-consumer sunglasses brand selling in India via its own website (moon-glasses.store, not a marketplace). The quarter being forecast starts ${quarterStart}.
+
+TARGET CITIES for this quarter's push (real input from the business — plan volume and CAC per city, since both vary a lot by market): ${setup.targetCities.join(", ")}
+
+OUR REAL PRODUCT CATEGORIES (from our own database — ground truth prices/SKU counts, not for you to estimate):
+${categoryBlock}
+
+${shippingBlock}
 
 ${baselineBlock}
 
-Use web search to ground the drivers below in real, current data: Indian D2C eyewear/fashion category sizing and growth rates, competitor pricing and CAC benchmarks, India COD-vs-prepaid order share and COD RTO rate benchmarks for fashion/apparel e-commerce, typical Indian payment gateway fees (Razorpay/Paytm-type), typical courier/shipping cost per order for a ~150-250g package within India, and typical D2C packaging cost per order. Cite what you find in each rationale. If you can't find solid data for a specific driver, say so explicitly in that driver's rationale and state you're using a general industry benchmark instead — never present a guess as if it were researched.
+Use web search to ground the drivers below in real, current data: Indian D2C eyewear/fashion category sizing and growth, competitor pricing, city-level customer acquisition cost benchmarks for fashion/D2C performance marketing in each target city (metro vs. tier-2 CPMs differ a lot), India COD-vs-prepaid share and COD RTO/NDR rate benchmarks for fashion e-commerce, typical Indian payment gateway fees, typical acetate vs. metal eyewear manufacturing cost as a % of retail price, typical courier cost per order within India, typical D2C packaging cost per order, and typical fixed monthly costs (retainers, tooling, freelancers) for an early-stage Indian D2C brand. Cite what you find in each rationale. If you can't find solid data for a specific driver, say so explicitly in that driver's rationale and state you're using a general industry benchmark instead — never present a guess as if it were researched.
 
-One additional real mechanic unique to this store: "Pay With A Post" — instead of paying, a shopper with a real Instagram following gets the product for free in exchange for posting about it and driving referral orders via their own coupon code. Estimate what share of total orders will realistically go through this mechanic given the baseline above (or, if no baseline, a conservative estimate for a new program), and note its cost is the full retail value of the product given away (already handled in our own cost model — you're only responsible for estimating the SHARE of orders, in postBarterSharePct).
+One additional real mechanic unique to this store: "Pay With A Post" — instead of paying, a shopper with a real Instagram following gets the product for free in exchange for posting about it and driving referral orders via their own coupon code. Estimate what share of total orders will realistically go through this mechanic (postBarterSharePct) given the baseline above (or a conservative estimate if there's no baseline).
 
-Then call submit_business_plan_drivers exactly once with your final drivers and rationale. Do not output final rupee totals or profit numbers yourself — only the drivers. A human will edit these and a deterministic formula computes the P&L from them.`;
+Then call submit_business_plan_drivers exactly once with your final drivers and rationale — one categories entry per category listed above, one cities entry per target city listed above, no more and no fewer. Do not output final rupee totals or profit numbers yourself — only the drivers. A human will edit these and a deterministic formula computes the P&L from them.`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -199,7 +290,7 @@ Then call submit_business_plan_drivers exactly once with your final drivers and 
       tools: [
         // Tool type as of today (2026-09-23) per Anthropic's docs — verify
         // this hasn't changed before relying on it in production.
-        { type: "web_search_20250305", name: "web_search", max_uses: 6 },
+        { type: "web_search_20250305", name: "web_search", max_uses: 8 },
         SUBMIT_TOOL,
       ],
       tool_choice: { type: "auto" },
@@ -208,7 +299,37 @@ Then call submit_business_plan_drivers exactly once with your final drivers and 
   if (!res.ok) throw new Error(`Claude API error: ${res.status} ${await res.text()}`);
 
   const data = await res.json();
-  return extractDriversFromToolUse(data.content ?? []);
+  const modelDrivers = extractDriversFromToolUse(data.content ?? []);
+
+  // Merge: ground truth (price/skuCount/label) + setup (targetCities/shippingPolicy) are
+  // never taken from the model, only its researched %s/rupee estimates are.
+  const categories: CategoryDriver[] = categoryTruth.map((truth) => {
+    const fromModel = modelDrivers.categories.find((c) => c.series === truth.series);
+    return {
+      ...truth,
+      shareOfOrdersPct: fromModel?.shareOfOrdersPct ?? Math.round(100 / categoryTruth.length),
+      productCostPct: fromModel?.productCostPct ?? 40,
+    };
+  });
+
+  return {
+    targetCities: setup.targetCities,
+    shippingPolicy: setup.shippingPolicy,
+    categories,
+    cities: modelDrivers.cities,
+    packagingCostPerOrderRupees: modelDrivers.packagingCostPerOrderRupees,
+    adminTechPct: modelDrivers.adminTechPct,
+    codSharePct: setup.shippingPolicy.codEnabled ? modelDrivers.codSharePct : 0,
+    paymentGatewayFeePct: modelDrivers.paymentGatewayFeePct,
+    codHandlingFeePct: modelDrivers.codHandlingFeePct,
+    rtoRatePct: modelDrivers.rtoRatePct,
+    rtoCostPerOrderRupees: modelDrivers.rtoCostPerOrderRupees,
+    ndrCostPerOrderRupees: modelDrivers.ndrCostPerOrderRupees,
+    shippingCostPerOrderRupees: modelDrivers.shippingCostPerOrderRupees,
+    postBarterSharePct: modelDrivers.postBarterSharePct,
+    fixedCostLines: modelDrivers.fixedCostLines.map((l, i) => ({ id: `fc-${i}-${Date.now()}`, ...l })),
+    rationale: modelDrivers.rationale,
+  };
 }
 
 // ---- Storage ----

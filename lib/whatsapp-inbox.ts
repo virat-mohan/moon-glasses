@@ -53,15 +53,20 @@ export async function logInboundWhatsAppMessage(input: {
     preview: input.body || "(media)",
     bumpUnread: true,
   });
-  await supabase.from("whatsapp_conversation_messages").insert({
-    conversation_id: conversationId,
-    direction: "inbound",
-    body: input.body || null,
-    media_url: input.mediaUrl ?? null,
-    provider_message_id: input.providerMessageId ?? null,
-    status: "received",
-  });
-  return conversationId;
+  const { data: message, error } = await supabase
+    .from("whatsapp_conversation_messages")
+    .insert({
+      conversation_id: conversationId,
+      direction: "inbound",
+      body: input.body || null,
+      media_url: input.mediaUrl ?? null,
+      provider_message_id: input.providerMessageId ?? null,
+      status: "received",
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { conversationId, messageId: message.id as string };
 }
 
 /** Logs an admin's outbound reply against an existing conversation. */

@@ -1228,3 +1228,32 @@ create table if not exists business_plans (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- ============================================================
+-- Auto-detecting a raw UPI QR payment from a WhatsApp screenshot — see
+-- lib/payment-auto-confirm.ts. A screenshot is never trusted as proof by
+-- itself (unlike a gateway webhook): it only auto-confirms an order when
+-- the sender's phone matches exactly one unpaid pending UPI order, the
+-- extracted amount matches that order's total, and the extracted UTR has
+-- never been used before. Anything less certain is logged here as
+-- needs_review rather than guessed at.
+-- ============================================================
+alter table orders add column if not exists upi_utr text;
+create unique index if not exists orders_upi_utr_idx on orders (upi_utr) where upi_utr is not null;
+
+create table if not exists whatsapp_payment_confirmations (
+  id uuid primary key default gen_random_uuid(),
+  conversation_message_id uuid references whatsapp_conversation_messages(id) on delete set null,
+  phone text not null,
+  media_url text,
+  extracted_amount_rupees numeric,
+  extracted_utr text,
+  extracted_payee text,
+  extracted_raw jsonb,
+  matched_order_id uuid references orders(id) on delete set null,
+  match_status text not null, -- auto_confirmed | needs_review | no_match | not_a_payment_screenshot | extraction_failed
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists whatsapp_payment_confirmations_status_idx
+  on whatsapp_payment_confirmations (match_status, created_at);
