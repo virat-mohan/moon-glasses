@@ -14,6 +14,7 @@ import {
   sendPostBarterProgressEmail,
   sendOrderNotificationEmail,
 } from "@/lib/email";
+import { sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
 
 const DEFAULT_MIN_FOLLOWERS = 5000;
 const DEFAULT_REQUIRED_ORDERS = 3;
@@ -351,6 +352,10 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   await Promise.allSettled([
     sendPostBarterOrderConfirmationEmail(savedOrder.customer_email, savedOrder.customer_name, savedOrder.id, couponCode, requiredOrders, tier),
     sendOrderNotificationEmail(savedOrder, orderItems),
+    // Same WhatsApp confirmation every other payment path (UPI, Razorpay)
+    // sends — a barter order shouldn't be the one path that only ever
+    // emails the customer.
+    sendOrderConfirmationWhatsApp(savedOrder, orderItems),
   ]);
 
   return { orderId: savedOrder.id as string, couponCode, requiredOrders, tier };

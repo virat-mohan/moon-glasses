@@ -72,6 +72,11 @@ export default async function AdminOrdersPage() {
     razorpay_payment_id: string | null;
     refunded_amount: number | null;
     return_shipment_id: string | null;
+    is_post_barter: boolean | null;
+    barter_tier: string | null;
+    barter_coupon_code: string | null;
+    barter_required_orders: number | null;
+    barter_qualified_at: string | null;
   }[] = [];
   let configError = false;
 
@@ -80,7 +85,7 @@ export default async function AdminOrdersPage() {
     const { data } = await supabase
       .from("orders")
       .select(
-        "id, created_at, customer_name, customer_phone, total, subtotal, discount_amount, payment_type, payment_status, balance_due, status, shipment_status, refund_status, is_gift, gift_note, shiprocket_order_id, shiprocket_shipment_id, shiprocket_awb_code, shiprocket_label_url, courier_name, razorpay_payment_id, refunded_amount, return_shipment_id"
+        "id, created_at, customer_name, customer_phone, total, subtotal, discount_amount, payment_type, payment_status, balance_due, status, shipment_status, refund_status, is_gift, gift_note, shiprocket_order_id, shiprocket_shipment_id, shiprocket_awb_code, shiprocket_label_url, courier_name, razorpay_payment_id, refunded_amount, return_shipment_id, is_post_barter, barter_tier, barter_coupon_code, barter_required_orders, barter_qualified_at"
       )
       .order("created_at", { ascending: false })
       .limit(50);
@@ -181,6 +186,24 @@ export default async function AdminOrdersPage() {
                     <span className="font-bold text-paint-orange">
                       COD · ₹{o.balance_due?.toLocaleString("en-IN")} due
                     </span>
+                  ) : o.is_post_barter ? (
+                    <div className="flex flex-col items-start gap-0.5">
+                      <span className={o.barter_qualified_at ? "text-tan-gold" : "font-bold text-paint-orange"}>
+                        Pay With A Post · {o.barter_tier === "gift_first" ? "Gift First" : "Sell First"}
+                        {o.barter_qualified_at ? " · Shipped" : " · Pending"}
+                      </span>
+                      {o.barter_coupon_code && (
+                        <span className="text-micro text-secondary-text">
+                          Code {o.barter_coupon_code}
+                          {o.barter_tier === "sell_first" && !o.barter_qualified_at
+                            ? ` (needs ${o.barter_required_orders} orders)`
+                            : ""}
+                        </span>
+                      )}
+                      <Link href={`/barter/${o.id}`} className="text-micro underline text-secondary-text">
+                        View customer page
+                      </Link>
+                    </div>
                   ) : (
                     <span className="text-secondary-text">Prepaid</span>
                   )}
