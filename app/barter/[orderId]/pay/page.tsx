@@ -66,7 +66,7 @@ export default async function BarterChargePage({ params }: { params: Promise<{ o
                   Send us a quick WhatsApp with your order details so we can confirm it and close this out.
                 </p>
                 <a
-                  href={`https://wa.me/919999277240?text=${encodeURIComponent(
+                  href={`https://wa.me/919318311657?text=${encodeURIComponent(
                     `Hi! I've just paid ₹${order.total.toLocaleString("en-IN")} for my Pay With A Post order (Order #${order.id.slice(0, 8).toUpperCase()}) since I missed the 12-hour posting window. Please confirm — thanks!`
                   )}`}
                   target="_blank"

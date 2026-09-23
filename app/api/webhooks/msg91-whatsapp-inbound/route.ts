@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSetting } from "@/lib/settings";
 import { logInboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
+import { logWebhookRequest } from "@/lib/webhook-log";
 
 /**
  * MSG91's inbound-WhatsApp webhook — configure this URL under MSG91
@@ -13,13 +14,22 @@ import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
  * on anything unrecognized so the first real message is easy to diagnose.
  */
 export async function POST(request: Request) {
+  const rawBody = await request.text();
   const expectedToken = await getSetting("MSG91_INBOUND_WEBHOOK_TOKEN");
   const providedToken = request.headers.get("x-webhook-token") ?? new URL(request.url).searchParams.get("token");
   if (expectedToken && providedToken !== expectedToken) {
+    await logWebhookRequest("msg91-inbound", "rejected_bad_token", rawBody);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => null);
+  let body: Record<string, any> | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any -- provider payload shape is unverified, read defensively below
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    const form = new URLSearchParams(rawBody);
+    body = form.size > 0 ? Object.fromEntries(form) : null;
+  }
+  await logWebhookRequest("msg91-inbound", body ? "received" : "unparseable", rawBody);
   if (!body) return NextResponse.json({ ok: true });
 
   // Some BSPs (and MSG91, per their docs) wrap inbound events in a

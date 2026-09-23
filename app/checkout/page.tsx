@@ -16,7 +16,7 @@ import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { GiftFirstUrgencyBadge } from "@/components/checkout/GiftFirstUrgencyBadge";
 
-const WHATSAPP_NUMBER = "918800339125";
+const WHATSAPP_NUMBER = "919318311657";
 
 declare global {
   interface Window {

@@ -1257,3 +1257,24 @@ create table if not exists whatsapp_payment_confirmations (
 );
 create index if not exists whatsapp_payment_confirmations_status_idx
   on whatsapp_payment_confirmations (match_status, created_at);
+
+-- ============================================================
+-- Raw record of every incoming webhook request (Meta, MSG91 inbound) —
+-- including rejected/unparseable ones — so a provider integration can
+-- be diagnosed from the database instead of guessed at. See
+-- lib/webhook-log.ts.
+-- ============================================================
+create table if not exists webhook_debug_log (
+  id uuid primary key default gen_random_uuid(),
+  source text not null,   -- meta | msg91-inbound
+  outcome text not null,  -- received:<object> | received_unverified:<object> | rejected_bad_signature | rejected_bad_token | unrecognized | unparseable
+  body text,
+  created_at timestamptz not null default now()
+);
+create index if not exists webhook_debug_log_created_idx on webhook_debug_log (created_at desc);
+
+-- Private bucket for inbound WhatsApp media (payment screenshots carry
+-- UTRs and names) — admin views them via short-lived signed URLs only.
+insert into storage.buckets (id, name, public)
+values ('whatsapp-media', 'whatsapp-media', false)
+on conflict (id) do nothing;

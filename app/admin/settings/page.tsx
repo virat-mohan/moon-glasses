@@ -43,7 +43,7 @@ const GROUPS: { label: string; fields: Field[] }[] = [
       { key: "META_AD_ACCOUNT_ID", label: "Meta Ad Account ID", hint: "e.g. act_1234567890" },
       { key: "META_PAGE_ID", label: "Meta Page ID", hint: "The Facebook Page linked to your ad account — required to create ad creatives." },
       { key: "INSTAGRAM_BUSINESS_ACCOUNT_ID", label: "Instagram Business Account ID", hint: "For auto-posting approved Explorer photos as Instagram Stories." },
-      { key: "META_WEBHOOK_VERIFY_TOKEN", label: "Meta Webhook Verify Token", hint: "Make up any random string, then paste the same value into Meta's App Dashboard → Webhooks → Verify Token when you subscribe to Instagram/Messenger events. Required for the DM/comment bot." },
+      { key: "META_WEBHOOK_VERIFY_TOKEN", label: "Meta Webhook Verify Token", hint: "Make up any random string, then paste the same value as the Verify Token in Meta's App Dashboard — both for Instagram/Messenger webhooks and under WhatsApp → Configuration (callback URL https://www.moon-glasses.store/api/webhooks/meta). Required for the DM/comment bot and for receiving WhatsApp messages." },
       { key: "META_PIXEL_ID", label: "Meta Pixel ID", hint: "Enables the Meta pixel + server-side Conversions API mirror on the site." },
     ],
   },
@@ -71,6 +71,7 @@ const GROUPS: { label: string; fields: Field[] }[] = [
       { key: "META_WHATSAPP_ACCESS_TOKEN", label: "Meta Access Token", hint: "A permanent System User token — Business Settings → System Users → Generate Token, with whatsapp_business_messaging permission. The temporary 24h token from Meta's quickstart will NOT work for real orders." },
       { key: "META_WHATSAPP_PHONE_NUMBER_ID", label: "Meta Phone Number ID", hint: "From developers.facebook.com → your app → WhatsApp → API Setup — the numeric ID next to your registered sending number, not the phone number itself." },
       { key: "META_WHATSAPP_TEMPLATE_LANGUAGE", label: "Template Language Code", hint: "The language code your templates were approved under (e.g. \"en_US\", \"en\"). Defaults to \"en_US\" if left blank." },
+      { key: "META_APP_SECRET", label: "Meta App Secret", hint: "developers.facebook.com → your app → App settings → Basic → App secret. Used to prove incoming webhooks really came from Meta. Until this is set, incoming WhatsApp screenshots are still logged but never auto-confirm an order — they all land in Needs Review." },
     ],
   },
   {

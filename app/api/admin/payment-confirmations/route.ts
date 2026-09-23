@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { STORAGE_REF_PREFIX } from "@/lib/whatsapp-cloud-inbound";
 
 export async function GET() {
   const supabase = getSupabaseServerClient();
@@ -11,5 +12,17 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ rows: data ?? [] });
+
+  // Screenshots from Meta live in a private bucket — hand the admin a
+  // one-hour signed link rather than exposing a permanent public URL.
+  const rows = await Promise.all(
+    (data ?? []).map(async (row) => {
+      if (!row.media_url?.startsWith(STORAGE_REF_PREFIX)) return row;
+      const [bucket, ...rest] = row.media_url.slice(STORAGE_REF_PREFIX.length).split("/");
+      const { data: signed } = await supabase.storage.from(bucket).createSignedUrl(rest.join("/"), 3600);
+      return { ...row, media_url: signed?.signedUrl ?? null };
+    })
+  );
+
+  return NextResponse.json({ rows });
 }

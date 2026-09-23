@@ -68,10 +68,15 @@ export async function processInboundPaymentScreenshot(input: {
   phone: string;
   mediaUrl: string;
   conversationMessageId: string | null;
+  /** Already-downloaded bytes, for providers whose media URLs can't be fetched later (e.g. Meta's expire and need auth). */
+  image?: { base64: string; mediaType: string };
+  /** False when the webhook's authenticity couldn't be verified — a full match then goes to needs_review instead of confirming. */
+  autoConfirmAllowed?: boolean;
 }) {
   const normalizedPhone = normalizePhone(input.phone);
+  const autoConfirmAllowed = input.autoConfirmAllowed ?? true;
 
-  const image = await downloadImage(input.mediaUrl);
+  const image = input.image ?? (await downloadImage(input.mediaUrl));
   if (!image) {
     await logAttempt({
       conversationMessageId: input.conversationMessageId,
@@ -179,6 +184,19 @@ export async function processInboundPaymentScreenshot(input: {
       matchedOrderId: order.id,
       matchStatus: "needs_review",
       note: `Extracted UTR ${extracted.utr} was already used on order ${utrClash.id} — possible replay.`,
+    });
+    return;
+  }
+
+  if (!autoConfirmAllowed) {
+    await logAttempt({
+      conversationMessageId: input.conversationMessageId,
+      phone: input.phone,
+      mediaUrl: input.mediaUrl,
+      extracted,
+      matchedOrderId: order.id,
+      matchStatus: "needs_review",
+      note: "Phone, amount and UTR all match, but the webhook's authenticity couldn't be verified (set META_APP_SECRET) — confirm manually.",
     });
     return;
   }

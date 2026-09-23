@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSetting } from "@/lib/settings";
 import { handleIncomingMessage, handleIncomingComment } from "@/lib/meta-bot";
+import { handleWhatsAppCloudWebhook, verifyMetaSignature } from "@/lib/whatsapp-cloud-inbound";
+import { logWebhookRequest } from "@/lib/webhook-log";
 
 /**
  * Meta calls GET once, when you click "Verify and Save" on the webhook
@@ -30,15 +32,57 @@ export async function GET(request: Request) {
  * duplicate deliveries of the same event.
  */
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
+  // Raw text first — the signature is computed over the exact bytes Meta sent.
+  const rawBody = await request.text();
+
+  // With the app secret set, anything not signed by Meta is rejected
+  // outright. Without it, requests are still processed (so setup can be
+  // tested), but WhatsApp screenshots can never auto-confirm a payment.
+  const appSecret = await getSetting("META_APP_SECRET");
+  const signatureVerified = appSecret
+    ? verifyMetaSignature(rawBody, request.headers.get("x-hub-signature-256"), appSecret)
+    : false;
+  if (appSecret && !signatureVerified) {
+    await logWebhookRequest("meta", "rejected_bad_signature", rawBody);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  type MetaWebhookBody = {
+    object?: string;
+    entry?: {
+      messaging?: { sender?: { id?: string }; message?: { text?: string; is_echo?: boolean } }[];
+      changes?: {
+        field?: string;
+        value?: { id?: string; text?: string; message?: string; from?: { id?: string } };
+      }[];
+    }[];
+  };
+  let body: MetaWebhookBody | null = null;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    body = null;
+  }
   if (!body?.object || !Array.isArray(body?.entry)) {
+    await logWebhookRequest("meta", "unrecognized", rawBody);
+    return NextResponse.json({ ok: true });
+  }
+
+  await logWebhookRequest("meta", signatureVerified ? `received:${body.object}` : `received_unverified:${body.object}`, rawBody);
+
+  if (body.object === "whatsapp_business_account") {
+    try {
+      await handleWhatsAppCloudWebhook(JSON.parse(rawBody), signatureVerified);
+    } catch (err) {
+      console.error("WhatsApp Cloud webhook handling failed", err);
+    }
     return NextResponse.json({ ok: true });
   }
 
   const platform: "instagram" | "facebook" = body.object === "instagram" ? "instagram" : "facebook";
 
   try {
-    for (const entry of body.entry) {
+    for (const entry of body.entry ?? []) {
       for (const event of entry.messaging ?? []) {
         const senderId = event.sender?.id;
         const text = event.message?.text;
