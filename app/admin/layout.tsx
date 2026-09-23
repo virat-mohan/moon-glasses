@@ -54,6 +54,7 @@ const NAV_SECTIONS = [
     label: "Finance",
     links: [
       { href: "/admin/pnl", label: "P&L" },
+      { href: "/admin/business-plan", label: "Business Plan (Forecast)" },
       { href: "/admin/expenses", label: "Expenses" },
       { href: "/admin/discounts", label: "Discount Rules" },
       { href: "/admin/coupons", label: "Coupon Codes" },

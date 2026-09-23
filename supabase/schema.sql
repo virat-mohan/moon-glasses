@@ -1211,3 +1211,20 @@ alter table orders add column if not exists barter_terms_accepted_at timestamptz
 alter table orders add column if not exists barter_charge_deadline_at timestamptz;
 alter table orders add column if not exists barter_charge_link_sent_at timestamptz;
 alter table orders add column if not exists barter_charged_at timestamptz;
+
+-- ============================================================
+-- Quarterly benchmark P&L (forecast) — see lib/business-plan.ts. Distinct
+-- from the `orders`/`expenses` tables that back the ACTUAL P&L in
+-- lib/pnl.ts: this stores editable DRIVERS (orders ramp, cost %s, etc.),
+-- not totals — computePlanFromDrivers derives the P&L from them fresh every
+-- time, both right after AI generation and on every human edit, so nothing
+-- here is ever a stale cached total. jsonb (not fixed columns) so a new
+-- driver can be added later without a migration.
+-- ============================================================
+create table if not exists business_plans (
+  id uuid primary key default gen_random_uuid(),
+  quarter_start date not null unique, -- first day of the quarter's first month
+  drivers jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
