@@ -283,7 +283,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     throw new Error("Please accept the Pay With A Post terms to ship now — or continue without checking the box to post first instead.");
   }
 
-  const pricing = await computeTrustedOrderTotal(payload.items, 0, payload.customer.pincode, null, payload.customer.phone, null, "prepaid");
+  const pricing = await computeTrustedOrderTotal(payload.items, 0, payload.customer.pincode, null, payload.customer.phone, null, "post_barter");
 
   const guestCustomer = await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name);
   const couponCode = await createBarterCouponCode(payload.customer.name, payload.instagramHandle, friendDiscountRupees);

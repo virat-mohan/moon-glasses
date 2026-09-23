@@ -1,6 +1,7 @@
 import { getSetting } from "@/lib/settings";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendMsg91WhatsAppFlow, sendMsg91Template } from "@/lib/msg91";
+import { sendMetaCloudTemplate } from "@/lib/whatsapp-cloud";
 import { generateAndUploadOrderCard } from "@/lib/order-card";
 
 type OrderForWhatsApp = { id: string; customer_name: string; customer_phone: string; total: number };
@@ -15,14 +16,15 @@ type CartSessionForWhatsApp = {
 async function logSend(
   messageId: string | null | undefined,
   templateName: string,
-  logAgainst: { cartSessionId?: string; orderId?: string }
+  logAgainst: { cartSessionId?: string; orderId?: string },
+  provider: "msg91" | "meta_cloud" = "msg91"
 ) {
   try {
     const supabase = getSupabaseServerClient();
     await supabase.from("whatsapp_messages").insert({
       cart_session_id: logAgainst.cartSessionId ?? null,
       order_id: logAgainst.orderId ?? null,
-      provider: "msg91",
+      provider,
       msg91_message_id: messageId ?? null,
       template_name: templateName,
     });
@@ -48,22 +50,35 @@ async function sendTemplate(
 }
 
 /**
- * Same as sendTemplate above, but via MSG91's bulk outbound-message API
- * (sendMsg91Template) — addresses the template by its actual approved name
- * rather than a Flow slug. Prefer this for any new template going forward.
+ * Same as sendTemplate above, but addresses the template by its actual
+ * approved name rather than an MSG91 Flow slug — the shape every provider
+ * that isn't MSG91's older Flow product uses. Prefer this for any new
+ * template going forward.
+ *
+ * Routes to whichever provider WHATSAPP_PROVIDER names — "meta_cloud" for
+ * a direct Meta WhatsApp Cloud API send (lib/whatsapp-cloud.ts), anything
+ * else (including unset) defaults to MSG91 (lib/msg91.ts), the original
+ * integration. The `templateName`/settings VALUE passed in as
+ * `providerTemplateName` must be that provider's own approved template
+ * name — swapping providers means re-pointing that setting at the
+ * equivalent template approved under the new provider, not a code change.
  */
 async function sendTemplateByName(
   phone: string,
   templateName: string,
-  msg91TemplateName: string | null,
+  providerTemplateName: string | null,
   variables: string[],
   logAgainst: { cartSessionId?: string; orderId?: string },
   header?: { type: "image" | "document"; url: string; filename?: string }
 ) {
-  if (!msg91TemplateName) return false;
-  const result = await sendMsg91Template(msg91TemplateName, phone, variables, header);
+  if (!providerTemplateName) return false;
+  const provider = (await getSetting("WHATSAPP_PROVIDER")) === "meta_cloud" ? "meta_cloud" : "msg91";
+  const result =
+    provider === "meta_cloud"
+      ? await sendMetaCloudTemplate(providerTemplateName, phone, variables, header)
+      : await sendMsg91Template(providerTemplateName, phone, variables, header);
   if (result.sent) {
-    await logSend(result.messageId, templateName, logAgainst);
+    await logSend(result.messageId, templateName, logAgainst, provider);
     return true;
   }
   return false;

@@ -65,6 +65,15 @@ const GROUPS: { label: string; fields: Field[] }[] = [
     ],
   },
   {
+    label: "Meta WhatsApp Cloud API (alternative to MSG91)",
+    fields: [
+      { key: "WHATSAPP_PROVIDER", label: "WhatsApp Provider", hint: "Leave blank or \"msg91\" to send via MSG91 above (default). Set to exactly \"meta_cloud\" to send order/shipping templates directly via Meta's own WhatsApp Cloud API instead — no BSP middleman. Only affects order-related sends (confirmation, shipping, abandoned cart, restock, review, referral, win-back); OTP and NDR/RTO nudges always use MSG91 for now." },
+      { key: "META_WHATSAPP_ACCESS_TOKEN", label: "Meta Access Token", hint: "A permanent System User token — Business Settings → System Users → Generate Token, with whatsapp_business_messaging permission. The temporary 24h token from Meta's quickstart will NOT work for real orders." },
+      { key: "META_WHATSAPP_PHONE_NUMBER_ID", label: "Meta Phone Number ID", hint: "From developers.facebook.com → your app → WhatsApp → API Setup — the numeric ID next to your registered sending number, not the phone number itself." },
+      { key: "META_WHATSAPP_TEMPLATE_LANGUAGE", label: "Template Language Code", hint: "The language code your templates were approved under (e.g. \"en_US\", \"en\"). Defaults to \"en_US\" if left blank." },
+    ],
+  },
+  {
     label: "Shiprocket",
     fields: [
       { key: "SHIPROCKET_EMAIL", label: "Shiprocket Email", hint: "The login email for your Shiprocket account." },

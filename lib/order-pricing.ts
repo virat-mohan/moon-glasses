@@ -29,7 +29,7 @@ export async function computeTrustedOrderTotal(
   referralCode?: string | null,
   checkoutPhone?: string,
   couponCode?: string | null,
-  paymentType: "prepaid" | "cod_advance" = "prepaid"
+  paymentType: "prepaid" | "cod_advance" | "post_barter" = "prepaid"
 ) {
   const chapters = await getAllChapters();
   const pricedItems = items.map((item) => {
@@ -64,9 +64,13 @@ export async function computeTrustedOrderTotal(
     loyaltyDiscountAmount = Math.min(requestedRedeemRupees, maxRedeemableRupees);
   }
 
-  // Free shipping is a prepaid-only perk — a COD order still needs the real
-  // Shiprocket rate checked (both to confirm the pincode is deliverable at
-  // all, and because the courier collects it as part of the balance due).
+  // Every paid order — prepaid or COD — is charged the real, live Shiprocket
+  // rate for its pincode; there's no more "prepaid ships free" perk. The one
+  // exception is post_barter: that order is genuinely free end to end (the
+  // whole point of paying with a post instead of money), so it never adds a
+  // shipping line regardless of what Shiprocket quotes. The rate is still
+  // looked up either way, since a confirmed "can't deliver here" must block
+  // the order even when nothing is being charged for shipping.
   let shippingCharge = 0;
   if (deliveryPincode) {
     const unitCount = pricedItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -80,7 +84,7 @@ export async function computeTrustedOrderTotal(
       );
     }
     const realRate = shippingResult.status === "available" ? shippingResult.rate : 0;
-    shippingCharge = paymentType === "prepaid" ? 0 : realRate;
+    shippingCharge = paymentType === "post_barter" ? 0 : realRate;
   }
 
   const referral = await resolveReferralDiscount(referralCode, customer?.id ?? null, checkoutPhone ?? "");
