@@ -105,7 +105,7 @@ export async function completeInstagramLogin(code: string) {
   if (!app) throw new Error("Instagram app isn't set up");
   const redirectUri = await getInstagramRedirectUri();
 
-  const short = await jsonOrThrow(
+  const shortRaw = await jsonOrThrow(
     await fetch("https://api.instagram.com/oauth/access_token", {
       method: "POST",
       body: new URLSearchParams({
@@ -118,6 +118,9 @@ export async function completeInstagramLogin(code: string) {
     }),
     "Exchanging the Instagram login code"
   );
+  // Newer Instagram Login apps wrap this as { data: [{ access_token, user_id, permissions }] }.
+  const short = (Array.isArray(shortRaw.data) ? shortRaw.data[0] : shortRaw) as { access_token?: string; user_id?: string | number };
+  if (!short?.access_token) throw new Error(`Instagram didn't return a login token: ${JSON.stringify(shortRaw).slice(0, 200)}`);
 
   const long = await jsonOrThrow(
     await fetch(
@@ -137,7 +140,7 @@ export async function completeInstagramLogin(code: string) {
 
   const connection: InstagramConnection = {
     accessToken: long.access_token,
-    userId: String(me.user_id ?? me.id),
+    userId: String(me.user_id ?? me.id ?? short.user_id),
     username: me.username,
     expiresAt: new Date(Date.now() + (long.expires_in ?? 60 * 24 * 3600) * 1000).toISOString(),
     connectedAt: new Date().toISOString(),
