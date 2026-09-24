@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAllSettingsMasked, setSetting, SETTINGS_KEYS, type SettingKey } from "@/lib/settings";
+import { getInstagramConnection } from "@/lib/instagram-connection";
 
 export async function GET() {
-  const present = await getAllSettingsMasked();
-  return NextResponse.json({ present });
+  const [present, instagram] = await Promise.all([getAllSettingsMasked(), getInstagramConnection().catch(() => null)]);
+  return NextResponse.json({ present: { ...present, INSTAGRAM_LOGIN_CONNECTED: !!instagram } });
 }
 
 export async function PATCH(request: Request) {

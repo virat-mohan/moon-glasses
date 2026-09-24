@@ -1,4 +1,5 @@
 import { getSetting } from "@/lib/settings";
+import { getInstagramConnection } from "@/lib/instagram-connection";
 
 const GRAPH_VERSION = "v21.0";
 
@@ -13,8 +14,27 @@ async function getInstagramAuth() {
   return { accessToken, igUserId };
 }
 
-async function igPost(path: string, accessToken: string, body: Record<string, unknown>) {
-  const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${path}`, {
+/**
+ * Auth for PUBLISHING and reading our own account. Prefers the one-click
+ * "Connect Instagram" login (graph.instagram.com, no Facebook Page needed);
+ * falls back to the older Facebook-token route. Business Discovery (other
+ * people's follower counts) is only available on the Facebook route, so it
+ * keeps using getInstagramAuth above.
+ */
+type PublishAuth = { accessToken: string; igUserId: string; base: string };
+
+async function getPublishAuth(): Promise<PublishAuth> {
+  const connection = await getInstagramConnection();
+  if (connection) {
+    return { accessToken: connection.accessToken, igUserId: connection.userId, base: `https://graph.instagram.com/${GRAPH_VERSION}` };
+  }
+  const { accessToken, igUserId } = await getInstagramAuth();
+  return { accessToken, igUserId, base: `https://graph.facebook.com/${GRAPH_VERSION}` };
+}
+
+async function igPost(auth: PublishAuth, path: string, body: Record<string, unknown>) {
+  const accessToken = auth.accessToken;
+  const res = await fetch(`${auth.base}/${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...body, access_token: accessToken }),
@@ -32,13 +52,13 @@ async function igPost(path: string, accessToken: string, body: Record<string, un
  * child is uploading in parallel-ish succession. Polls status_code and only
  * returns once Meta says the container is actually ready.
  */
-async function waitForMediaReady(containerId: string, accessToken: string) {
-  const timeoutMs = 60_000;
+async function waitForMediaReady(auth: PublishAuth, containerId: string, timeoutMs = 60_000) {
+  const accessToken = auth.accessToken;
   const intervalMs = 1500;
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     const res = await fetch(
-      `https://graph.facebook.com/${GRAPH_VERSION}/${containerId}?` +
+      `${auth.base}/${containerId}?` +
         new URLSearchParams({ fields: "status_code", access_token: accessToken })
     );
     const data = await res.json();
@@ -67,15 +87,16 @@ function buildUserTags(usernames?: string[]) {
 }
 
 export async function postToInstagramFeed(imageUrl: string, caption: string, taggedUsernames?: string[]) {
-  const { accessToken, igUserId } = await getInstagramAuth();
+  const auth = await getPublishAuth();
+  const { igUserId } = auth;
 
-  const created = await igPost(`${igUserId}/media`, accessToken, {
+  const created = await igPost(auth, `${igUserId}/media`, {
     image_url: imageUrl,
     caption,
     user_tags: buildUserTags(taggedUsernames),
   });
-  await waitForMediaReady(created.id, accessToken);
-  const published = await igPost(`${igUserId}/media_publish`, accessToken, { creation_id: created.id });
+  await waitForMediaReady(auth, created.id);
+  const published = await igPost(auth, `${igUserId}/media_publish`, { creation_id: created.id });
 
   return { postId: published.id as string };
 }
@@ -93,27 +114,28 @@ export async function postToInstagramCarouselFeed(
   caption: string,
   taggedUsernames?: string[]
 ) {
-  const { accessToken, igUserId } = await getInstagramAuth();
+  const auth = await getPublishAuth();
+  const { igUserId } = auth;
   if (imageUrls.length < 2) throw new Error("A carousel post needs at least 2 images");
 
   const childIds: string[] = [];
   for (const imageUrl of imageUrls) {
-    const item = await igPost(`${igUserId}/media`, accessToken, {
+    const item = await igPost(auth, `${igUserId}/media`, {
       image_url: imageUrl,
       is_carousel_item: true,
       user_tags: buildUserTags(taggedUsernames),
     });
-    await waitForMediaReady(item.id, accessToken);
+    await waitForMediaReady(auth, item.id);
     childIds.push(item.id);
   }
 
-  const container = await igPost(`${igUserId}/media`, accessToken, {
+  const container = await igPost(auth, `${igUserId}/media`, {
     media_type: "CAROUSEL",
     children: childIds,
     caption,
   });
-  await waitForMediaReady(container.id, accessToken);
-  const published = await igPost(`${igUserId}/media_publish`, accessToken, { creation_id: container.id });
+  await waitForMediaReady(auth, container.id);
+  const published = await igPost(auth, `${igUserId}/media_publish`, { creation_id: container.id });
 
   return { postId: published.id as string };
 }
@@ -139,10 +161,10 @@ export type InstagramPostPerformance = {
  * post insights fetch that fails rather than aborting the whole list.
  */
 export async function getRecentPostPerformance(limit = 12): Promise<InstagramPostPerformance[]> {
-  const { accessToken, igUserId } = await getInstagramAuth();
+  const { accessToken, igUserId, base } = await getPublishAuth();
 
   const mediaRes = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${igUserId}/media?` +
+    `${base}/${igUserId}/media?` +
       new URLSearchParams({
         fields: "id,caption,media_type,permalink,timestamp",
         limit: String(limit),
@@ -158,7 +180,7 @@ export async function getRecentPostPerformance(limit = 12): Promise<InstagramPos
     let interactions: number | null = null;
     try {
       const insightsRes = await fetch(
-        `https://graph.facebook.com/${GRAPH_VERSION}/${item.id}/insights?` +
+        `${base}/${item.id}/insights?` +
           new URLSearchParams({ metric: "reach,total_interactions,engagement", access_token: accessToken })
       );
       const insightsData = await insightsRes.json();
@@ -324,45 +346,31 @@ export async function postToInstagramStory(imageUrl: string) {
  * rather than have it silently no-op.
  */
 export async function postImageToInstagramStory(imageUrl: string, linkUrl?: string) {
-  const [accessToken, igUserId] = await Promise.all([
-    getSetting("META_ACCESS_TOKEN"),
-    getSetting("INSTAGRAM_BUSINESS_ACCOUNT_ID"),
-  ]);
+  const auth = await getPublishAuth();
+  const created = await igPost(auth, `${auth.igUserId}/media`, {
+    image_url: imageUrl,
+    media_type: "STORIES",
+    // Story link sticker — a real Instagram feature for API-published
+    // Stories on Business/Creator accounts. Meta may reject this for
+    // accounts that don't qualify; that surfaces as a normal error here.
+    ...(linkUrl ? { link: linkUrl } : {}),
+  });
+  await waitForMediaReady(auth, created.id);
+  const published = await igPost(auth, `${auth.igUserId}/media_publish`, { creation_id: created.id });
+  return { postId: published.id as string };
+}
 
-  if (!accessToken || !igUserId) {
-    throw new Error("Instagram is not configured — add META_ACCESS_TOKEN and INSTAGRAM_BUSINESS_ACCOUNT_ID in /admin/settings");
-  }
-
-  const createRes = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${igUserId}/media`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image_url: imageUrl,
-        media_type: "STORIES",
-        // Story link sticker — a real Instagram feature for API-published
-        // Stories on Business/Creator accounts. Meta may reject this for
-        // accounts that don't qualify; that surfaces as a normal error here.
-        ...(linkUrl ? { link: linkUrl } : {}),
-        access_token: accessToken,
-      }),
-    }
-  );
-  const created = await createRes.json();
-  if (!createRes.ok) throw new Error(`Instagram Graph API error: ${JSON.stringify(created)}`);
-  await waitForMediaReady(created.id, accessToken);
-
-  const publishRes = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${igUserId}/media_publish`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ creation_id: created.id, access_token: accessToken }),
-    }
-  );
-  const published = await publishRes.json();
-  if (!publishRes.ok) throw new Error(`Instagram Graph API error: ${JSON.stringify(published)}`);
-
+/** Publishes a Reel from a public video URL (MP4/MOV, 3s–15min). Video processing is slower than images, so this waits longer. */
+export async function postReelToInstagram(videoUrl: string, caption: string, coverUrl?: string) {
+  const auth = await getPublishAuth();
+  const created = await igPost(auth, `${auth.igUserId}/media`, {
+    media_type: "REELS",
+    video_url: videoUrl,
+    caption,
+    share_to_feed: true,
+    ...(coverUrl ? { cover_url: coverUrl } : {}),
+  });
+  await waitForMediaReady(auth, created.id, 5 * 60_000);
+  const published = await igPost(auth, `${auth.igUserId}/media_publish`, { creation_id: created.id });
   return { postId: published.id as string };
 }

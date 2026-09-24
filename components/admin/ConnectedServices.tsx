@@ -35,7 +35,7 @@ const SERVICES: { group: string; items: Service[] }[] = [
   {
     group: "Social & Marketing",
     items: [
-      { name: "Instagram", purpose: "@moonglassesonline — posting from this admin", url: "https://www.instagram.com/moonglassesonline", requires: ["INSTAGRAM_BUSINESS_ACCOUNT_ID"] },
+      { name: "Instagram", purpose: "@moonglassesonline — connect & post from Social", url: "/admin/social", requires: ["INSTAGRAM_LOGIN_CONNECTED"] },
       { name: "Meta for Developers", purpose: "The \"Moon Glasses WA\" app behind WhatsApp & Instagram", url: "https://developers.facebook.com/apps/1396559109231529/" },
       { name: "Meta Business Settings", purpose: "Assets, system user, access tokens", url: "https://business.facebook.com/settings" },
       { name: "Meta Business Suite", purpose: "Facebook Page & Instagram inbox", url: "https://business.facebook.com/latest/home" },

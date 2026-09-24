@@ -132,14 +132,32 @@ async function buildShareCard(
 
   ctx.textAlign = "center";
 
-  // The site's own tagline ("MOON GLASSES™ — See A Brighter You") instead of
-  // a generic mood line — set in the editorial serif reserved for the
-  // PayWithAPostMark wordmark (see app/layout.tsx).
-  ctx.fillStyle = "#e7c77a";
-  ctx.font = `italic 700 30px ${DISPLAY_FONT}`;
-  ctx.letterSpacing = "3px";
-  ctx.fillText("SEE A BRIGHTER YOU", CANVAS_W / 2, CANVAS_H - 356);
+  // "Powered by Pay With A Post™" — every shared post credits the mechanic,
+  // with the wordmark in the same italic serif as PayWithAPostMark.
+  const poweredY = CANVAS_H - 356;
+  ctx.font = `600 22px ${BODY_FONT}`;
+  ctx.letterSpacing = "4px";
+  const prefix = "POWERED BY ";
+  const prefixW = ctx.measureText(prefix).width;
   ctx.letterSpacing = "0px";
+  ctx.font = `italic 700 34px ${DISPLAY_FONT}`;
+  const mark = "Pay With A Post";
+  const markW = ctx.measureText(mark).width;
+  ctx.font = `700 16px ${BODY_FONT}`;
+  const tmW = ctx.measureText("TM").width;
+  const startX = (CANVAS_W - (prefixW + markW + tmW + 4)) / 2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#8b8b86";
+  ctx.font = `600 22px ${BODY_FONT}`;
+  ctx.letterSpacing = "4px";
+  ctx.fillText(prefix, startX, poweredY);
+  ctx.letterSpacing = "0px";
+  ctx.fillStyle = "#e7c77a";
+  ctx.font = `italic 700 34px ${DISPLAY_FONT}`;
+  ctx.fillText(mark, startX + prefixW, poweredY);
+  ctx.font = `700 16px ${BODY_FONT}`;
+  ctx.fillText("TM", startX + prefixW + markW + 4, poweredY - 16);
+  ctx.textAlign = "center";
 
   // The domain, set in the same face as the logo/brand wordmark (Space
   // Grotesk — see Navbar's "MOON GLASSES" treatment) instead of the body
@@ -210,7 +228,7 @@ export function ShareToInstagramButton({
   // retype. Captured on landing (see captureCoupon in lib/client-tracking.ts)
   // and auto-applied the moment they reach checkout.
   const shopLink = `${siteUrl.replace(/\/$/, "")}/?coupon=${couponCode}`;
-  const caption = `See a brighter you 🌙 Shop ${siteDomain} and use my code ${couponCode} at checkout — tag ${instagramHandle} as collaborator when you post.`;
+  const caption = `Shop ${siteDomain} and use my code ${couponCode} at checkout 🌙 ${instagramHandle}\n\nPowered by Pay With A Post™`;
 
   // Build the card once on mount so there's a real preview on the page —
   // both so the barterer knows exactly what they're about to post before
