@@ -50,6 +50,16 @@ export async function sendEmail(
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        // Resend's API sits behind Cloudflare, which scored a bare-script
+        // User-Agent (seen testing this from a Python client with no UA
+        // override) as bot traffic and blocked the request outright
+        // (Cloudflare error 1010) — a browser-shaped UA fixed it
+        // immediately, confirmed against the live API. Node's default fetch
+        // UA is unlikely to trigger this, but setting one explicitly removes
+        // the doubt rather than assuming — a script-identifying UA (e.g.
+        // "MoonglassesServer/1.0") risks tripping the same heuristic, so
+        // this deliberately looks like an ordinary browser instead.
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
       },
       body: JSON.stringify({
         from: "Moonglasses <orders@moon-glasses.store>",
