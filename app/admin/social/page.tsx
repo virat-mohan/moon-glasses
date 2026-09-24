@@ -7,6 +7,8 @@ type Status = {
   appConfigured: boolean;
   appId: string | null;
   redirectUri: string;
+  webhookUrl: string;
+  verifyToken: string;
   connection: { username: string; daysLeft: number; connectedAt: string } | null;
 };
 
@@ -184,6 +186,17 @@ function SocialPage() {
         )}
       </section>
 
+      {status && (
+        <section className="mt-6 border border-ink/30 p-5">
+          <h2 className="font-sans text-body-m font-bold uppercase tracking-[0.03em] text-ink">Webhook Setup</h2>
+          <p className="mt-1 text-caption text-secondary-text">
+            Paste these into Meta → your app → Instagram → Configure webhooks, then subscribe to messages, mentions and comments.
+          </p>
+          <CopyRow label="Callback URL" value={status.webhookUrl} />
+          <CopyRow label="Verify token" value={status.verifyToken} />
+        </section>
+      )}
+
       <section className="mt-6 border border-dashed border-ink/20 p-5">
         <h2 className="font-sans text-body-m font-bold uppercase tracking-[0.03em] text-secondary-text">Facebook Page</h2>
         <p className="mt-1 text-caption text-secondary-text">Coming later — Instagram first.</p>
@@ -197,5 +210,27 @@ export default function AdminSocialPage() {
     <Suspense fallback={null}>
       <SocialPage />
     </Suspense>
+  );
+}
+
+function CopyRow({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="mt-3">
+      <p className="text-micro uppercase tracking-[0.1em] text-secondary-text/70">{label}</p>
+      <div className="mt-1 flex items-center gap-2">
+        <code className="flex-1 truncate border border-divider bg-surface-alt px-3 py-2 text-caption text-ink">{value}</code>
+        <button
+          type="button"
+          className={BUTTON}
+          onClick={() => {
+            navigator.clipboard.writeText(value);
+            setCopied(true);
+          }}
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
   );
 }

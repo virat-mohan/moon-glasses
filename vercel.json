@@ -8,6 +8,6 @@
     { "path": "/api/cron/publish-queue", "schedule": "0 9 * * *" },
     { "path": "/api/cron/track-sweep", "schedule": "0 15 * * *" },
     { "path": "/api/cron/barter-charge-sweep", "schedule": "0 * * * *" },
-    { "path": "/api/cron/instagram-token-refresh", "schedule": "30 3 * * *" }
+    { "path": "/api/cron/instagram-token-refresh", "schedule": "15 * * * *" }
   ]
 }

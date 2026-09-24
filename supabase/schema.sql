@@ -1278,3 +1278,26 @@ create index if not exists webhook_debug_log_created_idx on webhook_debug_log (c
 insert into storage.buckets (id, name, public)
 values ('whatsapp-media', 'whatsapp-media', false)
 on conflict (id) do nothing;
+
+-- ============================================================
+-- Automatic pickup of Pay With A Post shares (lib/barter-post-detection.ts):
+-- every story mention, caption mention and collaborator post is logged here,
+-- matched or not; a match fills orders.barter_post_url (which also stops the
+-- gift-first charge sweep) and records how it was found.
+-- ============================================================
+create table if not exists instagram_mentions (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null, -- story | mention | collab
+  media_id text not null,
+  ig_username text,
+  permalink text,
+  media_ref text,
+  caption text,
+  matched_order_id uuid references orders(id) on delete set null,
+  raw jsonb,
+  created_at timestamptz not null default now(),
+  unique (kind, media_id)
+);
+alter table orders add column if not exists barter_post_source text;
+alter table orders add column if not exists barter_post_detected_at timestamptz;
+alter table instagram_mentions add column if not exists reposted_at timestamptz;

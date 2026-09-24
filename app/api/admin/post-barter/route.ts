@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { STORAGE_REF_PREFIX } from "@/lib/barter-post-detection";
+
+type Supa = ReturnType<typeof getSupabaseServerClient>;
+
+/** Story proof lives in a private bucket — hand the admin a one-hour signed link. */
+async function signRef(supabase: Supa, ref: string | null) {
+  if (!ref?.startsWith(STORAGE_REF_PREFIX)) return ref;
+  const [bucket, ...rest] = ref.slice(STORAGE_REF_PREFIX.length).split("/");
+  const { data } = await supabase.storage.from(bucket).createSignedUrl(rest.join("/"), 3600);
+  return data?.signedUrl ?? null;
+}
 
 // Charged on the revenue a Pay With A Post code actually brings in (paid
 // orders redeeming that code) — not on the barterer's own free order. Named
@@ -21,7 +32,7 @@ export async function GET(request: Request) {
     const { data: allOrders, error } = await supabase
       .from("orders")
       .select(
-        "id, created_at, customer_name, customer_phone, barter_tier, barter_instagram_handle, barter_follower_count, barter_coupon_code, barter_required_orders, barter_post_url, barter_qualified_at, total, delivered_at, barter_charge_deadline_at, barter_charge_link_sent_at, barter_charged_at"
+        "id, created_at, customer_name, customer_phone, barter_tier, barter_instagram_handle, barter_follower_count, barter_coupon_code, barter_required_orders, barter_post_url, barter_post_source, barter_post_detected_at, barter_qualified_at, total, delivered_at, barter_charge_deadline_at, barter_charge_link_sent_at, barter_charged_at"
       )
       .eq("is_post_barter", true)
       .order("created_at", { ascending: false });
@@ -34,10 +45,22 @@ export async function GET(request: Request) {
       usageByCode = Object.fromEntries((coupons ?? []).map((c) => [c.code, c.times_used ?? 0]));
     }
 
-    const withProgress = (allOrders ?? []).map((o) => ({
-      ...o,
-      orders_so_far: o.barter_coupon_code ? (usageByCode[o.barter_coupon_code] ?? 0) : 0,
-    }));
+    const withProgress = await Promise.all(
+      (allOrders ?? []).map(async (o) => ({
+        ...o,
+        barter_post_url: await signRef(supabase, o.barter_post_url),
+        orders_so_far: o.barter_coupon_code ? (usageByCode[o.barter_coupon_code] ?? 0) : 0,
+      }))
+    );
+
+    const { data: mentionRows } = await supabase
+      .from("instagram_mentions")
+      .select("id, kind, ig_username, permalink, media_ref, caption, matched_order_id, reposted_at, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    const mentions = await Promise.all(
+      (mentionRows ?? []).map(async (m) => ({ ...m, media_ref: await signRef(supabase, m.media_ref) }))
+    );
 
     // Everything below this line is the date-range-scoped picture — "how
     // many barterers signed up, and how much real revenue did their codes
@@ -54,6 +77,8 @@ export async function GET(request: Request) {
       else if (o.barter_tier === "gift_first") tierCounts.gift_first++;
     }
     const qualifiedCount = inRange.filter((o) => o.barter_qualified_at).length;
+    const postedCount = inRange.filter((o) => o.barter_post_url).length;
+    const autoDetectedCount = inRange.filter((o) => o.barter_post_source).length;
 
     // Real, paid revenue driven by these barterers' codes — a friend
     // actually checking out with a Pay With A Post code, not the barterer's
@@ -91,7 +116,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       orders: withProgress,
+      mentions,
       stats: {
+        postedCount,
+        autoDetectedCount,
         from,
         to,
         totalBarterers: inRange.length,

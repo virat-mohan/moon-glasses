@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSetting } from "@/lib/settings";
 import { refreshInstagramTokenIfNeeded } from "@/lib/instagram-connection";
+import { pollCollabPosts } from "@/lib/barter-post-detection";
 
 async function assertAuthorized(request: Request) {
   const secret = await getSetting("CRON_SECRET");
@@ -9,13 +10,15 @@ async function assertAuthorized(request: Request) {
   return provided === secret;
 }
 
-/** Daily: keeps the one-click Instagram connection alive (its token would otherwise lapse after 60 days). */
+/** Hourly: keeps the Instagram connection alive (60-day token) and picks up collaborator posts for Pay With A Post. */
 export async function GET(request: Request) {
   if (!(await assertAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    return NextResponse.json(await refreshInstagramTokenIfNeeded());
+    const refresh = await refreshInstagramTokenIfNeeded();
+    const collabs = await pollCollabPosts();
+    return NextResponse.json({ refresh, collabs });
   } catch (err) {
     console.error("Instagram token refresh failed", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : "Refresh failed" }, { status: 500 });

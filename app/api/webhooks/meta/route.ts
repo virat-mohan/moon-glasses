@@ -3,6 +3,8 @@ import { getSetting } from "@/lib/settings";
 import { handleIncomingMessage, handleIncomingComment } from "@/lib/meta-bot";
 import { handleWhatsAppCloudWebhook, verifyMetaSignature } from "@/lib/whatsapp-cloud-inbound";
 import { logWebhookRequest } from "@/lib/webhook-log";
+import { getInstagramApp } from "@/lib/instagram-connection";
+import { handleInstagramDetectionWebhook } from "@/lib/barter-post-detection";
 
 /**
  * Meta calls GET once, when you click "Verify and Save" on the webhook
@@ -38,11 +40,13 @@ export async function POST(request: Request) {
   // With the app secret set, anything not signed by Meta is rejected
   // outright. Without it, requests are still processed (so setup can be
   // tested), but WhatsApp screenshots can never auto-confirm a payment.
-  const appSecret = await getSetting("META_APP_SECRET");
-  const signatureVerified = appSecret
-    ? verifyMetaSignature(rawBody, request.headers.get("x-hub-signature-256"), appSecret)
-    : false;
-  if (appSecret && !signatureVerified) {
+  // Facebook-login webhooks (WhatsApp, Messenger) are signed with the Meta
+  // app secret; Instagram-Login webhooks with the Instagram app secret.
+  const [metaSecret, igApp] = await Promise.all([getSetting("META_APP_SECRET"), getInstagramApp().catch(() => null)]);
+  const secrets = [metaSecret, igApp?.appSecret].filter((x): x is string => !!x);
+  const signature = request.headers.get("x-hub-signature-256");
+  const signatureVerified = secrets.some((secret) => verifyMetaSignature(rawBody, signature, secret));
+  if (secrets.length > 0 && !signatureVerified) {
     await logWebhookRequest("meta", "rejected_bad_signature", rawBody);
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
@@ -77,6 +81,14 @@ export async function POST(request: Request) {
       console.error("WhatsApp Cloud webhook handling failed", err);
     }
     return NextResponse.json({ ok: true });
+  }
+
+  if (body.object === "instagram" && signatureVerified) {
+    try {
+      await handleInstagramDetectionWebhook(JSON.parse(rawBody));
+    } catch (err) {
+      console.error("Instagram post detection failed", err);
+    }
   }
 
   const platform: "instagram" | "facebook" = body.object === "instagram" ? "instagram" : "facebook";

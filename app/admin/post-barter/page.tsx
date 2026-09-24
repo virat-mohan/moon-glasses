@@ -15,6 +15,8 @@ type BarterOrder = {
   barter_coupon_code: string | null;
   barter_required_orders: number;
   barter_post_url: string | null;
+  barter_post_source: "story" | "mention" | "collab" | null;
+  barter_post_detected_at: string | null;
   barter_qualified_at: string | null;
   total: number;
   orders_so_far: number;
@@ -33,7 +35,23 @@ type LeaderboardRow = {
   qualified: boolean;
 };
 
+type Mention = {
+  id: string;
+  kind: "story" | "mention" | "collab";
+  ig_username: string | null;
+  permalink: string | null;
+  media_ref: string | null;
+  caption: string | null;
+  matched_order_id: string | null;
+  reposted_at: string | null;
+  created_at: string;
+};
+
+const SOURCE_LABEL = { story: "Story mention", mention: "Caption mention", collab: "Collab post" } as const;
+
 type Stats = {
+  postedCount: number;
+  autoDetectedCount: number;
   from: string | null;
   to: string | null;
   totalBarterers: number;
@@ -57,6 +75,7 @@ function rupees(n: number) {
 export default function AdminPostBarterPage() {
   const [orders, setOrders] = useState<BarterOrder[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [mentions, setMentions] = useState<Mention[]>([]);
   const [loading, setLoading] = useState(true);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -71,6 +90,7 @@ export default function AdminPostBarterPage() {
       .then((data) => {
         setOrders(data.orders ?? []);
         setStats(data.stats ?? null);
+        setMentions(data.mentions ?? []);
       })
       .finally(() => setLoading(false));
   }
@@ -141,8 +161,60 @@ export default function AdminPostBarterPage() {
             highlight
           />
           <StatCard label="Qualified & Shipped" value={stats.qualifiedCount.toLocaleString("en-IN")} />
+          <StatCard
+            label="Posted (auto-detected)"
+            value={`${stats.postedCount.toLocaleString("en-IN")} (${stats.autoDetectedCount.toLocaleString("en-IN")})`}
+          />
         </div>
       )}
+
+      <div className="mt-10">
+        <h2 className="font-display text-heading-s uppercase text-ink">Instagram Mentions</h2>
+        <p className="mt-1 text-caption text-secondary-text">
+          Stories and posts that mention @moonglassesonline, picked up automatically. Stories are saved the moment they
+          arrive, since Instagram deletes them after 24 hours.
+        </p>
+        {mentions.length === 0 ? (
+          <p className="mt-3 text-caption text-secondary-text">Nothing picked up yet.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto border border-divider">
+            <table className="w-full text-left text-caption">
+              <thead className="border-b border-divider text-secondary-text">
+                <tr>
+                  <th className="p-3 font-normal">When</th>
+                  <th className="p-3 font-normal">Who</th>
+                  <th className="p-3 font-normal">Type</th>
+                  <th className="p-3 font-normal">Matched order</th>
+                  <th className="p-3 font-normal">Proof</th>
+                  <th className="p-3 font-normal" />
+                </tr>
+              </thead>
+              <tbody>
+                {mentions.map((m) => (
+                  <tr key={m.id} className="border-b border-divider last:border-b-0">
+                    <td className="p-3 text-secondary-text">{formatDate(m.created_at)}</td>
+                    <td className="p-3 text-ink">{m.ig_username ? `@${m.ig_username}` : "unknown"}</td>
+                    <td className="p-3 text-ink">{SOURCE_LABEL[m.kind]}</td>
+                    <td className="p-3">{m.matched_order_id ? <span className="text-tan-gold">Yes</span> : <span className="text-secondary-text">No barter order</span>}</td>
+                    <td className="p-3">
+                      {m.permalink || m.media_ref ? (
+                        <a href={m.permalink ?? m.media_ref ?? undefined} target="_blank" rel="noreferrer" className="text-ink underline">
+                          View
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {m.kind === "story" && m.media_ref && <RepostButton mention={m} onDone={load} />}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {stats && stats.leaderboard.length > 0 && (
         <div className="mt-10">
@@ -258,6 +330,14 @@ function BarterRow({ order }: { order: BarterOrder }) {
         <a href={order.barter_post_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-caption text-ink underline">
           View post
         </a>
+      ) : null}
+      {order.barter_post_url && order.barter_post_source ? (
+        <p className="text-caption text-tan-gold">
+          Auto-detected · {SOURCE_LABEL[order.barter_post_source]}
+          {order.barter_post_detected_at ? ` · ${formatDate(order.barter_post_detected_at)}` : ""}
+        </p>
+      ) : order.barter_post_url ? (
+        <p className="text-caption text-secondary-text">Link submitted by customer</p>
       ) : (
         <p className="mt-1 text-caption text-secondary-text">No post link submitted yet.</p>
       )}
@@ -321,5 +401,36 @@ function MarkBarterChargedButton({ orderId }: { orderId: string }) {
     >
       {state === "confirming" ? "Confirming…" : state === "error" ? "Retry Mark Charged" : "Mark Charged"}
     </button>
+  );
+}
+
+function RepostButton({ mention, onDone }: { mention: Mention; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (mention.reposted_at) return <span className="text-tan-gold">Reposted</span>;
+  return (
+    <span>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          const res = await fetch("/api/admin/instagram/repost", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mentionId: mention.id }),
+          });
+          const d = await res.json().catch(() => null);
+          setBusy(false);
+          if (!res.ok) setError(d?.error ?? "Repost failed");
+          else onDone();
+        }}
+        className="border border-ink px-2 py-1 uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-50"
+      >
+        {busy ? "Posting…" : "Repost to our Story"}
+      </button>
+      {error && <span className="ml-2 text-paint-orange">{error}</span>}
+    </span>
   );
 }

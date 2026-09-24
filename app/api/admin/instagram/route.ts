@@ -1,4 +1,6 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
+import { getSetting, setSetting } from "@/lib/settings";
 import {
   disconnectInstagram,
   getInstagramApp,
@@ -13,10 +15,20 @@ export async function GET() {
     getInstagramConnection(),
     getInstagramRedirectUri(),
   ]);
+  // Admin needs to paste this into Meta's webhook setup, so it's shown (and
+  // created on first view) here rather than hidden like other settings.
+  let verifyToken = await getSetting("META_WEBHOOK_VERIFY_TOKEN");
+  if (!verifyToken) {
+    verifyToken = crypto.randomBytes(24).toString("hex");
+    await setSetting("META_WEBHOOK_VERIFY_TOKEN", verifyToken);
+  }
+  const webhookUrl = redirectUri.replace("/api/admin/instagram/callback", "/api/webhooks/meta");
   return NextResponse.json({
     appConfigured: !!app,
     appId: app?.appId ?? null,
     redirectUri,
+    webhookUrl,
+    verifyToken,
     connection: connection
       ? {
           username: connection.username,

@@ -360,6 +360,15 @@ export async function postImageToInstagramStory(imageUrl: string, linkUrl?: stri
   return { postId: published.id as string };
 }
 
+/** Publishes a video Story from a public video URL (used to repost customers' story mentions). */
+export async function postVideoToInstagramStory(videoUrl: string) {
+  const auth = await getPublishAuth();
+  const created = await igPost(auth, `${auth.igUserId}/media`, { media_type: "STORIES", video_url: videoUrl });
+  await waitForMediaReady(auth, created.id, 5 * 60_000);
+  const published = await igPost(auth, `${auth.igUserId}/media_publish`, { creation_id: created.id });
+  return { postId: published.id as string };
+}
+
 /** Publishes a Reel from a public video URL (MP4/MOV, 3s–15min). Video processing is slower than images, so this waits longer. */
 export async function postReelToInstagram(videoUrl: string, caption: string, coverUrl?: string) {
   const auth = await getPublishAuth();
