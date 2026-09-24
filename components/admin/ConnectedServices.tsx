@@ -27,7 +27,7 @@ const SERVICES: { group: string; items: Service[] }[] = [
   {
     group: "Customer Messaging",
     items: [
-      { name: "Brevo", purpose: "Order, invoice and shipping emails", url: "https://app.brevo.com/", requires: ["BREVO_API_KEY"], note: "Without this, customers get no emails." },
+      { name: "Resend", purpose: "Order, invoice and shipping emails", url: "https://resend.com/emails", requires: ["RESEND_API_KEY"], note: "Without this, customers get no emails." },
       { name: "WhatsApp Manager", purpose: "WhatsApp number & message templates", url: "https://business.facebook.com/wa/manage/home/", requires: ["META_WHATSAPP_ACCESS_TOKEN", "META_WHATSAPP_PHONE_NUMBER_ID"] },
       { name: "MSG91", purpose: "Login OTPs, fallback WhatsApp sender", url: "https://control.msg91.com/", requires: ["MSG91_AUTH_KEY"] },
     ],

@@ -73,8 +73,8 @@ function renderArticleEmailHtml(article: JournalArticle, brand: Awaited<ReturnTy
  * sent twice.
  */
 export async function sendJournalArticleToSubscribers(article: JournalArticle) {
-  const apiKey = await getSetting("BREVO_API_KEY");
-  if (!apiKey) throw new Error("BREVO_API_KEY is not set — add it in /admin/settings first");
+  const apiKey = await getSetting("RESEND_API_KEY");
+  if (!apiKey) throw new Error("RESEND_API_KEY is not set — add it in /admin/settings first");
 
   const [emails, brand] = await Promise.all([getSubscriberEmails(), getBrandProfile()]);
   if (emails.length === 0) return 0;
@@ -135,8 +135,8 @@ export async function sendDropAnnouncementEmail(
   heroImageUrl: string,
   ctaPath = "/"
 ) {
-  const apiKey = await getSetting("BREVO_API_KEY");
-  if (!apiKey) throw new Error("BREVO_API_KEY is not set — add it in /admin/settings first");
+  const apiKey = await getSetting("RESEND_API_KEY");
+  if (!apiKey) throw new Error("RESEND_API_KEY is not set — add it in /admin/settings first");
 
   const [emails, brand] = await Promise.all([getSubscriberEmails(), getBrandProfile()]);
   if (emails.length === 0) return 0;

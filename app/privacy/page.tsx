@@ -54,7 +54,7 @@ export default function PrivacyPolicyPage() {
             <p className="mt-3">
               We share the minimum necessary data with the service providers that keep the site running:
               our payment processor (Razorpay) to process payments, our shipping partner (Shiprocket) to
-              deliver orders, our email/SMS/WhatsApp providers (Brevo, MSG91) to send order and account
+              deliver orders, our email/SMS/WhatsApp providers (Resend, MSG91) to send order and account
               communications, and our database/hosting providers (Supabase, Vercel). We never sell your
               personal information to third parties.
             </p>

@@ -26,7 +26,7 @@ const GROUPS: { label: string; fields: Field[] }[] = [
   {
     label: "Email",
     fields: [
-      { key: "BREVO_API_KEY", label: "Brevo API Key", hint: "From Brevo → Settings → SMTP & API → API Keys. Powers every customer email — OTP, order confirmation, abandoned cart, newsletter." },
+      { key: "RESEND_API_KEY", label: "Resend API Key", hint: "From resend.com → API Keys. One key powers every customer email across every Retail OS brand — OTP, order confirmation, abandoned cart, newsletter. Your sending domain must be verified in Resend first (Domains → Add Domain → add the DNS records it shows)." },
     ],
   },
   {

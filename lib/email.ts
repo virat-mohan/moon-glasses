@@ -24,44 +24,52 @@ function wrapEmailHtml(bodyHtml: string) {
 </html>`;
 }
 
-/** Low-level Brevo send — every other function in this file (and lib/newsletter.ts) goes through this one. */
+/**
+ * Low-level send — every other function in this file (and lib/newsletter.ts)
+ * goes through this one. Resend, not Brevo: one shared Retail-OS-wide Resend
+ * account handles every brand's transactional mail, each brand as its own
+ * verified sending domain — onboarding a new brand is one DNS record, not a
+ * new account. RESEND_API_KEY is the same key across every Retail OS
+ * project; only the sender domain/name below is brand-specific.
+ */
 export async function sendEmail(
   to: string,
   subject: string,
   bodyHtml: string,
   attachments?: { url: string; name: string }[]
 ) {
-  const apiKey = await getSetting("BREVO_API_KEY");
+  const apiKey = await getSetting("RESEND_API_KEY");
   if (!apiKey) {
-    console.log(`BREVO_API_KEY not set — skipping email "${subject}" to ${to}`);
+    console.log(`RESEND_API_KEY not set — skipping email "${subject}" to ${to}`);
     return false;
   }
 
   try {
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "api-key": apiKey,
-        Accept: "application/json",
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "Moonglasses", email: "orders@moon-glasses.store" },
-        to: [{ email: to }],
+        from: "Moonglasses <orders@moon-glasses.store>",
+        to: [to],
         subject,
-        htmlContent: wrapEmailHtml(bodyHtml),
-        // Brevo fetches the file from the URL itself — no need to download
-        // and base64-encode it ourselves.
-        ...(attachments && attachments.length > 0 ? { attachment: attachments } : {}),
+        html: wrapEmailHtml(bodyHtml),
+        // Resend fetches the file from the URL itself (same as Brevo did) —
+        // no need to download and base64-encode it ourselves.
+        ...(attachments && attachments.length > 0
+          ? { attachments: attachments.map((a) => ({ path: a.url, filename: a.name })) }
+          : {}),
       }),
     });
     if (!res.ok) {
-      console.error("Brevo send failed", subject, res.status, await res.text());
+      console.error("Resend send failed", subject, res.status, await res.text());
       return false;
     }
     return true;
   } catch (err) {
-    console.error("Brevo send failed", subject, err);
+    console.error("Resend send failed", subject, err);
     return false;
   }
 }
