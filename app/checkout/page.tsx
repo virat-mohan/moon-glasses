@@ -69,6 +69,7 @@ export default function CheckoutPage() {
     qrImageUrl: null,
   });
   const [upiSubmitting, setUpiSubmitting] = useState(false);
+  const [postBarterEnabled, setPostBarterEnabled] = useState(false);
   // razorpay.enabled defaults to false until /api/checkout/config resolves —
   // without this separate flag, a customer submitting the form before that
   // fetch completes (a real risk: it's an async call fired on mount) would
@@ -413,6 +414,7 @@ export default function CheckoutPage() {
           codAdvanceRupees: data.codAdvanceRupees ?? 99,
         });
         setUpi({ enabled: !!data.upiEnabled, id: data.upiId ?? null, qrImageUrl: data.upiQrImageUrl ?? null });
+        setPostBarterEnabled(!!data.postBarterEnabled);
         // With Razorpay off, "prepaid" has no visible tile to select it —
         // default straight to the real payment method so submitting
         // without touching a tile does something sensible instead of
@@ -890,11 +892,13 @@ export default function CheckoutPage() {
             <p className="mt-4 max-w-md text-body-s text-secondary-text">
               {razorpay.enabled ? (
                 "Pay securely below and we'll email your invoice and confirm right after."
-              ) : upi.enabled ? (
+              ) : upi.enabled && postBarterEnabled ? (
                 <>
                   Pay by UPI QR below, or skip payment entirely with <PayWithAPostMark /> — pick
                   whichever fits.
                 </>
+              ) : upi.enabled ? (
+                "Pay by UPI QR below."
               ) : (
                 "We don't run this through a payment gateway yet — placing an order sends your details and cart straight to us on WhatsApp, and we'll confirm payment and delivery with you directly."
               )}
@@ -997,7 +1001,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {unitCount === 1 ? (
+            {postBarterEnabled && (unitCount === 1 ? (
               <div className="mt-4 border border-ink/30 p-4">
                 <GiftFirstUrgencyBadge className="mb-2" />
                 <button
@@ -1133,7 +1137,7 @@ export default function CheckoutPage() {
                   currency.
                 </p>
               </div>
-            )}
+            ))}
 
             {orderSummary}
 

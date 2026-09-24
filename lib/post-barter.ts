@@ -27,6 +27,16 @@ const DEFAULT_GIFT_FIRST_DAILY_CAP = 10;
 
 export type BarterTier = "gift_first" | "sell_first";
 
+/**
+ * On unless explicitly switched off — the feature was already live when the
+ * toggle was added, so an unset value must not silently disable it. Only
+ * gates NEW applications (banners, checkout option, order creation);
+ * existing barter orders keep qualifying, shipping and being charged.
+ */
+export async function isPostBarterEnabled(): Promise<boolean> {
+  return (await getSetting("POST_BARTER_ENABLED")) !== "false";
+}
+
 export async function getPostBarterConfig() {
   const [minFollowersSetting, requiredOrdersSetting, friendDiscountSetting, dailyCapSetting] = await Promise.all([
     getSetting("POST_BARTER_MIN_FOLLOWERS"),
@@ -234,6 +244,9 @@ export type PostBarterOrderPayload = {
  * enough real, paid orders have come in through their code.
  */
 export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
+  if (!(await isPostBarterEnabled())) {
+    throw new Error("Pay With A Post isn't available right now.");
+  }
   const totalQuantity = payload.items.reduce((sum, item) => sum + item.quantity, 0);
   if (totalQuantity !== 1) {
     throw new Error("Pay With A Post covers one item per order — adjust your cart to a single item.");

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import { PostBarterToggle } from "@/components/admin/PostBarterToggle";
 
 type BarterOrder = {
   id: string;
@@ -89,6 +90,8 @@ export default function AdminPostBarterPage() {
         Orders paid for with an Instagram post instead of currency. Ships automatically once a
         customer&apos;s code clears its required-orders line — nothing to approve manually.
       </p>
+
+      <PostBarterToggle />
 
       <div className="mt-6 flex flex-wrap items-end gap-3 border border-divider bg-surface-alt p-4">
         <label className="flex flex-col gap-1 text-caption text-secondary-text">

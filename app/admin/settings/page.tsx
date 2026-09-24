@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { ConnectedServices } from "@/components/admin/ConnectedServices";
 
 type Field = { key: string; label: string; hint: string };
 
@@ -154,6 +155,8 @@ export default function AdminSettingsPage() {
         Stored server-side in Supabase, never sent to the browser. Add a key any time — features
         that depend on it switch on automatically once it&apos;s here.
       </p>
+
+      {!loading && <ConnectedServices present={present} />}
 
       {loading ? (
         <p className="mt-8 text-body-s text-secondary-text">Loading...</p>

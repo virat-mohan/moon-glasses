@@ -8,6 +8,7 @@ import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
 import { Hero } from "@/components/hero/HeroVideo";
 import { EditorialSplit } from "@/components/hero/EditorialSplit";
 import { PayWithAPostBanner } from "@/components/hero/PayWithAPostBanner";
+import { isPostBarterEnabled } from "@/lib/post-barter";
 import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { computeWebsiteAnalytics } from "@/lib/website-analytics";
@@ -33,7 +34,7 @@ function buildPillars(shapeCount: number, colourwayCount: number) {
 }
 
 export default async function Home() {
-  const coreChapters = await getCoreCollectionChapters();
+  const [coreChapters, postBarterEnabled] = await Promise.all([getCoreCollectionChapters(), isPostBarterEnabled()]);
   const collection = groupByStyle(coreChapters);
   // Computed live from what's actually published, rather than a hardcoded
   // "five shapes, 16 colourways" — that line went stale the moment a shape
@@ -115,7 +116,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <PayWithAPostBanner />
+        {postBarterEnabled && <PayWithAPostBanner />}
 
         <EditorialSplit
           image="/images/brand/editorial-01.jpg"

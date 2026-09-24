@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getRazorpayCredentials } from "@/lib/razorpay";
 import { getCodAdvanceRupees } from "@/lib/order-pricing";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
+import { isPostBarterEnabled } from "@/lib/post-barter";
 
 // Turned off at the request of the business owner (keys are configured and
 // the integration itself works — verified end to end against a real test
@@ -17,6 +18,7 @@ export async function GET() {
   const creds = await getRazorpayCredentials();
   const codAdvanceRupees = await getCodAdvanceRupees();
   const upi = await getUpiPaymentConfig();
+  const postBarterEnabled = await isPostBarterEnabled();
   return NextResponse.json({
     razorpayEnabled: !RAZORPAY_DISABLED && !!creds,
     razorpayKeyId: creds?.keyId ?? null,
@@ -24,5 +26,6 @@ export async function GET() {
     upiEnabled: !!upi,
     upiId: upi?.upiId ?? null,
     upiQrImageUrl: upi?.qrImageUrl ?? null,
+    postBarterEnabled,
   });
 }

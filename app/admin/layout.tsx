@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminAccountControls } from "@/components/admin/AdminAccountControls";
 
 const NAV_SECTIONS = [
   {
@@ -103,6 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           ))}
         </nav>
+        <AdminAccountControls />
       </aside>
       <div className="min-w-0 flex-1">{children}</div>
     </div>

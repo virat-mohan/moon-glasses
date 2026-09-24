@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -48,6 +48,13 @@ export default function CartPage() {
   const discount = calculateDiscount(items, discountRule);
   const total = subtotal - discount;
   const unitCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const [postBarterEnabled, setPostBarterEnabled] = useState(false);
+  useEffect(() => {
+    fetch("/api/checkout/config")
+      .then((r) => r.json())
+      .then((d) => setPostBarterEnabled(!!d.postBarterEnabled))
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -182,7 +189,7 @@ export default function CartPage() {
               Proceed to Checkout
             </Link>
 
-            {unitCount === 1 && (
+            {postBarterEnabled && unitCount === 1 && (
               <p className="mt-3 text-center font-sans text-body-s font-bold text-ink">
                 Skip the payment — get it free with{" "}
                 <Link href="/checkout" className="underline underline-offset-4">

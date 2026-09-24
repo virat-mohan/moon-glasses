@@ -18,6 +18,7 @@ import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
 import { RestockNotifyForm } from "@/components/chapter/RestockNotifyForm";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import { isPostBarterEnabled } from "@/lib/post-barter";
 import { getApprovedReviews, getReviewSummary } from "@/lib/reviews";
 import type { Chapter } from "@/types/chapter";
 
@@ -66,7 +67,7 @@ export async function generateMetadata({
 
 export default async function ChapterPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const allChapters = await getAllChapters();
+  const [allChapters, postBarterEnabled] = await Promise.all([getAllChapters(), isPostBarterEnabled()]);
   const chapter = allChapters.find((c) => c.slug === slug);
   if (!chapter) notFound();
   // Draft master-inventory products (live === false) aren't published yet —
@@ -207,7 +208,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
               />
             </div>
 
-            {stockLabel !== "out-of-stock" && (
+            {postBarterEnabled && stockLabel !== "out-of-stock" && (
               <p className="mt-3 font-sans text-body-s font-bold text-ink">
                 Skip the payment — Buy Now with{" "}
                 <Link href="/#pay-with-a-post" className="underline underline-offset-4">
