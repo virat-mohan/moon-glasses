@@ -18,7 +18,7 @@ export function DiscountPromoBanner({ className = "" }: { className?: string }) 
       className={`inline-flex max-w-full flex-col items-center justify-center border border-tan-gold bg-cream px-5 py-2.5 text-center ${className}`}
     >
       <p className="overflow-hidden text-ellipsis whitespace-nowrap font-sans text-micro font-bold uppercase tracking-[0.06em] text-tan-gold md:text-caption">
-        Limited Time Offer: {describeDiscountRule(rule)}
+        Here for Now: {describeDiscountRule(rule)}
       </p>
       <p className="font-sans text-micro normal-case text-secondary-text">(applied automatically at checkout)</p>
     </div>

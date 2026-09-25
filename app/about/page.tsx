@@ -7,29 +7,33 @@ export default function AboutPage() {
     <>
       <main className="mx-auto w-full max-w-[1440px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
         <div className="max-w-2xl">
-          <h1 className="font-display text-heading-xl uppercase leading-[0.95] text-ink md:text-display-m">
+          <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">
+            The Moon Way — Two Founders, A Small Edit, Only The Pairs We Would Actually Wear
+          </p>
+          <h1 className="mt-3 font-display text-heading-xl uppercase leading-[0.95] text-ink md:text-display-m">
             See A Brighter You.
           </h1>
 
           <div className="mt-8 space-y-6 text-body text-ink">
             <p>
-              MOON GLASSES started with a simple problem: fashion eyewear that could actually keep
-              up after dark — frames with real personality, lenses with real protection, built for
-              a night out rather than a beach chair.
+              We started Moon Glasses because we like light tints, that&rsquo;s our vibe and if
+              you&rsquo;re here we believe it&rsquo;s yours too.
             </p>
+            <p>The idea is simple, fewer choices, the kinds you try and keep reaching for.</p>
             <p>
-              Five shapes across 16 colourways at launch — ₹1,499 acetate, ₹1,999 metal. UV400
-              protected, spring-hinged for all-day comfort, designed to be the piece that finishes
-              the outfit, not an afterthought.
+              There are two of us behind Moon Glasses, and we keep the edit small for a reason:
+              every pair has to feel like something we would actually wear.
             </p>
-            <p>
-              Every lens is tinted, not just tinted-looking — built to shift what the night feels
-              like, not just how bright it is. The mood changes with the color. Elevate your trip.
-            </p>
+            <p>No big fashion speech. Just good-looking glasses with an easy mood.</p>
+            <p>If it made the cut, it&rsquo;s here. Just like you did.</p>
           </div>
         </div>
 
-        <div className="mt-24 grid grid-cols-1 gap-12 border-t border-divider pt-16 md:grid-cols-2 md:gap-16">
+        <p className="mt-24 border-t border-divider pt-16 text-caption uppercase tracking-[0.15em] text-secondary-text">
+          The People Behind Moonglasses
+        </p>
+
+        <div className="mt-8 grid grid-cols-1 gap-12 md:grid-cols-2 md:gap-16">
           <div className="relative aspect-[4/5] w-full overflow-hidden bg-surface-alt">
             <Image
               src="/images/team/anun-dhawan.png"
@@ -49,8 +53,8 @@ export default function AboutPage() {
 
             <div className="mt-8 space-y-6 text-body text-ink">
               <p>
-                MOON GLASSES exists because of three things I can&rsquo;t live without — music,
-                movement, and good people.
+                MOON GLASSES exists because of three things I love — music, people and the
+                outdoors.
               </p>
               <p>
                 Techno&rsquo;s been my reset button for years. The noise cancels out, everything

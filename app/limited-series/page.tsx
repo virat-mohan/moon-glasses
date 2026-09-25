@@ -20,7 +20,7 @@ export default async function LimitedSeriesPage() {
   return (
     <>
       <main className="mx-auto w-full max-w-[1440px] px-6 pt-28 md:px-12 md:pt-36">
-        <p className="text-caption uppercase tracking-[0.15em] text-paint-orange">Small-Batch · Once Gone, Gone</p>
+        <p className="text-caption uppercase tracking-[0.15em] text-paint-orange">Once its gone, its gone</p>
         <h1 className="mt-2 font-display text-display-m uppercase text-ink">Limited Series.</h1>
         <p className="mt-3 max-w-lg font-sans text-body-s text-secondary-text">
           A separate line from the core collection — deliberately short runs, never restocked. ₹1,749

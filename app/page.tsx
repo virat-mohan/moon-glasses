@@ -73,7 +73,7 @@ export default async function Home() {
         {limitedChapters.length > 0 && (
           <section className="border-b border-divider pb-16 pt-8">
             <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
-              Limited Series — Small-Batch · Once Gone, Gone
+              The drop — Once its gone, its gone
             </p>
             <TileGrid
               items={limitedChapters.map((chapter) => ({
@@ -87,7 +87,7 @@ export default async function Home() {
         {trending.length > 0 && (
           <section className="border-b border-divider pb-16 pt-8">
             <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
-              Trending Now
+              Current vibe — Yours and ours
             </p>
             <TileGrid
               items={trending.map((chapter) => ({
@@ -102,6 +102,9 @@ export default async function Home() {
           <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">New In</p>
           <h2 className="font-display text-display-m uppercase text-ink">The Collection</h2>
           <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
+            The core crew/ edit — the pairs we keep coming back to.
+          </p>
+          <p className="mt-1 max-w-md font-sans text-caption text-secondary-text/70">
             {shapeCount} shape{shapeCount === 1 ? "" : "s"}, {colourwayCount} colourway
             {colourwayCount === 1 ? "" : "s"}, across two materials. ₹1,499 acetate, ₹1,999 metal.
           </p>
@@ -135,8 +138,8 @@ export default async function Home() {
         />
         <EditorialSplit
           image="/images/brand/editorial-01.jpg"
-          eyebrow="Small-Batch · Once Gone, Gone"
-          title="Limited Series"
+          eyebrow="Once its gone, its gone"
+          title="The drop"
           copy="A separate line from the core collection — deliberately short runs that never restock. Dropping soon."
           ctaLabel="See Limited Series"
           ctaHref="/limited-series"

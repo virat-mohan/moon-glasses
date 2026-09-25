@@ -28,7 +28,7 @@ export function TileGrid({
   return (
     <div>
       <p className="mb-3 font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">
-        <span className="hidden [@media(hover:hover)]:inline">Hover To Flip, Click To View Details</span>
+        <span className="hidden [@media(hover:hover)]:inline">Hover. Flip. Deep Dive.</span>
         <span className="hidden [@media(hover:none)]:inline">Tap To Flip, Tap Again To View Details</span>
       </p>
       <div className={`tile-grid grid ${columnsClassName} gap-0`}>
