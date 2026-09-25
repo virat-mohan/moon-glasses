@@ -33,7 +33,7 @@ type InvoiceItem = { chapter_name: string; unit_price: number; quantity: number 
  */
 export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[]) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-mono-white.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const date = new Date(order.created_at).toLocaleDateString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -112,7 +112,7 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
 
           <tr>
             <td style="padding:36px 40px 8px 40px;text-align:center;">
-              <img src="${logoUrl}" alt="${brand.brandName}" width="150" style="display:inline-block;" />
+              <img src="${logoUrl}" alt="${brand.brandName}" width="150" height="75" style="display:inline-block;" />
             </td>
           </tr>
           <tr>

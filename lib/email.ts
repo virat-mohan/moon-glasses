@@ -158,12 +158,12 @@ export async function sendContactFormEmail(name: string, email: string, message:
 /** Login OTP by email — the active channel while WhatsApp/SMS delivery is still being set up. */
 export async function sendOtpEmail(email: string, code: string) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;text-align:center;">
       <div style="background-color:#ffffff;padding:16px 0;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:14px;color:#666;">Your login code is</p>
       <p style="font-size:36px;font-weight:bold;letter-spacing:0.15em;margin:8px 0 24px;">${code}</p>
@@ -183,7 +183,7 @@ type CartSessionForEmail = {
 export async function sendAbandonedCartEmail(session: CartSessionForEmail) {
   if (!session.customer_email) return false;
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const cartUrl = `${brand.siteUrl.replace(/\/$/, "")}/cart`;
   const itemLines = session.items
     .map((i) => `<li style="margin-bottom:4px;">${i.quantity} × ${i.name}</li>`)
@@ -192,7 +192,7 @@ export async function sendAbandonedCartEmail(session: CartSessionForEmail) {
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi${session.customer_name ? ` ${session.customer_name}` : ""},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">You left something in your cart:</p>
@@ -218,7 +218,7 @@ export async function sendBuyNow10Email(
 ) {
   if (!session.customer_email) return false;
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const cartUrl = `${brand.siteUrl.replace(/\/$/, "")}/cart`;
   const feedbackUrl = `${brand.siteUrl.replace(/\/$/, "")}/api/cart-feedback?session=${cartSessionId}`;
   const itemLines = session.items
@@ -230,7 +230,7 @@ export async function sendBuyNow10Email(
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi${session.customer_name ? ` ${session.customer_name}` : ""},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">Still thinking it over? Here's 10% off to help you decide:</p>
@@ -254,13 +254,13 @@ export async function sendBuyNow10Email(
 /** Sent once to each pending "notify me" lead when a sold-out Chapter's stock goes back above zero. */
 export async function sendRestockEmail(email: string, name: string | null, chapterName: string, chapterSlug: string) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const chapterUrl = `${brand.siteUrl.replace(/\/$/, "")}/chapter/${chapterSlug}`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">${chapterName} is back in stock — grab it before it sells out again.</p>
@@ -325,13 +325,13 @@ export async function sendReferralInviteEmail(
   discountRupees: number
 ) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const referralUrl = `${brand.siteUrl.replace(/\/$/, "")}/?ref=${referralCode}`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${toName ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
@@ -353,7 +353,7 @@ export async function sendReviewRequestEmail(
   chapterNames: string[]
 ) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const googleReviewUrl = "https://g.page/r/CbvWdBDo1oxlEBM/review";
   const returnUrl = `${brand.siteUrl.replace(/\/$/, "")}/return/${orderId}`;
   const itemsLine = chapterNames.join(", ");
@@ -361,7 +361,7 @@ export async function sendReviewRequestEmail(
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${customerName ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
@@ -381,7 +381,7 @@ export async function sendReviewRequestEmail(
 /** Retention nudge for a customer who hasn't ordered in a while — see the win-back cron. */
 export async function sendWinbackEmail(toEmail: string, name: string | null, milesBalance: number) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const shopUrl = `${brand.siteUrl.replace(/\/$/, "")}/series`;
 
   const milesLine =
@@ -392,7 +392,7 @@ export async function sendWinbackEmail(toEmail: string, name: string | null, mil
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">It's been a while — ${milesLine}</p>
@@ -406,12 +406,12 @@ export async function sendWinbackEmail(toEmail: string, name: string | null, mil
 /** Sent when a shipment enters an RTO-in-transit status — informational, fires alongside the WhatsApp nudge since it needs no template approval. */
 export async function sendRtoInitiatedEmail(toEmail: string, name: string | null, orderId: string) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
@@ -428,12 +428,12 @@ export async function sendRtoInitiatedEmail(toEmail: string, name: string | null
 /** Sent once an RTO'd item is physically back and the refund has actually gone through. */
 export async function sendRtoRefundedEmail(toEmail: string, name: string | null, orderId: string, refundRupees: number) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
@@ -450,12 +450,12 @@ export async function sendRtoRefundedEmail(toEmail: string, name: string | null,
 /** Sent when an admin approves a return request and schedules the pickup. */
 export async function sendReturnApprovedEmail(toEmail: string, name: string | null, orderId: string) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
@@ -471,12 +471,12 @@ export async function sendReturnApprovedEmail(toEmail: string, name: string | nu
 /** Sent when an admin denies a return request. */
 export async function sendReturnDeniedEmail(toEmail: string, name: string | null, orderId: string, reason: string) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
@@ -492,12 +492,12 @@ export async function sendReturnDeniedEmail(toEmail: string, name: string | null
 /** Sent once a customer-initiated return is physically back and refunded — same trigger point as the RTO-refunded email, different copy. */
 export async function sendReturnRefundedEmail(toEmail: string, name: string | null, orderId: string, refundRupees: number) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
@@ -661,7 +661,7 @@ export async function sendPostBarterOrderConfirmationEmail(
   tier: "gift_first" | "sell_first"
 ) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moonglasses-logo-email-v2.png`;
+  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
   const trackingUrl = `${brand.siteUrl.replace(/\/$/, "")}/barter/${orderId}`;
 
@@ -685,7 +685,7 @@ export async function sendPostBarterOrderConfirmationEmail(
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" style="display:inline-block;" />
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">${intro}</p>
