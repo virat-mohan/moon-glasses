@@ -36,7 +36,9 @@ export async function sendEmail(
   to: string,
   subject: string,
   bodyHtml: string,
-  attachments?: { url: string; name: string }[]
+  attachments?: { url: string; name: string }[],
+  /** Optional plain-text alternative, shown by clients that don't render HTML. */
+  options?: { text?: string }
 ) {
   const apiKey = await getSetting("RESEND_API_KEY");
   if (!apiKey) {
@@ -66,6 +68,7 @@ export async function sendEmail(
         to: [to],
         subject,
         html: wrapEmailHtml(bodyHtml),
+        ...(options?.text ? { text: options.text } : {}),
         // Resend fetches the file from the URL itself (same as Brevo did) —
         // no need to download and base64-encode it ourselves.
         ...(attachments && attachments.length > 0
