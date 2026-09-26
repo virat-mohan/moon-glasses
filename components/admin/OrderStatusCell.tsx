@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 
+// Presentation only: soft palette tint per status.
+const TONES: Record<string, string> = {
+  pending_whatsapp_confirmation: "gold",
+  pending_upi_payment: "bronze",
+  confirmed: "cobalt",
+  cancelled: "terracotta",
+};
+
 const OPTIONS: Record<string, string[]> = {
   status: ["pending_whatsapp_confirmation", "pending_upi_payment", "confirmed", "cancelled"],
 };
@@ -37,7 +45,8 @@ export function OrderStatusCell({
       value={current}
       onChange={(e) => update(e.target.value)}
       disabled={saving}
-      className="border border-divider bg-surface px-2 py-1 font-sans text-caption text-ink"
+      data-tone={TONES[current]}
+      className="adm-status-select border border-divider bg-surface px-2 py-1 font-sans text-caption text-ink"
     >
       {OPTIONS[field].map((o) => (
         <option key={o} value={o}>

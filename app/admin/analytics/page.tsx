@@ -59,7 +59,7 @@ function FunnelBar({ label, count, of, first }: { label: string; count: number; 
     <div className="flex items-center gap-3">
       <p className="w-40 shrink-0 text-caption text-secondary-text">{label}</p>
       <div className="h-6 flex-1 bg-surface-alt">
-        <div className="h-6 bg-ink" style={{ width: `${Math.max(rate * 100, count > 0 ? 2 : 0)}%` }} />
+        <div className="h-6 rounded-r-md bg-[var(--tone-cobalt,currentColor)]" style={{ width: `${Math.max(rate * 100, count > 0 ? 2 : 0)}%` }} />
       </div>
       <p className="w-28 shrink-0 text-right text-caption text-ink">
         {count.toLocaleString("en-IN")} {!first && `(${pct(rate)})`}
