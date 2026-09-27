@@ -80,9 +80,10 @@ export default async function Home() {
 
         {limitedChapters.length > 0 && (
           <section className="border-b border-divider pb-16 pt-8">
-            <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
-              The drop — Once its gone, its gone
+            <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">
+              Once its gone, its gone
             </p>
+            <h2 className="mb-8 font-display text-display-m uppercase text-ink md:mb-10">Limited Edition Drop</h2>
             <div className="md:hidden">
               <MobileCatalogue items={limitedItems} />
             </div>

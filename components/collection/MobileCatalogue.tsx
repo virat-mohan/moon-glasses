@@ -32,7 +32,7 @@ function Slide({ chapter, stockLabel }: Item) {
           alt={chapter.name}
           fill
           sizes="100vw"
-          className="scale-[1.2] object-contain transition-opacity duration-300"
+          className="object-contain p-[5%] contrast-[1.08] saturate-[1.1] brightness-[1.02] transition-opacity duration-300"
           style={{ opacity: model ? 0 : 1 }}
         />
         {hasModel && (

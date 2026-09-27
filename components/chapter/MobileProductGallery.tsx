@@ -50,7 +50,7 @@ export function MobileProductGallery({
               sizes="100vw"
               priority={i === 0}
               onError={s.isModel ? () => setHasModel(false) : undefined}
-              className={s.isModel ? "object-cover object-[50%_18%]" : "scale-[1.1] object-contain"}
+              className={s.isModel ? "object-cover object-[50%_18%]" : "object-contain p-[5%] contrast-[1.08] saturate-[1.1] brightness-[1.02]"}
             />
           </div>
         ))}
