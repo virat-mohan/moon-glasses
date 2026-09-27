@@ -223,7 +223,7 @@ export async function finalizeOrder(
   await Promise.allSettled([
     sendInvoiceEmail(savedOrder, orderItems),
     sendOrderNotificationEmail(savedOrder, orderItems),
-    sendOrderConfirmationWhatsApp(savedOrder, orderItems),
+    sendOrderConfirmationWhatsApp(savedOrder),
   ]);
 
   await markCartSessionConverted(payload.sessionKey, {

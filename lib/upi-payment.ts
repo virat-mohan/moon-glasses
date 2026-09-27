@@ -230,7 +230,7 @@ export async function confirmUpiOrderPayment(orderId: string) {
   await Promise.allSettled([
     sendInvoiceEmail(order, items ?? []),
     sendOrderNotificationEmail(order, items ?? []),
-    sendOrderConfirmationWhatsApp(order, items ?? []),
+    sendOrderConfirmationWhatsApp(order),
   ]);
 
   try {

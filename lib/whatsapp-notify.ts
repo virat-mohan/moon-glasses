@@ -2,10 +2,8 @@ import { getSetting } from "@/lib/settings";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendMsg91Template } from "@/lib/msg91";
 import { sendMetaCloudTemplate } from "@/lib/whatsapp-cloud";
-import { generateAndUploadOrderCard } from "@/lib/order-card";
 
 type OrderForWhatsApp = { id: string; customer_name: string; customer_phone: string; total: number };
-type OrderItemForCard = { chapter_name: string; quantity: number };
 type CartSessionForWhatsApp = {
   id: string;
   customer_name: string | null;
@@ -69,15 +67,10 @@ async function sendTemplateByName(
 }
 
 /**
- * Sends an order-confirmation WhatsApp message via MSG91's bulk API, with a
- * branded "Order Confirmed" card (generated via @vercel/og) as the
- * template's image header — WhatsApp doesn't render HTML, so an image +
- * formatted text is the closest equivalent to a designed email. Needs an
- * approved template (image header, three body variables in order: customer
- * name, order number, total) named exactly as set in
- * MSG91_ORDER_CONFIRMATION_TEMPLATE_ID in /admin/settings.
+ * Order confirmation. Template body variables in order: customer name,
+ * order number, total. Name set as MSG91_ORDER_CONFIRMATION_TEMPLATE_ID.
  */
-export async function sendOrderConfirmationWhatsApp(order: OrderForWhatsApp, items: OrderItemForCard[] = []) {
+export async function sendOrderConfirmationWhatsApp(order: OrderForWhatsApp) {
   const msg91TemplateName = await getSetting("MSG91_ORDER_CONFIRMATION_TEMPLATE_ID");
   const variables = [
     order.customer_name,
@@ -85,21 +78,7 @@ export async function sendOrderConfirmationWhatsApp(order: OrderForWhatsApp, ite
     `₹${order.total.toLocaleString("en-IN")}`,
   ];
 
-  let cardUrl: string | undefined;
-  try {
-    cardUrl = await generateAndUploadOrderCard(order, items);
-  } catch (err) {
-    console.error("Failed to generate order confirmation card — sending without it", err);
-  }
-
-  return sendTemplateByName(
-    order.customer_phone,
-    "order_confirmation",
-    msg91TemplateName,
-    variables,
-    { orderId: order.id },
-    cardUrl ? { type: "image", url: cardUrl } : undefined
-  );
+  return sendTemplateByName(order.customer_phone, "order_confirmation", msg91TemplateName, variables, { orderId: order.id });
 }
 
 /**
@@ -133,16 +112,10 @@ export async function sendShipNotificationWhatsApp(
     customerName,
     customerPhone,
     `${itemsLine} — Total ₹${totalRupees.toLocaleString("en-IN")}`,
+    labelUrl,
   ];
-  const orderNumber = orderId.slice(0, 8).toUpperCase();
   const results = await Promise.all(
-    numbers.map((phone) =>
-      sendTemplateByName(phone, "ship_notification", msg91TemplateName, variables, { orderId }, {
-        type: "document",
-        url: labelUrl,
-        filename: `label-${orderNumber}.pdf`,
-      })
-    )
+    numbers.map((phone) => sendTemplateByName(phone, "ship_notification", msg91TemplateName, variables, { orderId }))
   );
   return results.some(Boolean);
 }

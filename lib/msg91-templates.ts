@@ -5,7 +5,6 @@ type TemplateDef = {
   settingKey: SettingKey;
   name: string;
   category: "UTILITY" | "MARKETING";
-  header?: "IMAGE" | "DOCUMENT";
   body: string;
   example: string[];
   button?: { text: string; url: string };
@@ -28,7 +27,6 @@ async function templateDefs(): Promise<TemplateDef[]> {
       settingKey: "MSG91_ORDER_CONFIRMATION_TEMPLATE_ID",
       name: "order_confirmed",
       category: "UTILITY",
-      header: "IMAGE",
       body: `Hi {{1}}, your ${name} order #{{2}} is confirmed.\n\nTotal: {{3}}\n\nWe'll send tracking as soon as it ships.`,
       example: ["Anun", "AB12CD34", "₹1,499"],
     },
@@ -36,9 +34,8 @@ async function templateDefs(): Promise<TemplateDef[]> {
       settingKey: "MSG91_SHIP_NOTIFICATION_TEMPLATE_ID",
       name: "ready_to_ship",
       category: "UTILITY",
-      header: "DOCUMENT",
-      body: "New order ready to ship.\n\nOrder: #{{1}}\nCustomer: {{2}} ({{3}})\nItems: {{4}}\n\nThe shipping label is attached.",
-      example: ["AB12CD34", "Anun Dhawan", "919876543210", "1x Wayfarer, Black Green. Total ₹1,499"],
+      body: "New order ready to ship.\n\nOrder: #{{1}}\nCustomer: {{2}} ({{3}})\nItems: {{4}}\n\nShipping label: {{5}}\n\nPlease print it and hand the parcel to the courier.",
+      example: ["AB12CD34", "Anun Dhawan", "919876543210", "1x Wayfarer, Black Green. Total ₹1,499", `${site}/samples/label-sample.pdf`],
     },
     {
       settingKey: "MSG91_NDR_TEMPLATE_ID",
@@ -78,7 +75,8 @@ async function templateDefs(): Promise<TemplateDef[]> {
     {
       settingKey: "MSG91_PWAP_SHIPPED_TEMPLATE_ID",
       name: "pwap_shipped",
-      category: "UTILITY",
+      // Meta classed this as marketing because of the "come back" invite.
+      category: "MARKETING",
       body: `Congratulations {{1}}! Your friends came through and your {{2}} has shipped, completely free. Thank you for spreading the good vibes.\n\nCome back for your 2nd free pair: place another Pay With A Post order at ${domain} and do it all again.`,
       example: ["Anun", "Wayfarer, Black Green"],
     },
@@ -135,18 +133,8 @@ async function templateDefs(): Promise<TemplateDef[]> {
   ];
 }
 
-// Meta fetches the example media itself; the apex domain redirects, so point it at www directly.
-function mediaBase(site: string) {
-  return site.replace(/^https:\/\/(?!www\.)/, "https://www.");
-}
-
-function toComponents(def: TemplateDef, site: string) {
+function toComponents(def: TemplateDef) {
   const components: Record<string, unknown>[] = [];
-  if (def.header === "IMAGE") {
-    components.push({ type: "HEADER", format: "IMAGE", example: { header_handle: [`${mediaBase(site)}/images/brand/editorial-01.jpg`] } });
-  } else if (def.header === "DOCUMENT") {
-    components.push({ type: "HEADER", format: "DOCUMENT", example: { header_handle: [`${mediaBase(site)}/samples/label-sample.pdf`] } });
-  }
   components.push({ type: "BODY", text: def.body, example: { body_text: [def.example] } });
   if (def.button) {
     components.push({ type: "BUTTONS", buttons: [{ type: "URL", text: def.button.text, url: def.button.url }] });
@@ -173,8 +161,6 @@ export async function createMsg91Templates(): Promise<{ results: TemplateCreateR
   if (!authKey || !integratedNumber) {
     throw new Error("Add the MSG91 Auth Key and WhatsApp Integrated Number in Settings first.");
   }
-  const site = (await getBrandProfile()).siteUrl.replace(/\/$/, "");
-
   const results: TemplateCreateResult[] = await Promise.all(
     (await templateDefs()).map(async (def): Promise<TemplateCreateResult> => {
       try {
@@ -187,13 +173,13 @@ export async function createMsg91Templates(): Promise<{ results: TemplateCreateR
             language: "en",
             category: def.category,
             button_url: def.button ? "true" : "false",
-            components: toComponents(def, site),
+            components: toComponents(def),
           }),
         });
         const data = await res.json().catch(() => null);
         const message =
           typeof data?.errors === "string" ? data.errors : JSON.stringify(data?.errors ?? data?.message ?? data ?? res.status);
-        const alreadyExists = /already exist/i.test(message);
+        const alreadyExists = /already exist|already English content|doesn.t match the one that.s already associated/i.test(message);
         const ok = (res.ok && !data?.hasError) || alreadyExists;
         if (ok) await setSetting(def.settingKey, def.name);
         else console.error("MSG91 template create failed", def.name, message);

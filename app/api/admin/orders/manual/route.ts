@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     await Promise.allSettled([
       sendInvoiceEmail(order, orderItems),
       sendOrderNotificationEmail(order, orderItems),
-      sendOrderConfirmationWhatsApp(order, orderItems),
+      sendOrderConfirmationWhatsApp(order),
     ]);
 
     return NextResponse.json({ ok: true, orderId: order.id });

@@ -374,7 +374,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     // ships now, so it gets the ordinary order confirmation.
     tier === "sell_first"
       ? sendPostBarterConfirmedWhatsApp(savedOrder, couponCode, requiredOrders, orderItems[0]?.chapter_name ?? "pair")
-      : sendOrderConfirmationWhatsApp(savedOrder, orderItems),
+      : sendOrderConfirmationWhatsApp(savedOrder),
   ]);
 
   return { orderId: savedOrder.id as string, couponCode, requiredOrders, tier };
