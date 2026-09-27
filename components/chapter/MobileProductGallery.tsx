@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { chapterImageSrc } from "@/lib/chapters";
-import { PRODUCT_SHOT_CLASS } from "@/components/collection/CatalogueCard";
+import { PRODUCT_BG, PRODUCT_SHOT_CLASS } from "@/components/collection/CatalogueCard";
 
 /** Mobile product photos: full-width, zoomed in, swipe between angles and the model shot. */
 export function MobileProductGallery({
@@ -42,7 +42,7 @@ export function MobileProductGallery({
           <div
             key={s.src}
             className="relative aspect-[4/5] w-full flex-none snap-center overflow-hidden"
-            style={{ backgroundColor: s.isModel ? "var(--moon-black)" : "#fff" }}
+            style={{ backgroundColor: s.isModel ? "var(--moon-black)" : PRODUCT_BG }}
           >
             <Image
               src={s.src}

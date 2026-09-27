@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { chapterImageSrc } from "@/lib/chapters";
-import { PRODUCT_SHOT_CLASS } from "@/components/collection/CatalogueCard";
+import { PRODUCT_BG, PRODUCT_SHOT_CLASS } from "@/components/collection/CatalogueCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function Product360Viewer({
@@ -35,7 +35,7 @@ export function Product360Viewer({
     <div>
       <div
         className="group relative aspect-[4/5] overflow-hidden shadow-[inset_0_0_0_1px_var(--moon-gold)]"
-        style={{ backgroundColor: frames[current]?.isModel ? "var(--moon-black)" : "#fff" }}
+        style={{ backgroundColor: frames[current]?.isModel ? "var(--moon-black)" : PRODUCT_BG }}
       >
         {frames.map((f, i) => (
           <Image
@@ -64,9 +64,8 @@ export function Product360Viewer({
           <button
             key={f.src}
             onClick={() => setFrame(i)}
-            className={`relative aspect-square overflow-hidden shadow-[inset_0_0_0_1px_var(--moon-gold)] transition-opacity ${
-              f.isModel ? "bg-[var(--moon-black)]" : "bg-white"
-            } ${i === current ? "opacity-100 ring-1 ring-ink" : "opacity-60 hover:opacity-100"}`}
+            style={{ backgroundColor: f.isModel ? "var(--moon-black)" : PRODUCT_BG }}
+            className={`relative aspect-square overflow-hidden shadow-[inset_0_0_0_1px_var(--moon-gold)] transition-opacity ${i === current ? "opacity-100 ring-1 ring-ink" : "opacity-60 hover:opacity-100"}`}
             aria-label={`${name} photo ${i + 1}`}
           >
             <Image

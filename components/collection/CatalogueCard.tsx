@@ -11,7 +11,8 @@ import type { StockLabel } from "@/lib/inventory";
 
 export type CatalogueItem = { chapter: Chapter; stockLabel: StockLabel };
 
-export const PRODUCT_SHOT_CLASS = "object-contain p-[5%] contrast-[1.08] saturate-[1.1] brightness-[1.02]";
+export const PRODUCT_BG = "#fff";
+export const PRODUCT_SHOT_CLASS = "object-contain p-[5%] contrast-[1.08] saturate-[1.1]";
 
 /**
  * One photo per pair, model first. Touch: each tap switches model/product.
@@ -48,7 +49,7 @@ export function CatalogueCard({ chapter, stockLabel, sizes = "100vw" }: Catalogu
         }}
         aria-label={`${chapter.name} — ${model ? "showing it worn" : "showing the product"}`}
         className="relative block aspect-[4/5] w-full cursor-pointer overflow-hidden"
-        style={{ backgroundColor: model ? "var(--moon-black)" : "#fff" }}
+        style={{ backgroundColor: model ? "var(--moon-black)" : PRODUCT_BG }}
       >
         <Image
           src={productImage}

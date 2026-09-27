@@ -93,7 +93,7 @@ export default function CartPage() {
                       alt={item.name}
                       fill
                       sizes="144px"
-                      className="object-contain p-1 contrast-[1.08] saturate-[1.1] brightness-[1.02] md:p-2"
+                      className="object-contain p-1 contrast-[1.08] saturate-[1.1] md:p-2"
                     />
                   </Link>
 
