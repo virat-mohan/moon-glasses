@@ -175,31 +175,34 @@ export async function createMsg91Templates(): Promise<{ results: TemplateCreateR
   }
   const site = (await getBrandProfile()).siteUrl.replace(/\/$/, "");
 
-  const results: TemplateCreateResult[] = [];
-  for (const def of await templateDefs()) {
-    try {
-      const res = await fetch("https://control.msg91.com/api/v5/whatsapp/client-panel-template/", {
-        method: "POST",
-        headers: { authkey: authKey, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          integrated_number: integratedNumber,
-          template_name: def.name,
-          language: "en",
-          category: def.category,
-          button_url: def.button ? "true" : "false",
-          components: toComponents(def, site),
-        }),
-      });
-      const data = await res.json().catch(() => null);
-      const message = typeof data?.errors === "string" ? data.errors : JSON.stringify(data?.errors ?? data?.message ?? data ?? res.status);
-      const alreadyExists = /already exist/i.test(message);
-      const ok = (res.ok && !data?.hasError) || alreadyExists;
-      if (ok) await setSetting(def.settingKey, def.name);
-      results.push({ name: def.name, ok, detail: ok ? (alreadyExists ? "Already exists" : "Submitted for approval") : message });
-    } catch (err) {
-      results.push({ name: def.name, ok: false, detail: err instanceof Error ? err.message : "Request failed" });
-    }
-  }
+  const results: TemplateCreateResult[] = await Promise.all(
+    (await templateDefs()).map(async (def): Promise<TemplateCreateResult> => {
+      try {
+        const res = await fetch("https://control.msg91.com/api/v5/whatsapp/client-panel-template/", {
+          method: "POST",
+          headers: { authkey: authKey, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            integrated_number: integratedNumber,
+            template_name: def.name,
+            language: "en",
+            category: def.category,
+            button_url: def.button ? "true" : "false",
+            components: toComponents(def, site),
+          }),
+        });
+        const data = await res.json().catch(() => null);
+        const message =
+          typeof data?.errors === "string" ? data.errors : JSON.stringify(data?.errors ?? data?.message ?? data ?? res.status);
+        const alreadyExists = /already exist/i.test(message);
+        const ok = (res.ok && !data?.hasError) || alreadyExists;
+        if (ok) await setSetting(def.settingKey, def.name);
+        else console.error("MSG91 template create failed", def.name, message);
+        return { name: def.name, ok, detail: ok ? (alreadyExists ? "Already exists" : "Submitted for approval") : message };
+      } catch (err) {
+        return { name: def.name, ok: false, detail: err instanceof Error ? err.message : "Request failed" };
+      }
+    })
+  );
 
   let namespace: string | null = null;
   try {
