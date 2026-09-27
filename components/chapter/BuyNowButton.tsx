@@ -11,6 +11,7 @@ export function BuyNowButton({
   disabled = false,
   quantity = 1,
   variant = "outline",
+  destination = "checkout",
 }: {
   chapter: Chapter;
   image: string;
@@ -18,6 +19,8 @@ export function BuyNowButton({
   quantity?: number;
   /** "outline" is the bordered PDP button; "minimal" is a plain text link (no box) for tight tile overlays. */
   variant?: "outline" | "minimal";
+  /** "cart" adds the pair to the existing cart and opens it; "checkout" replaces the cart and skips straight to checkout. */
+  destination?: "checkout" | "cart";
 }) {
   const { clear, addItem } = useCart();
   const router = useRouter();
@@ -27,6 +30,11 @@ export function BuyNowButton({
 
   function handleClick() {
     setLoading(true);
+    if (destination === "cart") {
+      addItem(chapter, image, quantity);
+      router.push("/cart");
+      return;
+    }
     clear();
     addItem(chapter, image, quantity);
     router.push("/checkout");

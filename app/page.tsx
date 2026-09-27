@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { TileGrid } from "@/components/collection/TileGrid";
+import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
 import { CollectionExplorer } from "@/components/collection/CollectionExplorer";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
@@ -61,6 +62,13 @@ export default async function Home() {
     console.error("Homepage: failed to compute trending chapters", err);
   }
 
+  const toItem = (chapter: (typeof collection)[number]) => ({
+    chapter,
+    stockLabel: stockLabelFor(inventory[chapter.slug]),
+  });
+  const limitedItems = limitedChapters.map(toItem);
+  const collectionItems = collection.map(toItem);
+
   return (
     <>
       <Hero />
@@ -75,17 +83,17 @@ export default async function Home() {
             <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
               The drop — Once its gone, its gone
             </p>
-            <TileGrid
-              items={limitedChapters.map((chapter) => ({
-                chapter,
-                stockLabel: stockLabelFor(inventory[chapter.slug]),
-              }))}
-            />
+            <div className="md:hidden">
+              <MobileCatalogue items={limitedItems} />
+            </div>
+            <div className="hidden md:block">
+              <TileGrid items={limitedItems} />
+            </div>
           </section>
         )}
 
         {trending.length > 0 && (
-          <section className="border-b border-divider pb-16 pt-8">
+          <section className="hidden border-b border-divider pb-16 pt-8 md:block">
             <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
               Current vibe — Yours and ours
             </p>
@@ -98,52 +106,52 @@ export default async function Home() {
           </section>
         )}
 
-        <section id="shop" className="scroll-mt-20 pb-24 pt-16">
+        <section id="shop" className="scroll-mt-20 pb-16 pt-12 md:pb-24 md:pt-16">
           <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">New In</p>
           <h2 className="font-display text-display-m uppercase text-ink">The Collection</h2>
           <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
             The core crew/ edit — the pairs we keep coming back to.
           </p>
-          <p className="mt-1 max-w-md font-sans text-caption text-secondary-text/70">
+          <p className="mt-1 hidden max-w-md font-sans text-caption text-secondary-text/70 md:block">
             {shapeCount} shape{shapeCount === 1 ? "" : "s"}, {colourwayCount} colourway
             {colourwayCount === 1 ? "" : "s"}, across two materials. ₹1,499 acetate, ₹1,999 metal.
           </p>
 
-          <div className="mt-10">
-            <CollectionExplorer
-              items={collection.map((chapter) => ({
-                chapter,
-                stockLabel: stockLabelFor(inventory[chapter.slug]),
-              }))}
-            />
+          <div className="mt-8 md:hidden">
+            <MobileCatalogue items={collectionItems} />
+          </div>
+          <div className="mt-10 hidden md:block">
+            <CollectionExplorer items={collectionItems} />
           </div>
         </section>
 
         {postBarterEnabled && <PayWithAPostBanner />}
 
-        <EditorialSplit
-          image="/images/brand/editorial-01.jpg"
-          eyebrow="Made For After Dark"
-          title="Fashion First"
-          copy="The pair for gigs, sets, night outs — light tints for the perfect after dark fashion accessory."
-        />
-        <EditorialSplit
-          image="/images/brand/editorial-02.jpg"
-          eyebrow="New In"
-          title="Light Tints"
-          copy="Wayfarer, round, rectangle, aviator and octagon — five shapes, 16 lens tints, across plastic and metal."
-          ctaLabel="Discover The Collection"
-          ctaHref="/#shop"
-          reverse
-        />
-        <EditorialSplit
-          image="/images/brand/editorial-01.jpg"
-          eyebrow="Once its gone, its gone"
-          title="The drop"
-          copy="A separate line from the core collection — deliberately short runs that never restock. Dropping soon."
-          ctaLabel="See Limited Series"
-          ctaHref="/limited-series"
-        />
+        <div className="hidden md:block">
+          <EditorialSplit
+            image="/images/brand/editorial-01.jpg"
+            eyebrow="Made For After Dark"
+            title="Fashion First"
+            copy="The pair for gigs, sets, night outs — light tints for the perfect after dark fashion accessory."
+          />
+          <EditorialSplit
+            image="/images/brand/editorial-02.jpg"
+            eyebrow="New In"
+            title="Light Tints"
+            copy="Wayfarer, round, rectangle, aviator and octagon — five shapes, 16 lens tints, across plastic and metal."
+            ctaLabel="Discover The Collection"
+            ctaHref="/#shop"
+            reverse
+          />
+          <EditorialSplit
+            image="/images/brand/editorial-01.jpg"
+            eyebrow="Once its gone, its gone"
+            title="The drop"
+            copy="A separate line from the core collection — deliberately short runs that never restock. Dropping soon."
+            ctaLabel="See Limited Series"
+            ctaHref="/limited-series"
+          />
+        </div>
 
         {explorerPosts.length > 0 && (
           <section id="crew" className="scroll-mt-24 border-t border-divider py-24">
@@ -183,7 +191,7 @@ export default async function Home() {
           </section>
         )}
 
-        <section className="grid grid-cols-2 gap-8 border-t border-divider py-24 md:grid-cols-4">
+        <section className="hidden grid-cols-2 gap-8 border-t border-divider py-24 md:grid md:grid-cols-4">
           {buildPillars(shapeCount, colourwayCount).map((p) => (
             <div key={p.title}>
               <p className="text-body-s text-ink">{p.title}</p>

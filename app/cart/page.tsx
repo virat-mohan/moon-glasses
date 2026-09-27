@@ -93,7 +93,7 @@ export default function CartPage() {
                       alt={item.name}
                       fill
                       sizes="144px"
-                      className="object-contain p-2"
+                      className="scale-[1.35] object-contain md:scale-100 md:p-2"
                     />
                   </Link>
 
@@ -109,7 +109,7 @@ export default function CartPage() {
                     </p>
                   </div>
 
-                  <div className="ml-auto flex shrink-0 items-center gap-3 sm:ml-0">
+                  <div className="flex w-full shrink-0 items-center justify-end gap-3 sm:ml-0 sm:w-auto">
                     <div className="flex items-center gap-3 border border-divider px-3 py-1.5">
                       <button
                         aria-label="Decrease quantity"

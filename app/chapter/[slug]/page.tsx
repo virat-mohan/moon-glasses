@@ -8,7 +8,9 @@ import { getExplorerPostsForChapter } from "@/lib/community";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { getBrandProfile } from "@/lib/brand";
 import { Product360Viewer } from "@/components/chapter/Product360Viewer";
+import { MobileProductGallery } from "@/components/chapter/MobileProductGallery";
 import { CollectionItem } from "@/components/collection/CollectionItem";
+import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
 import { AddToCartButton } from "@/components/chapter/AddToCartButton";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import { ViewContentTracker } from "@/components/tracking/ViewContentTracker";
@@ -164,7 +166,17 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
           ]}
         />
         <div className="mt-6 grid grid-cols-1 gap-12 md:grid-cols-2">
-          <Product360Viewer folder={chapter.folder} images={chapter.images} name={chapter.name} />
+          <div className="md:hidden">
+            <MobileProductGallery
+              folder={chapter.folder}
+              images={chapter.images}
+              modelImage={chapter.modelImage}
+              name={chapter.name}
+            />
+          </div>
+          <div className="hidden md:block">
+            <Product360Viewer folder={chapter.folder} images={chapter.images} name={chapter.name} />
+          </div>
 
           <div className="md:pt-4">
             <h1 className="font-display text-heading-xl uppercase text-ink">{shortProductName(chapter.name)}</h1>
@@ -195,7 +207,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
               </p>
             )}
 
-            <div className="mt-10 flex flex-wrap gap-4 [&>button]:min-w-[200px]">
+            <div className="mt-8 grid grid-cols-2 gap-3 [&>button]:py-3.5 md:mt-10 md:flex md:flex-wrap md:gap-4 md:[&>button]:min-w-[200px] md:[&>button]:py-2.5">
               <AddToCartButton
                 chapter={chapter}
                 image={chapterImageSrc(chapter.folder, chapter.primary)}
@@ -302,7 +314,12 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             <p className="mb-6 text-caption uppercase tracking-[0.08em] text-secondary-text">
               Continue Exploring — {chapter.series}
             </p>
-            <div className="grid grid-cols-2 gap-0 md:grid-cols-5">
+            <div className="md:hidden">
+              <MobileCatalogue
+                items={others.map((c) => ({ chapter: c, stockLabel: stockLabelFor(inventory[c.slug]) }))}
+              />
+            </div>
+            <div className="hidden grid-cols-2 gap-0 md:grid md:grid-cols-5">
               {others.map((c, i) => (
                 <CollectionItem
                   key={c.slug}
