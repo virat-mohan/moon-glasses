@@ -2,6 +2,7 @@ import { getSetting } from "@/lib/settings";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendMsg91Template } from "@/lib/msg91";
 import { sendMetaCloudTemplate } from "@/lib/whatsapp-cloud";
+import { generateAndUploadPwapShareCard } from "@/lib/pwap-share-card";
 
 type OrderForWhatsApp = { id: string; customer_name: string; customer_phone: string; total: number };
 type CartSessionForWhatsApp = {
@@ -270,21 +271,36 @@ export async function sendWinbackWhatsApp(phone: string, name: string, milesBala
   return sendTemplateByName(phone, "winback", msg91TemplateName, variables, {});
 }
 
-/** Pay With A Post confirmation: the shopper's code and how many friends need to buy with it. */
+/**
+ * Pay With A Post confirmation: the shopper's code and how many friends need
+ * to buy with it. Once the image version (MSG91_PWAP_SHARE_TEMPLATE_ID, same
+ * body, image header) is approved, it carries a ready-to-post card they can
+ * forward straight to Instagram; until then the text version goes out.
+ */
 export async function sendPostBarterConfirmedWhatsApp(
   order: OrderForWhatsApp,
   couponCode: string,
   requiredOrders: number,
   itemName: string
 ) {
+  const variables = [order.customer_name, couponCode, String(requiredOrders), itemName];
+  const shareTemplate = await getSetting("MSG91_PWAP_SHARE_TEMPLATE_ID");
+  if (shareTemplate) {
+    try {
+      const cardUrl = await generateAndUploadPwapShareCard(order.id, couponCode);
+      if (cardUrl) {
+        const sent = await sendTemplateByName(order.customer_phone, "pwap_share_post", shareTemplate, variables, { orderId: order.id }, {
+          type: "image",
+          url: cardUrl,
+        });
+        if (sent) return true;
+      }
+    } catch (err) {
+      console.error("Pay With A Post share card failed — sending text version", order.id, err);
+    }
+  }
   const templateName = await getSetting("MSG91_PWAP_CONFIRMED_TEMPLATE_ID");
-  return sendTemplateByName(
-    order.customer_phone,
-    "pwap_order_confirmed",
-    templateName,
-    [order.customer_name, couponCode, String(requiredOrders), itemName],
-    { orderId: order.id }
-  );
+  return sendTemplateByName(order.customer_phone, "pwap_order_confirmed", templateName, variables, { orderId: order.id });
 }
 
 /** Sent each time a friend's paid order lands on a Pay With A Post code, before the threshold is reached. */
