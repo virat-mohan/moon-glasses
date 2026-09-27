@@ -22,6 +22,11 @@ import { usePathname } from "next/navigation";
 export function ScrollToTop() {
   const pathname = usePathname();
 
+  // A refresh should start at the top too, not wherever the browser remembers.
+  useEffect(() => {
+    window.history.scrollRestoration = "manual";
+  }, []);
+
   useEffect(() => {
     if (window.location.hash) return; // let the browser/Next scroll to the anchor instead
     window.scrollTo(0, 0);

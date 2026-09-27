@@ -3,58 +3,79 @@
 import Image from "next/image";
 import { useState } from "react";
 import { chapterImageSrc } from "@/lib/chapters";
-import { ChevronRight } from "lucide-react";
+import { PRODUCT_SHOT_CLASS } from "@/components/collection/CatalogueCard";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function Product360Viewer({
   folder,
   images,
+  modelImage,
   name,
 }: {
   folder: string;
   images: string[];
+  modelImage?: string;
   name: string;
 }) {
   const [frame, setFrame] = useState(0);
-  const frameCount = images.length;
+  const [hasModel, setHasModel] = useState(true);
+  const model = modelImage ?? `/images/chapters/${encodeURIComponent(folder)}/lifestyle.jpg`;
+  const frames = [
+    ...images.map((img) => ({ src: chapterImageSrc(folder, img), isModel: false })),
+    ...(hasModel ? [{ src: model, isModel: true }] : []),
+  ];
+  const count = frames.length;
+  const current = Math.min(frame, count - 1);
 
-  const next = () => setFrame((f) => (f + 1) % frameCount);
+  const step = (d: number) => setFrame((f) => (Math.min(f, count - 1) + d + count) % count);
+  const arrow =
+    "absolute top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-ink bg-cream text-ink opacity-0 transition hover:bg-ink hover:text-cream group-hover:opacity-100";
 
   return (
     <div>
-      <div className="chapter-card-bg relative aspect-square overflow-hidden bg-white shadow-[inset_0_0_0_1px_var(--moon-gold)]">
-        {images.map((img, i) => (
+      <div
+        className="group relative aspect-[4/5] overflow-hidden shadow-[inset_0_0_0_1px_var(--moon-gold)]"
+        style={{ backgroundColor: frames[current]?.isModel ? "var(--moon-black)" : "#fff" }}
+      >
+        {frames.map((f, i) => (
           <Image
-            key={img}
-            src={chapterImageSrc(folder, img)}
-            alt={i === frame ? name : ""}
+            key={f.src}
+            src={f.src}
+            alt={i === current ? name : ""}
             fill
             sizes="(min-width: 1024px) 50vw, 100vw"
-            className="object-contain p-[6%]"
-            style={{ opacity: i === frame ? 1 : 0 }}
+            className={`${f.isModel ? "object-cover object-[50%_18%]" : PRODUCT_SHOT_CLASS} transition-opacity duration-300`}
+            style={{ opacity: i === current ? 1 : 0 }}
             priority={i === 0}
+            onError={f.isModel ? () => setHasModel(false) : undefined}
           />
         ))}
 
-        <button
-          onClick={next}
-          aria-label="Next angle"
-          className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-ink bg-cream text-ink transition-colors hover:bg-ink hover:text-cream"
-        >
+        <button onClick={() => step(-1)} aria-label="Previous photo" className={`${arrow} left-4`}>
+          <ChevronLeft size={20} strokeWidth={1.5} />
+        </button>
+        <button onClick={() => step(1)} aria-label="Next photo" className={`${arrow} right-4`}>
           <ChevronRight size={20} strokeWidth={1.5} />
         </button>
       </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-3">
-        {images.map((img, i) => (
+      <div className="mt-4 grid grid-cols-5 gap-3">
+        {frames.map((f, i) => (
           <button
-            key={img}
+            key={f.src}
             onClick={() => setFrame(i)}
-            className={`relative aspect-square overflow-hidden bg-white shadow-[inset_0_0_0_1px_var(--moon-gold)] transition-opacity ${
-              i === frame ? "opacity-100 ring-1 ring-ink" : "opacity-60 hover:opacity-100"
-            }`}
-            aria-label={`${name} angle ${i + 1}`}
+            className={`relative aspect-square overflow-hidden shadow-[inset_0_0_0_1px_var(--moon-gold)] transition-opacity ${
+              f.isModel ? "bg-[var(--moon-black)]" : "bg-white"
+            } ${i === current ? "opacity-100 ring-1 ring-ink" : "opacity-60 hover:opacity-100"}`}
+            aria-label={`${name} photo ${i + 1}`}
           >
-            <Image src={chapterImageSrc(folder, img)} alt="" fill sizes="120px" className="object-contain p-[6%]" />
+            <Image
+              src={f.src}
+              alt=""
+              fill
+              sizes="120px"
+              className={f.isModel ? "object-cover object-[50%_18%]" : PRODUCT_SHOT_CLASS}
+            />
           </button>
         ))}
       </div>

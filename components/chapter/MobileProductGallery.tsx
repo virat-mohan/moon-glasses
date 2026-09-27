@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { chapterImageSrc } from "@/lib/chapters";
+import { PRODUCT_SHOT_CLASS } from "@/components/collection/CatalogueCard";
 
 /** Mobile product photos: full-width, zoomed in, swipe between angles and the model shot. */
 export function MobileProductGallery({
@@ -50,7 +51,7 @@ export function MobileProductGallery({
               sizes="100vw"
               priority={i === 0}
               onError={s.isModel ? () => setHasModel(false) : undefined}
-              className={s.isModel ? "object-cover object-[50%_18%]" : "object-contain p-[5%] contrast-[1.08] saturate-[1.1] brightness-[1.02]"}
+              className={s.isModel ? "object-cover object-[50%_18%]" : PRODUCT_SHOT_CLASS}
             />
           </div>
         ))}

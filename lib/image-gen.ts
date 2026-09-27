@@ -186,7 +186,7 @@ async function uploadGeneratedImage(base64Png: string, storagePathPrefix: string
  * angle URLs and a gender.
  *
  * Generated at 4:5 portrait (rendered ~1080x1350) — the aspect ratio the
- * homepage tile flip (CollectionItem) and the product page gallery both
+ * homepage tile flip (CatalogueCard) and the product page gallery both
  * expect, and one that also crops cleanly to a mobile full-bleed hero or a
  * square Instagram feed post without the face/product being cut off. If a
  * true full-bleed 9:16 mobile Story/Reel asset is ever needed instead, pass

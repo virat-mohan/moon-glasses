@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TileGrid } from "@/components/collection/TileGrid";
+import { CatalogueGrid } from "@/components/collection/CatalogueCard";
+import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
 import { STYLE_ORDER, styleRimLens } from "@/lib/chapters";
 import type { Chapter } from "@/types/chapter";
 import type { StockLabel } from "@/lib/inventory";
@@ -62,6 +63,7 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
     });
   }, [withMeta, style, rim, lens]);
 
+  const filteredItems = filtered.map(({ chapter, stockLabel }) => ({ chapter, stockLabel }));
   const hasFilter = !!style;
 
   function chipClass(active: boolean) {
@@ -155,9 +157,14 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
       {filtered.length === 0 ? (
         <p className="mt-10 text-body-s text-secondary-text">No pairs match that combination yet.</p>
       ) : (
-        <div className="mt-10">
-          <TileGrid items={filtered.map(({ chapter, stockLabel }) => ({ chapter, stockLabel }))} />
-        </div>
+        <>
+          <div className="mt-6 md:hidden">
+            <MobileCatalogue key={`${style}-${rim}-${lens}`} items={filteredItems} />
+          </div>
+          <div className="mt-10 hidden md:block">
+            <CatalogueGrid items={filteredItems} />
+          </div>
+        </>
       )}
     </div>
   );

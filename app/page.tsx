@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { TileGrid } from "@/components/collection/TileGrid";
 import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
+import { CatalogueGrid } from "@/components/collection/CatalogueCard";
 import { CollectionExplorer } from "@/components/collection/CollectionExplorer";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
@@ -12,7 +12,6 @@ import { PayWithAPostBanner } from "@/components/hero/PayWithAPostBanner";
 import { isPostBarterEnabled } from "@/lib/post-barter";
 import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
-import { computeWebsiteAnalytics } from "@/lib/website-analytics";
 import { getExplorerPosts } from "@/lib/community";
 import { chapters, groupByStyle, styleRimLens } from "@/lib/chapters";
 
@@ -48,20 +47,6 @@ export default async function Home() {
   const explorerPosts = await getExplorerPosts();
   const limitedChapters = await getLimitedSeriesChapters();
 
-  let trending: typeof collection = [];
-  try {
-    const analytics = await computeWebsiteAnalytics(
-      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      new Date().toISOString()
-    );
-    trending = analytics.topViewedChapters
-      .map((v) => collection.find((c) => c.slug === v.slug))
-      .filter((c): c is (typeof collection)[number] => !!c)
-      .slice(0, 4);
-  } catch (err) {
-    console.error("Homepage: failed to compute trending chapters", err);
-  }
-
   const toItem = (chapter: (typeof collection)[number]) => ({
     chapter,
     stockLabel: stockLabelFor(inventory[chapter.slug]),
@@ -88,22 +73,17 @@ export default async function Home() {
               <MobileCatalogue items={limitedItems} />
             </div>
             <div className="hidden md:block">
-              <TileGrid items={limitedItems} />
+              <CatalogueGrid
+                items={limitedItems}
+                columnsClassName={
+                  limitedItems.length === 5
+                    ? "md:grid-cols-3 lg:grid-cols-5"
+                    : limitedItems.length === 3
+                      ? "md:grid-cols-3"
+                      : "md:grid-cols-3 lg:grid-cols-4"
+                }
+              />
             </div>
-          </section>
-        )}
-
-        {trending.length > 0 && (
-          <section className="hidden border-b border-divider pb-16 pt-8 md:block">
-            <p className="mb-6 text-caption uppercase tracking-[0.12em] text-secondary-text">
-              Current vibe — Yours and ours
-            </p>
-            <TileGrid
-              items={trending.map((chapter) => ({
-                chapter,
-                stockLabel: stockLabelFor(inventory[chapter.slug]),
-              }))}
-            />
           </section>
         )}
 
@@ -118,10 +98,7 @@ export default async function Home() {
             {colourwayCount === 1 ? "" : "s"}, across two materials. ₹1,499 acetate, ₹1,999 metal.
           </p>
 
-          <div className="mt-8 md:hidden">
-            <MobileCatalogue items={collectionItems} />
-          </div>
-          <div className="mt-10 hidden md:block">
+          <div className="mt-8 md:mt-10">
             <CollectionExplorer items={collectionItems} />
           </div>
         </section>
@@ -134,23 +111,6 @@ export default async function Home() {
             eyebrow="Made For After Dark"
             title="Fashion First"
             copy="The pair for gigs, sets, night outs — light tints for the perfect after dark fashion accessory."
-          />
-          <EditorialSplit
-            image="/images/brand/editorial-02.jpg"
-            eyebrow="New In"
-            title="Light Tints"
-            copy="Wayfarer, round, rectangle, aviator and octagon — five shapes, 16 lens tints, across plastic and metal."
-            ctaLabel="Discover The Collection"
-            ctaHref="/#shop"
-            reverse
-          />
-          <EditorialSplit
-            image="/images/brand/editorial-01.jpg"
-            eyebrow="Once its gone, its gone"
-            title="The drop"
-            copy="A separate line from the core collection — deliberately short runs that never restock. Dropping soon."
-            ctaLabel="See Limited Series"
-            ctaHref="/limited-series"
           />
         </div>
 

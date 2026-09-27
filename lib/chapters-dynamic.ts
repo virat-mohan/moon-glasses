@@ -107,7 +107,7 @@ async function getMergedChapters(): Promise<(Chapter & { collection: ChapterColl
       name: o.name ?? c.name,
       primary: o.primary_image ?? c.primary,
       // sideImage is what the homepage card and the product page's own
-      // og:image/thumbnail actually render (see CollectionItem and
+      // og:image/thumbnail actually render (see CatalogueCard and
       // chapter/[slug]/page.tsx) — without also overriding it here, setting
       // a new hero image only changed the product page's main gallery shot
       // and silently left the homepage showing the old one.
@@ -167,12 +167,12 @@ export async function getMasterInventoryChapters(): Promise<
     const primary = isStatic ? chapterImageSrc(c.folder, c.primary) : c.primary;
 
     // Static chapters don't store their lifestyle shot as `modelImage` at
-    // all — CollectionItem instead falls back to the on-disk convention
+    // all — CatalogueCard instead falls back to the on-disk convention
     // /images/chapters/<folder>/lifestyle.jpg at render time. Without
     // checking that same file here, every one of the original 16 looked
     // like it had no model photo yet, even when it's been live with one for
     // ages. Only claim it exists when the file is actually there, same as
-    // CollectionItem's own onError fallback.
+    // CatalogueCard's own onError fallback.
     let modelImage = c.modelImage;
     if (!modelImage && isStatic) {
       const lifestylePath = path.join(process.cwd(), "public", "images", "chapters", c.folder, "lifestyle.jpg");

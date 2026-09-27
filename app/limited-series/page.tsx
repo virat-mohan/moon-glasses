@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CollectionItem } from "@/components/collection/CollectionItem";
+import { CatalogueGrid } from "@/components/collection/CatalogueCard";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
@@ -36,15 +36,13 @@ export default async function LimitedSeriesPage() {
             </p>
           </div>
         ) : (
-          <div className="mt-10 grid grid-cols-2 gap-0 md:grid-cols-4">
-            {limitedSeries.map((chapter, i) => (
-              <CollectionItem
-                key={chapter.slug}
-                chapter={chapter}
-                index={i}
-                stockLabel={stockLabelFor(inventory[chapter.slug])}
-              />
-            ))}
+          <div className="mt-10">
+            <CatalogueGrid
+              items={limitedSeries.map((chapter) => ({
+                chapter,
+                stockLabel: stockLabelFor(inventory[chapter.slug]),
+              }))}
+            />
           </div>
         )}
 

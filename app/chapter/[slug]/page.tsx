@@ -9,7 +9,7 @@ import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { getBrandProfile } from "@/lib/brand";
 import { Product360Viewer } from "@/components/chapter/Product360Viewer";
 import { MobileProductGallery } from "@/components/chapter/MobileProductGallery";
-import { CollectionItem } from "@/components/collection/CollectionItem";
+import { CatalogueGrid } from "@/components/collection/CatalogueCard";
 import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
 import { AddToCartButton } from "@/components/chapter/AddToCartButton";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
@@ -92,6 +92,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
   const others = pickContinueExploring(otherPool, limitedSlugs, 4);
   const explorerPosts = await getExplorerPostsForChapter(chapter.slug);
   const inventory = await getInventoryMap();
+  const otherItems = others.map((c) => ({ chapter: c, stockLabel: stockLabelFor(inventory[c.slug]) }));
   const stock = inventory[chapter.slug];
   const stockLabel = stockLabelFor(stock);
   const brand = await getBrandProfile();
@@ -175,7 +176,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             />
           </div>
           <div className="hidden md:block">
-            <Product360Viewer folder={chapter.folder} images={chapter.images} name={chapter.name} />
+            <Product360Viewer folder={chapter.folder} images={chapter.images} modelImage={chapter.modelImage} name={chapter.name} />
           </div>
 
           <div className="md:pt-4">
@@ -315,19 +316,10 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
               Continue Exploring — {chapter.series}
             </p>
             <div className="md:hidden">
-              <MobileCatalogue
-                items={others.map((c) => ({ chapter: c, stockLabel: stockLabelFor(inventory[c.slug]) }))}
-              />
+              <MobileCatalogue items={otherItems} />
             </div>
-            <div className="hidden grid-cols-2 gap-0 md:grid md:grid-cols-5">
-              {others.map((c, i) => (
-                <CollectionItem
-                  key={c.slug}
-                  chapter={c}
-                  index={i}
-                  stockLabel={stockLabelFor(inventory[c.slug])}
-                />
-              ))}
+            <div className="hidden md:block">
+              <CatalogueGrid items={otherItems} columnsClassName="md:grid-cols-4" />
             </div>
           </section>
         )}
