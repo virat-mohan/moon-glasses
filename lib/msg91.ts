@@ -80,68 +80,6 @@ export async function sendMsg91Flow(
 }
 
 /**
- * Sends a WhatsApp template message via a OneAPI Flow. Distinct from
- * sendMsg91Flow above: that one is confirmed working for the SMS OTP Flow,
- * which takes variables as flat VAR1/VAR2 strings — but MSG91's own
- * generated code sample for a WhatsApp-template Flow uses a different shape,
- * body_1/body_2 keyed objects ({type: "text", value}), matching the
- * template's {{1}}, {{2}}, ... placeholders. Sending VAR1/VAR2 to a WhatsApp
- * Flow gets silently accepted by the API ("queued successfully") but never
- * actually delivered by WhatsApp — this was the root cause of abandoned-cart
- * WhatsApp nudges never arriving despite MSG91 reporting success. Every
- * WhatsApp-template send (abandoned cart, order confirmation, NDR/RTO
- * nudges, referral, win-back) should use this, not sendMsg91Flow.
- */
-export async function sendMsg91WhatsAppFlow(
-  flowSlug: string | null,
-  phone: string,
-  bodyValues: string[],
-  mediaUrl?: string
-) {
-  const enabled = await getSetting("WHATSAPP_SMS_ENABLED");
-  if (enabled !== "true") {
-    return { sent: false as const };
-  }
-
-  const authKey = await getSetting("MSG91_AUTH_KEY");
-  if (!authKey || !flowSlug) {
-    return { sent: false as const };
-  }
-
-  const variables = Object.fromEntries(
-    bodyValues.map((v, i) => [`body_${i + 1}`, { type: "text", value: v }])
-  );
-
-  const to: Record<string, unknown> = { mobiles: toMobile(phone), variables };
-  if (mediaUrl) to.media = { url: mediaUrl };
-
-  try {
-    const res = await fetch(`https://control.msg91.com/api/v5/oneapi/api/flow/${flowSlug}/run`, {
-      method: "POST",
-      headers: {
-        authkey: authKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        data: {
-          sendTo: [{ to: [to], variables }],
-        },
-      }),
-    });
-    const data = await res.json().catch(() => null);
-    if (!res.ok || data?.hasError) {
-      console.error("MSG91 WhatsApp flow send failed", res.status, data);
-      return { sent: false as const };
-    }
-    const messageId = data?.data?.request_id ?? data?.request_id ?? null;
-    return { sent: true as const, messageId: messageId ? String(messageId) : undefined };
-  } catch (err) {
-    console.error("MSG91 WhatsApp flow send failed", err);
-    return { sent: false as const };
-  }
-}
-
-/**
  * Sends a message via one of MSG91's newer Campaign API campaigns (Campaigns
  * → Flows in the dashboard can create either a "Flow" — handled by
  * sendMsg91Flow above, hitting /oneapi/api/flow — or a "Campaign", which is

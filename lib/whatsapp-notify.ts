@@ -1,6 +1,6 @@
 import { getSetting } from "@/lib/settings";
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { sendMsg91WhatsAppFlow, sendMsg91Template } from "@/lib/msg91";
+import { sendMsg91Template } from "@/lib/msg91";
 import { sendMetaCloudTemplate } from "@/lib/whatsapp-cloud";
 import { generateAndUploadOrderCard } from "@/lib/order-card";
 
@@ -31,22 +31,6 @@ async function logSend(
   } catch (err) {
     console.error("Failed to log whatsapp_messages row", err);
   }
-}
-
-async function sendTemplate(
-  phone: string,
-  templateName: string,
-  msg91TemplateId: string | null,
-  variables: string[],
-  logAgainst: { cartSessionId?: string; orderId?: string },
-  mediaUrl?: string
-) {
-  const result = await sendMsg91WhatsAppFlow(msg91TemplateId, phone, variables, mediaUrl);
-  if (result.sent) {
-    await logSend(result.messageId, templateName, logAgainst);
-    return true;
-  }
-  return false;
 }
 
 /**
@@ -251,7 +235,7 @@ export async function sendReviewRequestWhatsApp(phone: string, name: string | nu
 export async function sendNdrWhatsApp(order: OrderForWhatsApp) {
   const msg91TemplateId = await getSetting("MSG91_NDR_TEMPLATE_ID");
   const variables = [order.customer_name, order.id.slice(0, 8).toUpperCase()];
-  return sendTemplate(order.customer_phone, "ndr_nudge", msg91TemplateId, variables, {
+  return sendTemplateByName(order.customer_phone, "ndr_nudge", msg91TemplateId, variables, {
     orderId: order.id,
   });
 }
@@ -265,7 +249,7 @@ export async function sendNdrWhatsApp(order: OrderForWhatsApp) {
 export async function sendRtoInitiatedWhatsApp(order: OrderForWhatsApp) {
   const msg91TemplateId = await getSetting("MSG91_RTO_INITIATED_TEMPLATE_ID");
   const variables = [order.customer_name, order.id.slice(0, 8).toUpperCase()];
-  return sendTemplate(order.customer_phone, "rto_initiated", msg91TemplateId, variables, {
+  return sendTemplateByName(order.customer_phone, "rto_initiated", msg91TemplateId, variables, {
     orderId: order.id,
   });
 }
@@ -279,7 +263,7 @@ export async function sendRtoInitiatedWhatsApp(order: OrderForWhatsApp) {
 export async function sendRtoRefundedWhatsApp(order: OrderForWhatsApp, refundRupees: number) {
   const msg91TemplateId = await getSetting("MSG91_RTO_REFUNDED_TEMPLATE_ID");
   const variables = [order.customer_name, order.id.slice(0, 8).toUpperCase(), `₹${refundRupees.toLocaleString("en-IN")}`];
-  return sendTemplate(order.customer_phone, "rto_refunded", msg91TemplateId, variables, {
+  return sendTemplateByName(order.customer_phone, "rto_refunded", msg91TemplateId, variables, {
     orderId: order.id,
   });
 }
@@ -311,4 +295,46 @@ export async function sendWinbackWhatsApp(phone: string, name: string, milesBala
   const msg91TemplateName = await getSetting("MSG91_WINBACK_TEMPLATE_ID");
   const variables = [name, String(milesBalance)];
   return sendTemplateByName(phone, "winback", msg91TemplateName, variables, {});
+}
+
+/** Pay With A Post confirmation: the shopper's code and how many friends need to buy with it. */
+export async function sendPostBarterConfirmedWhatsApp(
+  order: OrderForWhatsApp,
+  couponCode: string,
+  requiredOrders: number,
+  itemName: string
+) {
+  const templateName = await getSetting("MSG91_PWAP_CONFIRMED_TEMPLATE_ID");
+  return sendTemplateByName(
+    order.customer_phone,
+    "pwap_order_confirmed",
+    templateName,
+    [order.customer_name, couponCode, String(requiredOrders), itemName],
+    { orderId: order.id }
+  );
+}
+
+/** Sent each time a friend's paid order lands on a Pay With A Post code, before the threshold is reached. */
+export async function sendPostBarterProgressWhatsApp(
+  orderId: string,
+  phone: string,
+  name: string,
+  soFar: number,
+  required: number,
+  couponCode: string
+) {
+  const templateName = await getSetting("MSG91_PWAP_PROGRESS_TEMPLATE_ID");
+  return sendTemplateByName(
+    phone,
+    "pwap_progress",
+    templateName,
+    [name, String(soFar), String(required), couponCode, String(Math.max(0, required - soFar))],
+    { orderId }
+  );
+}
+
+/** Sent when a Pay With A Post order hits its threshold and ships free. */
+export async function sendPostBarterShippedWhatsApp(orderId: string, phone: string, name: string, itemName: string) {
+  const templateName = await getSetting("MSG91_PWAP_SHIPPED_TEMPLATE_ID");
+  return sendTemplateByName(phone, "pwap_shipped", templateName, [name, itemName], { orderId });
 }

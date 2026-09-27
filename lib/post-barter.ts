@@ -14,7 +14,12 @@ import {
   sendPostBarterProgressEmail,
   sendOrderNotificationEmail,
 } from "@/lib/email";
-import { sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
+import {
+  sendOrderConfirmationWhatsApp,
+  sendPostBarterConfirmedWhatsApp,
+  sendPostBarterProgressWhatsApp,
+  sendPostBarterShippedWhatsApp,
+} from "@/lib/whatsapp-notify";
 
 const DEFAULT_MIN_FOLLOWERS = 5000;
 const DEFAULT_REQUIRED_ORDERS = 3;
@@ -365,10 +370,11 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   await Promise.allSettled([
     sendPostBarterOrderConfirmationEmail(savedOrder.customer_email, savedOrder.customer_name, savedOrder.id, couponCode, requiredOrders, tier),
     sendOrderNotificationEmail(savedOrder, orderItems),
-    // Same WhatsApp confirmation every other payment path (UPI, Razorpay)
-    // sends — a barter order shouldn't be the one path that only ever
-    // emails the customer.
-    sendOrderConfirmationWhatsApp(savedOrder, orderItems),
+    // Post First shoppers need their code and target on WhatsApp; Gift First
+    // ships now, so it gets the ordinary order confirmation.
+    tier === "sell_first"
+      ? sendPostBarterConfirmedWhatsApp(savedOrder, couponCode, requiredOrders, orderItems[0]?.chapter_name ?? "pair")
+      : sendOrderConfirmationWhatsApp(savedOrder, orderItems),
   ]);
 
   return { orderId: savedOrder.id as string, couponCode, requiredOrders, tier };
@@ -402,7 +408,7 @@ export async function maybeQualifyBarterOrderForCoupon(
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, customer_phone, customer_email, barter_required_orders, barter_qualified_at")
+    .select("id, customer_name, customer_phone, customer_email, barter_required_orders, barter_qualified_at")
     .eq("is_post_barter", true)
     .eq("barter_coupon_code", couponCode.toUpperCase())
     .is("barter_qualified_at", null)
@@ -441,20 +447,35 @@ export async function maybeQualifyBarterOrderForCoupon(
   }).length;
 
   if (qualifyingCount < order.barter_required_orders) {
-    try {
-      await sendPostBarterProgressEmail(order.customer_email, qualifyingCount, order.barter_required_orders);
-    } catch (err) {
-      console.error("Failed to send barter progress email", order.id, err);
-    }
+    await Promise.allSettled([
+      sendPostBarterProgressEmail(order.customer_email, qualifyingCount, order.barter_required_orders),
+      sendPostBarterProgressWhatsApp(
+        order.id,
+        order.customer_phone,
+        order.customer_name,
+        qualifyingCount,
+        order.barter_required_orders,
+        couponCode.toUpperCase()
+      ),
+    ]).then((results) =>
+      results.forEach((r) => r.status === "rejected" && console.error("Barter progress notify failed", order.id, r.reason))
+    );
     return;
   }
 
   await supabase.from("orders").update({ barter_qualified_at: new Date().toISOString() }).eq("id", order.id);
   await decrementInventoryAndShip(order.id);
 
-  try {
-    await sendPostBarterQualifiedEmail(order.customer_email, order.customer_phone);
-  } catch (err) {
-    console.error("Failed to send barter-qualified email", order.id, err);
-  }
+  const { data: firstItem } = await supabase
+    .from("order_items")
+    .select("chapter_name")
+    .eq("order_id", order.id)
+    .limit(1)
+    .maybeSingle();
+  await Promise.allSettled([
+    sendPostBarterQualifiedEmail(order.customer_email, order.customer_phone),
+    sendPostBarterShippedWhatsApp(order.id, order.customer_phone, order.customer_name, firstItem?.chapter_name ?? "pair"),
+  ]).then((results) =>
+    results.forEach((r) => r.status === "rejected" && console.error("Barter qualified notify failed", order.id, r.reason))
+  );
 }

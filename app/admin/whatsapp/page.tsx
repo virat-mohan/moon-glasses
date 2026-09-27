@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { WhatsAppTemplatesPanel } from "@/components/admin/WhatsAppTemplatesPanel";
 
 type Conversation = {
   id: string;
@@ -91,6 +92,7 @@ export default function WhatsAppInboxPage() {
 
   return (
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
+      <WhatsAppTemplatesPanel />
       <h1 className="mt-2 font-display text-heading-l uppercase text-ink">WhatsApp Inbox</h1>
       <p className="mt-2 max-w-2xl text-body-s text-secondary-text">
         Replies only deliver within 24 hours of the customer&apos;s last message — Meta&apos;s
