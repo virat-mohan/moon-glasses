@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag, Menu, X, User } from "lucide-react";
 import { useCart } from "@/lib/cart";
+import { brand } from "@/lib/retail-os-brand";
 
 const leftLinks = [{ label: "Shop", href: "/#shop" }];
 
@@ -40,8 +41,8 @@ export function Navbar() {
             overlay needed. */}
         <Link href="/" className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
           <Image
-            src="/images/brand/moon-glasses-logo.png"
-            alt="MOON GLASSES"
+            src={brand.assets.navLogoPath}
+            alt={brand.assets.navLogoAlt}
             width={720}
             height={400}
             style={{ height: "110px", width: "auto" }}
