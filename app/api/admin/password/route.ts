@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE, checkAdminPassword, createAdminSessionValue, setAdminPassword } from "@/lib/admin-auth";
+import { ADMIN_COOKIE, checkOwnerPassword, createAdminSessionValue, setAdminPassword } from "@/lib/admin-auth";
 
 /** Change the admin password from inside the admin. Logs out every other session. */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  if (!(await checkAdminPassword(String(body?.currentPassword ?? "")))) {
+  if (!(await checkOwnerPassword(String(body?.currentPassword ?? "")))) {
     return NextResponse.json({ error: "Current password is wrong" }, { status: 401 });
   }
   try {

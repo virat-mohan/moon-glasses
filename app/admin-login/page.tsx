@@ -3,13 +3,12 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-type Mode = "login" | "setup" | "unconfigured" | null;
+type Mode = "login" | "setup" | "invite" | "unconfigured" | null;
 
 const INPUT =
   "w-full border border-ink/30 bg-surface px-4 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink";
 
 function AdminLoginForm() {
-  const [mode, setMode] = useState<Mode>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [setupCode, setSetupCode] = useState("");
@@ -18,17 +17,23 @@ function AdminLoginForm() {
   const router = useRouter();
   const params = useSearchParams();
 
+  const inviteCode = params.get("invite");
+  const inviteEmail = params.get("email");
+  const isInvite = !!(inviteCode && inviteEmail);
+  const [mode, setMode] = useState<Mode>(isInvite ? "invite" : null);
+
   useEffect(() => {
+    if (isInvite) return;
     fetch("/api/admin-auth")
       .then((r) => r.json())
       .then((d) => setMode(d.mode))
       .catch(() => setMode("unconfigured"));
-  }, []);
+  }, [isInvite]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (mode === "setup" && password !== confirm) {
+    if ((mode === "setup" || mode === "invite") && password !== confirm) {
       setError("Passwords don't match");
       return;
     }
@@ -37,7 +42,13 @@ function AdminLoginForm() {
       const res = await fetch("/api/admin-auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mode === "setup" ? { action: "setup", setupCode, password } : { action: "login", password }),
+        body: JSON.stringify(
+          mode === "setup"
+            ? { action: "setup", setupCode, password }
+            : mode === "invite"
+              ? { action: "accept_invite", email: inviteEmail, code: inviteCode, password }
+              : { action: "login", password }
+        ),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "Login failed");
@@ -58,8 +69,13 @@ function AdminLoginForm() {
       {mode === "unconfigured" && (
         <p className="mt-6 text-body-s text-secondary-text">Admin access hasn&apos;t been set up yet.</p>
       )}
-      {(mode === "login" || mode === "setup") && (
+      {(mode === "login" || mode === "setup" || mode === "invite") && (
         <form onSubmit={submit} className="mt-6 space-y-4">
+          {mode === "invite" && (
+            <p className="text-caption text-secondary-text">
+              You&apos;ve been given admin access as {inviteEmail}. Choose your own password; you&apos;ll use it to sign in from now on.
+            </p>
+          )}
           {mode === "setup" && (
             <>
               <p className="text-caption text-secondary-text">
@@ -71,12 +87,12 @@ function AdminLoginForm() {
           <input
             type="password"
             autoFocus={mode === "login"}
-            placeholder={mode === "setup" ? "New password (10+ characters)" : "Password"}
+            placeholder={mode === "login" ? "Password" : "New password (10+ characters)"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={INPUT}
           />
-          {mode === "setup" && (
+          {(mode === "setup" || mode === "invite") && (
             <input type="password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={INPUT} />
           )}
           {error && <p className="text-caption text-paint-orange">{error}</p>}
@@ -85,7 +101,7 @@ function AdminLoginForm() {
             disabled={loading || !password || (mode === "setup" && !setupCode)}
             className="w-full border border-ink px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream disabled:opacity-50"
           >
-            {loading ? "Checking..." : mode === "setup" ? "Set Password & Enter" : "Enter"}
+            {loading ? "Checking..." : mode === "login" ? "Enter" : "Set Password & Enter"}
           </button>
         </form>
       )}

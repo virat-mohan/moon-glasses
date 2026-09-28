@@ -7,6 +7,8 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 const PASSWORD_HASH_KEY = "ADMIN_PASSWORD_HASH";
 const SESSION_SECRET_KEY = "ADMIN_SESSION_SECRET";
 const SETUP_CODE_HASH_KEY = "ADMIN_SETUP_CODE_HASH";
+const TEAM_KEY = "ADMIN_TEAM";
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const ADMIN_COOKIE = "admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
@@ -58,7 +60,77 @@ export async function getAdminAuthMode(): Promise<AdminAuthMode> {
   return "unconfigured";
 }
 
-export async function checkAdminPassword(password: string) {
+export type AdminRole = "owner" | "team";
+
+type TeamState = {
+  members: { email: string; hash: string; addedAt: string }[];
+  invites: { email: string; codeHash: string; expiresAt: string }[];
+};
+
+async function readTeam(): Promise<TeamState> {
+  const raw = await readKey(TEAM_KEY);
+  const parsed = raw ? (JSON.parse(raw) as Partial<TeamState>) : {};
+  return { members: parsed.members ?? [], invites: parsed.invites ?? [] };
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+/** Which role a password belongs to, or null. The owner password wins over any team password. */
+export async function roleForPassword(password: string): Promise<AdminRole | null> {
+  if (await checkOwnerPassword(password)) return "owner";
+  const team = await readTeam();
+  return team.members.some((m) => verifySecret(password, m.hash)) ? "team" : null;
+}
+
+/** Team members get their own password through a one-time link instead of sharing the owner's. Returns the plain code once. */
+export async function inviteTeamMember(email: string) {
+  const address = normalizeEmail(email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) throw new Error("Enter a valid email");
+  const code = crypto.randomBytes(18).toString("base64url");
+  const team = await readTeam();
+  team.invites = team.invites.filter((i) => i.email !== address);
+  team.invites.push({ email: address, codeHash: hashSecret(code), expiresAt: new Date(Date.now() + INVITE_TTL_MS).toISOString() });
+  await writeKey(TEAM_KEY, JSON.stringify(team));
+  return code;
+}
+
+export async function acceptTeamInvite(email: string, code: string, password: string) {
+  const address = normalizeEmail(email);
+  const team = await readTeam();
+  const invite = team.invites.find((i) => i.email === address);
+  if (!invite || new Date(invite.expiresAt) < new Date() || !verifySecret(code.trim(), invite.codeHash)) {
+    throw new Error("This invite link is invalid or has expired. Ask for a new one.");
+  }
+  if (password.length < 10) throw new Error("Use at least 10 characters");
+  team.invites = team.invites.filter((i) => i.email !== address);
+  team.members = team.members.filter((m) => m.email !== address);
+  team.members.push({ email: address, hash: hashSecret(password), addedAt: new Date().toISOString() });
+  await writeKey(TEAM_KEY, JSON.stringify(team));
+}
+
+export async function listTeam() {
+  const team = await readTeam();
+  return {
+    members: team.members.map((m) => ({ email: m.email, addedAt: m.addedAt })),
+    invites: team.invites
+      .filter((i) => new Date(i.expiresAt) > new Date())
+      .map((i) => ({ email: i.email, expiresAt: i.expiresAt })),
+  };
+}
+
+/** Removes a member or pending invite. Rotates the session secret so a removed member is signed out at once (everyone else signs in again). */
+export async function removeTeamMember(email: string) {
+  const address = normalizeEmail(email);
+  const team = await readTeam();
+  team.members = team.members.filter((m) => m.email !== address);
+  team.invites = team.invites.filter((i) => i.email !== address);
+  await writeKey(TEAM_KEY, JSON.stringify(team));
+  await writeKey(SESSION_SECRET_KEY, crypto.randomBytes(32).toString("hex"));
+}
+
+export async function checkOwnerPassword(password: string) {
   const envPassword = process.env.ADMIN_PASSWORD;
   if (envPassword) {
     const a = Buffer.from(password);
@@ -78,21 +150,28 @@ async function getOrCreateSessionSecret() {
 }
 
 /** Stateless signed session: "<expiry>.<hmac>". Rotating the secret (on password change) invalidates every session. */
-export async function createAdminSessionValue() {
+export async function createAdminSessionValue(role: AdminRole = "owner") {
   const secret = await getOrCreateSessionSecret();
-  const expiry = String(Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS);
-  return { value: `${expiry}.${sign(secret, expiry)}`, maxAge: SESSION_TTL_SECONDS };
+  const payload = `${Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS}-${role}`;
+  return { value: `${payload}.${sign(secret, payload)}`, maxAge: SESSION_TTL_SECONDS };
+}
+
+/** The signed-in role, or null. Sessions minted before roles existed ("<expiry>.<mac>") count as owner. */
+export async function getAdminSessionRole(value: string | undefined): Promise<AdminRole | null> {
+  if (!value) return null;
+  const [payload, mac] = value.split(".");
+  if (!payload || !mac || !/^[0-9a-f]{64}$/.test(mac)) return null;
+  const [expiry, role = "owner"] = payload.split("-");
+  if (Number(expiry) < Date.now() / 1000) return null;
+  if (role !== "owner" && role !== "team") return null;
+  const secret = await readKey(SESSION_SECRET_KEY);
+  if (!secret) return null;
+  const expected = Buffer.from(sign(secret, payload), "hex");
+  return crypto.timingSafeEqual(Buffer.from(mac, "hex"), expected) ? role : null;
 }
 
 export async function isValidAdminSession(value: string | undefined) {
-  if (!value) return false;
-  const [expiry, mac] = value.split(".");
-  if (!expiry || !mac || !/^[0-9a-f]{64}$/.test(mac)) return false;
-  if (Number(expiry) < Date.now() / 1000) return false;
-  const secret = await readKey(SESSION_SECRET_KEY);
-  if (!secret) return false;
-  const expected = Buffer.from(sign(secret, expiry), "hex");
-  return crypto.timingSafeEqual(Buffer.from(mac, "hex"), expected);
+  return (await getAdminSessionRole(value)) !== null;
 }
 
 /** First-run only: exchanges the one-time setup code for the real password, then burns the code. */

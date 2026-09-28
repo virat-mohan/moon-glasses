@@ -85,6 +85,7 @@ export const NAV_SECTIONS: AdminNavSection[] = [
       { href: "/admin/marketing-assets", label: "Marketing Assets" },
       { href: "/admin/brand-profile", label: "Brand Profile" },
       { href: "/admin/settings", label: "API Keys & Settings" },
+      { href: "/admin/team", label: "Team Access" },
     ],
   },
 ];
