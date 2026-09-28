@@ -245,6 +245,12 @@ const MALE_HAIRSTYLE_VARIANTS = [
   "medium-length waves",
   "buzz cut with light stubble",
   "cropped curly hair",
+  "bleached platinum buzz cut",
+  "shoulder-length hair under a backwards baseball cap",
+  "a black beanie pulled back off the forehead",
+  "a patterned bandana tied as a headband",
+  "short hair dyed ash grey",
+  "a bucket hat worn high on the head",
 ];
 
 const FEMALE_HAIRSTYLE_VARIANTS = [
@@ -254,6 +260,15 @@ const FEMALE_HAIRSTYLE_VARIANTS = [
   "voluminous curls",
   "a soft updo with flyaways",
   "middle-parted long hair",
+  "shoulder-length hair dyed pastel pink",
+  "a sleek bob dyed cherry red",
+  "long hair with electric blue ends",
+  "a curly afro with copper-orange highlights",
+  "a platinum blonde pixie cut",
+  "braids tucked under a bucket hat worn high on the head",
+  "long waves under a knitted beanie",
+  "a silk scarf tied as a headband over loose hair",
+  "space buns",
 ];
 
 // Same reasoning as GAZE_VARIANTS/WARDROBE_VARIANTS — left as one fixed
@@ -275,6 +290,8 @@ export async function generateModelPhoto(options: {
   /** For the marketing_assets label/tags — purely organizational, not required. */
   productName?: string;
   chapterSlug?: string;
+  /** Hair and headwear for this model; picked at random when omitted. Pass distinct looks across a catalogue so models don't repeat. */
+  look?: string;
 }): Promise<string> {
   const geminiKey = await getSetting("IMAGE_GEN_API_KEY");
   if (!geminiKey) {
@@ -285,7 +302,7 @@ export async function generateModelPhoto(options: {
   const wardrobeList = options.gender === "male" ? MALE_WARDROBE_VARIANTS : FEMALE_WARDROBE_VARIANTS;
   const wardrobe = wardrobeList[Math.floor(Math.random() * wardrobeList.length)];
   const hairstyleList = options.gender === "male" ? MALE_HAIRSTYLE_VARIANTS : FEMALE_HAIRSTYLE_VARIANTS;
-  const hairstyle = hairstyleList[Math.floor(Math.random() * hairstyleList.length)];
+  const hairstyle = options.look ?? hairstyleList[Math.floor(Math.random() * hairstyleList.length)];
   const backdrop = BACKDROP_VARIANTS[Math.floor(Math.random() * BACKDROP_VARIANTS.length)];
 
   const prompt = `Here ${
@@ -296,7 +313,7 @@ Generate a realistic, professional lifestyle photo of a good-looking, well-groom
 
 Mood: at a lively party — genuinely joyful, mid-laugh or grinning, full of energy, having a great time. No drink, glass, or bottle in hand or anywhere in frame. ${gaze}.
 
-Wardrobe: ${wardrobe} — clearly ${options.gender === "male" ? "menswear, cut and styled for a man" : "womenswear, cut and styled for a woman"}. Choose whatever color makes the shot look best: a direct or complementary match to the lens tint shown in the reference image(s), a neutral (black, white, or grey), or another stylish color entirely — any of these is fine as long as the outfit reads as fashionable and put-together. Hair: ${hairstyle}. No other visible eyewear.
+Wardrobe: ${wardrobe} — clearly ${options.gender === "male" ? "menswear, cut and styled for a man" : "womenswear, cut and styled for a woman"}. Choose whatever color makes the shot look best: a direct or complementary match to the lens tint shown in the reference image(s), a neutral (black, white, or grey), or another stylish color entirely — any of these is fine as long as the outfit reads as fashionable and put-together. Hair and headwear: ${hairstyle}. Any hat, cap or headband sits well above the brow and never touches or hides the sunglasses. No other visible eyewear.
 
 Framing: a close-up portrait — the face fills most of the frame and the sunglasses span roughly half the image width, sitting about a third of the way down from the top edge, so the frame and lens tint read clearly at a glance. Show only the head, neck and the very top of the shoulders; the same close zoom level every time. Crop at the top of the chest: no chest or décolletage on display, and if the wardrobe is low-cut or off-shoulder, crop tighter so it doesn't read that way. Shallow depth of field, with ${backdrop}. Nothing so busy it competes with the product.
 
