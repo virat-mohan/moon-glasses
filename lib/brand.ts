@@ -1,40 +1,14 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+// The brand profile + defaults now live in the canonical Retail OS brand config
+// (lib/retail-os-brand.ts), so the AI pipeline and customer-facing surfaces
+// share one in-repo source. Re-exported so existing "@/lib/brand" imports keep
+// working unchanged.
+import { DEFAULT_BRAND_PROFILE, type BrandProfile } from "@/lib/retail-os-brand";
 
-export type BrandProfile = {
-  brandName: string;
-  tagline: string;
-  voice: string;
-  productNoun: string;
-  currencySymbol: string;
-  siteUrl: string;
-  instagramHandle: string;
-  /**
-   * The visual design language — palette, lighting, mood, composition —
-   * for AI-generated imagery that isn't grounded in a real product photo
-   * (brand-awareness ad creative, drop-announcement art, etc). Any image
-   * generation that DOES depict a specific product must instead use that
-   * product's real uploaded photo as an image-to-image reference (see
-   * generateAdImage's referenceImageUrl and generateModelPhoto in
-   * lib/image-gen.ts) — this field is only for imagery that never renders
-   * a specific, un-uploaded product design.
-   */
-  visualLanguage: string;
-};
+export type { BrandProfile };
+export { DEFAULT_BRAND_PROFILE };
 
 const BRAND_PROFILE_KEY = "BRAND_PROFILE";
-
-export const DEFAULT_BRAND_PROFILE: BrandProfile = {
-  brandName: "MOON GLASSES",
-  tagline: "See A Brighter You",
-  voice:
-    "Fashion-forward, editorial, confident — dark/nightlife imagery paired with restrained, minimal copy. Short lines, no hard sell. Built for a young, style-conscious Indian audience.",
-  productNoun: "sunglasses",
-  currencySymbol: "₹",
-  siteUrl: "https://moon-glasses.store",
-  instagramHandle: "@moonglassesonline",
-  visualLanguage:
-    "Near-black backgrounds, high contrast, warm gold (#e0b84a) as the sole accent colour. Editorial nightlife photography — gigs, sets, city-at-night energy — never daytime/beach/outdoor lifestyle. Minimal, uncluttered composition; confident subjects, genuine expressions, no stock-photo posing. Typography-led when text appears: bold, uppercase, generous letter-spacing.",
-};
 
 /**
  * Everything downstream (ad brief prompts, image-gen prompts, journal drafts)

@@ -7,6 +7,7 @@ import { WhatsAppFloatButton } from "@/components/contact/WhatsAppFloatButton";
 import { AmbientTechno } from "@/components/audio/AmbientTechno";
 import { CartProvider } from "@/lib/cart";
 import { getSetting } from "@/lib/settings";
+import { brand, titleBrandName } from "@/lib/retail-os-brand";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
@@ -33,31 +34,36 @@ const bodoniModa = Bodoni_Moda({
   style: ["italic"],
 });
 
-const SITE_URL = "https://moon-glasses.store";
-const DESCRIPTION =
-  "MOON GLASSES™ — fashion eyewear for after dark. ₹1,499 acetate, ₹1,999 metal. Ships across India.";
+// Brand identity is now sourced from the canonical Retail OS brand config
+// (lib/retail-os-brand.ts). Values are unchanged — this only removes the
+// hardcoded duplication (including the second SITE_URL that had to be kept in
+// sync by hand) so Moon is configured, not hand-edited.
+const SITE_URL = brand.profile.siteUrl;
+const DESCRIPTION = brand.description;
+const DEFAULT_TITLE = `${titleBrandName()} — ${brand.profile.tagline}`;
+const OG_IMAGE = brand.assets.ogImagePath;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "MOON GLASSES™ — See A Brighter You",
-    template: "%s — MOON GLASSES™",
+    default: DEFAULT_TITLE,
+    template: `%s — ${titleBrandName()}`,
   },
   description: DESCRIPTION,
-  keywords: ["fashion sunglasses India", "MOON GLASSES", "eyewear", "aviator sunglasses"],
+  keywords: brand.keywords,
   openGraph: {
     type: "website",
-    siteName: "MOON GLASSES",
-    title: "MOON GLASSES™ — See A Brighter You",
+    siteName: brand.profile.brandName,
+    title: DEFAULT_TITLE,
     description: DESCRIPTION,
     url: SITE_URL,
-    images: [{ url: "/images/brand/moon-glasses-logo.png", width: 1200, height: 630, alt: "MOON GLASSES" }],
+    images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: brand.profile.brandName }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MOON GLASSES™ — See A Brighter You",
+    title: DEFAULT_TITLE,
     description: DESCRIPTION,
-    images: ["/images/brand/moon-glasses-logo.png"],
+    images: [OG_IMAGE],
   },
   alternates: { canonical: SITE_URL },
 };
@@ -65,12 +71,12 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "MOON GLASSES",
+  name: brand.profile.brandName,
   url: SITE_URL,
-  logo: `${SITE_URL}/images/brand/moon-glasses-logo.png`,
+  logo: `${SITE_URL}${brand.assets.orgLogoPath}`,
   description: DESCRIPTION,
-  address: { "@type": "PostalAddress", addressCountry: "IN" },
-  sameAs: ["https://www.instagram.com/moonglassesonline/"],
+  address: { "@type": "PostalAddress", addressCountry: brand.address?.addressCountry ?? "IN" },
+  sameAs: brand.social?.instagram ? [brand.social.instagram] : [],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

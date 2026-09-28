@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { titleBrandName } from "@/lib/retail-os-brand";
 
 const columns = [
   {
@@ -63,7 +64,7 @@ export function FooterEditorial() {
         ))}
       </div>
       <div className="mx-auto mt-12 flex w-full max-w-[1440px] items-center justify-between px-6 font-sans text-micro uppercase tracking-[0.05em] text-secondary-text md:px-12">
-        <p>© {new Date().getFullYear()} MOON GLASSES™</p>
+        <p>© {new Date().getFullYear()} {titleBrandName()}</p>
       </div>
     </footer>
   );
