@@ -245,12 +245,8 @@ const MALE_HAIRSTYLE_VARIANTS = [
   "medium-length waves",
   "buzz cut with light stubble",
   "cropped curly hair",
-  "bleached platinum buzz cut",
-  "shoulder-length hair under a backwards baseball cap",
-  "a black beanie pulled back off the forehead",
-  "a patterned bandana tied as a headband",
-  "short hair dyed ash grey",
-  "a bucket hat worn high on the head",
+  "a plain black baseball cap worn backwards",
+  "neat side-parted hair with a clean fade",
 ];
 
 const FEMALE_HAIRSTYLE_VARIANTS = [
@@ -260,15 +256,10 @@ const FEMALE_HAIRSTYLE_VARIANTS = [
   "voluminous curls",
   "a soft updo with flyaways",
   "middle-parted long hair",
-  "shoulder-length hair dyed pastel pink",
-  "a sleek bob dyed cherry red",
-  "long hair with electric blue ends",
-  "a curly afro with copper-orange highlights",
-  "a platinum blonde pixie cut",
-  "braids tucked under a bucket hat worn high on the head",
-  "long waves under a knitted beanie",
-  "a silk scarf tied as a headband over loose hair",
-  "space buns",
+  "a sleek dark chin-length bob",
+  "long dark hair with soft caramel highlights",
+  "a low bun with a few loose strands",
+  "long waves under a plain black beanie",
 ];
 
 // Same reasoning as GAZE_VARIANTS/WARDROBE_VARIANTS — left as one fixed
