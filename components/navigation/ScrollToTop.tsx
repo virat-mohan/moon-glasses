@@ -3,33 +3,50 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
+/** Scrolls to the #section in the URL, retrying briefly because the target may not have rendered yet. */
+function scrollToHash() {
+  const id = decodeURIComponent(window.location.hash.slice(1));
+  if (!id) return;
+  let tries = 0;
+  const attempt = () => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ block: "start" });
+    else if (tries++ < 20) setTimeout(attempt, 100);
+  };
+  attempt();
+}
+
 /**
- * Next.js's own scroll-to-top-on-navigate doesn't always win against the
- * browser's own scroll-restoration (especially returning to a route visited
- * before) — this forces every real route change back to the top. Doesn't
- * fire on hash-only navigation on the SAME page (pathname doesn't change),
- * so anchor links like /travel-inspiration#pick-your-world still scroll to
- * their target instead of being yanked back to 0.
- *
- * A link from a DIFFERENT page straight to an anchor (e.g. checkout's
- * PayWithAPostMark linking to "/#pay-with-a-post") DOES change the
- * pathname, so this effect used to fire anyway and immediately override
- * Next's own hash-scroll with scrollTo(0, 0) — the exact bug reported: the
- * link always landed at the top of the homepage, never at the anchor.
- * Checking window.location.hash before forcing the reset fixes both cases
- * with the same guard.
+ * Every route change and refresh starts at the top (the browser's own scroll
+ * restoration is switched off), except when the URL points at a section like
+ * "/#shop": then it lands on that section. Next's built-in hash scroll fires
+ * before a long page has rendered, so it's done here with a short retry.
  */
 export function ScrollToTop() {
   const pathname = usePathname();
 
-  // A refresh should start at the top too, not wherever the browser remembers.
   useEffect(() => {
     window.history.scrollRestoration = "manual";
+    // Clicking a "#section" link whose hash is already in the URL changes nothing, so nothing else scrolls.
+    const onClick = (e: MouseEvent) => {
+      const link = (e.target as Element | null)?.closest?.("a[href*='#']") as HTMLAnchorElement | null;
+      if (!link) return;
+      const target = new URL(link.href, window.location.href);
+      if (target.pathname === window.location.pathname && target.hash === window.location.hash) {
+        setTimeout(scrollToHash, 0);
+      }
+    };
+    window.addEventListener("hashchange", scrollToHash);
+    document.addEventListener("click", onClick);
+    return () => {
+      window.removeEventListener("hashchange", scrollToHash);
+      document.removeEventListener("click", onClick);
+    };
   }, []);
 
   useEffect(() => {
-    if (window.location.hash) return; // let the browser/Next scroll to the anchor instead
-    window.scrollTo(0, 0);
+    if (window.location.hash) scrollToHash();
+    else window.scrollTo(0, 0);
   }, [pathname]);
 
   return null;
