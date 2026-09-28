@@ -222,7 +222,6 @@ export const SHARED_SPECS = [
   "Impact-Resistant Lenses",
   "Spring-Hinge Temples For All-Day Comfort",
   "Scratch-Resistant Coating",
-  "Includes Microfiber Pouch",
   "One Size Fits Most",
   "Designed In India",
 ];

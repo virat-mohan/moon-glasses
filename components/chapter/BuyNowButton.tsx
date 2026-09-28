@@ -50,7 +50,7 @@ export function BuyNowButton({
           : "border border-ink px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-ink hover:text-cream disabled:opacity-60"
       }
     >
-      {loading ? "Working…" : "Buy Now"}
+      {loading ? "Working…" : "Get it"}
     </button>
   );
 }

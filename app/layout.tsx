@@ -5,10 +5,8 @@ import { ScrollToTop } from "@/components/navigation/ScrollToTop";
 import { MetaPixelTracker } from "@/components/tracking/MetaPixel";
 import { WhatsAppFloatButton } from "@/components/contact/WhatsAppFloatButton";
 import { AmbientTechno } from "@/components/audio/AmbientTechno";
-import { StickyCountdownBar } from "@/components/countdown/StickyCountdownBar";
 import { CartProvider } from "@/lib/cart";
 import { getSetting } from "@/lib/settings";
-import { getDropDateIso } from "@/lib/dropDate";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
@@ -77,7 +75,6 @@ const organizationJsonLd = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const pixelId = await getSetting("META_PIXEL_ID");
-  const dropDateIso = await getDropDateIso();
 
   return (
     <html
@@ -93,7 +90,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <CartProvider>
           <ScrollToTop />
           <div>
-            <StickyCountdownBar targetIso={dropDateIso} />
             <Navbar />
           </div>
           {children}

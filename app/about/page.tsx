@@ -8,7 +8,7 @@ export default function AboutPage() {
       <main className="mx-auto w-full max-w-[1440px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
         <div className="max-w-2xl">
           <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">
-            The Moon Way — Two Founders, A Small Edit, Only The Pairs We Would Actually Wear
+            Two Founders and Only The Pairs We Would Actually Wear
           </p>
           <h1 className="mt-3 font-display text-heading-xl uppercase leading-[0.95] text-ink md:text-display-m">
             See A Brighter You.
@@ -21,8 +21,7 @@ export default function AboutPage() {
             </p>
             <p>The idea is simple, fewer choices, the kinds you try and keep reaching for.</p>
             <p>
-              There are two of us behind Moon Glasses, and we keep the edit small for a reason:
-              every pair has to feel like something we would actually wear.
+              There are two of us behind Moon Glasses, and we keep the edit small for a reason.
             </p>
             <p>No big fashion speech. Just good-looking glasses with an easy mood.</p>
             <p>If it made the cut, it&rsquo;s here. Just like you did.</p>

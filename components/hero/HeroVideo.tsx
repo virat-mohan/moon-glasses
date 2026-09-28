@@ -1,6 +1,3 @@
-import Link from "next/link";
-import { CountdownTimer } from "@/components/countdown/CountdownTimer";
-import { getDropDateIso, formatDropDateLabel } from "@/lib/dropDate";
 
 /**
  * Full-bleed cinematic hero — near-100vh, minimal headline anchored low.
@@ -10,10 +7,7 @@ import { getDropDateIso, formatDropDateLabel } from "@/lib/dropDate";
  * function bundle even though they're deployed fine to the CDN), so it was
  * silently failing in production and leaving the hero blank.
  */
-export async function Hero() {
-  const dropDateIso = await getDropDateIso();
-  const isLive = Date.now() >= new Date(dropDateIso).getTime();
-
+export function Hero() {
   return (
     <section className="relative -mx-6 mb-20 flex min-h-[100vh] flex-col items-center justify-end overflow-hidden pb-24 md:-mx-12">
       <div
@@ -31,28 +25,13 @@ export async function Hero() {
           Light Tints. Good Vibes.
         </p>
 
-        {!isLive && (
-          <div className="mt-10">
-            <CountdownTimer targetIso={dropDateIso} label={`Drops ${formatDropDateLabel(dropDateIso)}`} />
-          </div>
-        )}
-
         <div className="mt-10">
-          {isLive ? (
-            <a
-              href="#shop"
-              className="py-4 font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)]"
-            >
-              Shop The Collection
-            </a>
-          ) : (
-            <Link
-              href="/preorder"
-              className="py-4 font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)]"
-            >
-              Reserve Yours — Pay ₹500
-            </Link>
-          )}
+          <a
+            href="#shop"
+            className="py-4 font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)]"
+          >
+            Shop The Collection
+          </a>
         </div>
       </div>
     </section>

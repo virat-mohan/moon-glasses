@@ -26,10 +26,10 @@ export function NewsletterBlock() {
   return (
     <section className="border-t border-divider py-20 text-center">
       <p className="font-display text-heading-l uppercase text-ink md:text-heading-xl">
-        Keep Exploring.
+        Join the crew
       </p>
       <p className="mx-auto mt-3 max-w-md font-sans text-body-s text-secondary-text">
-        Receive new designs and exclusive drops.
+        We&apos;ll keep in touch!
       </p>
 
       {status === "done" ? (

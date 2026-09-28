@@ -225,7 +225,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
 
             {postBarterEnabled && stockLabel !== "out-of-stock" && (
               <p className="mt-3 font-sans text-body-s font-bold text-ink">
-                Skip the payment — Buy Now with{" "}
+                Skip the payment — get it with{" "}
                 <Link href="/#pay-with-a-post" className="underline underline-offset-4">
                   <PayWithAPostMark />
                 </Link>{" "}

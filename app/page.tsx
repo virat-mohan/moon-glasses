@@ -13,6 +13,7 @@ import { isPostBarterEnabled } from "@/lib/post-barter";
 import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { getExplorerPosts } from "@/lib/community";
+import { computeWebsiteAnalytics } from "@/lib/website-analytics";
 import { chapters, groupByStyle, styleRimLens } from "@/lib/chapters";
 
 function chapterName(slug: string) {
@@ -20,6 +21,23 @@ function chapterName(slug: string) {
 }
 
 export const revalidate = 3600;
+
+/** The most-viewed pairs over the last week, topped up from the collection while traffic is too thin to fill four. */
+async function getCurrentVibe<T extends { slug: string }>(collection: T[]): Promise<T[]> {
+  let viewed: T[] = [];
+  try {
+    const analytics = await computeWebsiteAnalytics(
+      new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      new Date().toISOString()
+    );
+    viewed = analytics.topViewedChapters
+      .map((v) => collection.find((c) => c.slug === v.slug))
+      .filter((c): c is T => !!c);
+  } catch (err) {
+    console.error("Homepage: failed to compute Current Vibe", err);
+  }
+  return [...viewed, ...collection.filter((c) => !viewed.includes(c))].slice(0, 4);
+}
 
 function buildPillars(shapeCount: number, colourwayCount: number) {
   return [
@@ -52,6 +70,8 @@ export default async function Home() {
     stockLabel: stockLabelFor(inventory[chapter.slug]),
   });
   const limitedItems = limitedChapters.map(toItem);
+
+  const vibeItems = (await getCurrentVibe(collection)).map(toItem);
   const collectionItems = collection.map(toItem);
 
   return (
@@ -87,15 +107,27 @@ export default async function Home() {
           </section>
         )}
 
+        {vibeItems.length > 0 && (
+          <section className="border-b border-divider pb-16 pt-8">
+            <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">Yours and ours</p>
+            <h2 className="mb-8 font-display text-display-m uppercase text-ink md:mb-10">Current Vibe</h2>
+            <div className="md:hidden">
+              <MobileCatalogue items={vibeItems} />
+            </div>
+            <div className="hidden md:block">
+              <CatalogueGrid items={vibeItems} columnsClassName="md:grid-cols-4" />
+            </div>
+          </section>
+        )}
+
         <section id="shop" className="scroll-mt-20 pb-16 pt-12 md:pb-24 md:pt-16">
-          <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">New In</p>
           <h2 className="font-display text-display-m uppercase text-ink">The Collection</h2>
           <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
-            The core crew/ edit — the pairs we keep coming back to.
+            The core edit — the pairs we keep coming back to.
           </p>
           <p className="mt-1 hidden max-w-md font-sans text-caption text-secondary-text/70 md:block">
             {shapeCount} shape{shapeCount === 1 ? "" : "s"}, {colourwayCount} colourway
-            {colourwayCount === 1 ? "" : "s"}, across two materials. ₹1,499 acetate, ₹1,999 metal.
+            {colourwayCount === 1 ? "" : "s"}, across two materials.
           </p>
 
           <div className="mt-8 md:mt-10">

@@ -77,7 +77,6 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <p className="text-caption uppercase tracking-[0.12em] text-secondary-text">Shop By Style</p>
         {hasFilter && (
           <button
             type="button"

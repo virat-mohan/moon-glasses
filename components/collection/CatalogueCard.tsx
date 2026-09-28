@@ -80,7 +80,7 @@ export function CatalogueCard({ chapter, stockLabel, sizes = "100vw" }: Catalogu
 
       <div className="flex items-end justify-between gap-3 px-1 pt-3">
         <Link href={href} className="min-w-0 hover:[&>p:first-child]:text-ink">
-          <p className="truncate font-sans text-caption uppercase tracking-[0.05em] text-secondary-text transition-colors">
+          <p className="font-sans text-caption uppercase leading-snug tracking-[0.05em] text-secondary-text transition-colors">
             {shortProductName(chapter.name)}
           </p>
           <p className="font-sans text-body text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>

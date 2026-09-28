@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Pre-orders are paused; old "Reserve yours" links go to the collection instead.
+  async redirects() {
+    return [{ source: "/preorder", destination: "/#shop", permanent: false }];
+  },
   images: {
     // Vercel's free-tier Image Optimization quota (1,000 source images/month)
     // has been exhausted, which was breaking every image on the live site
