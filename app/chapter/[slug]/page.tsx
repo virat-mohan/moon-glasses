@@ -18,6 +18,7 @@ import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { DiscountPromoBanner } from "@/components/ui/DiscountPromoBanner";
+import { TedSmithCredit } from "@/components/ui/TedSmithCredit";
 import { RestockNotifyForm } from "@/components/chapter/RestockNotifyForm";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { isPostBarterEnabled } from "@/lib/post-barter";
@@ -190,6 +191,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
             <DiscountPromoBanner className="mt-4" />
 
             <p className="mt-6 max-w-md font-sans text-body text-secondary-text">{chapter.story}</p>
+            <TedSmithCredit className="mt-4" />
 
             {!chapter.verifiedOnSite && (
               <p className="mt-4 max-w-md font-sans text-caption text-paint-orange">

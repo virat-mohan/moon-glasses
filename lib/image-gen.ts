@@ -325,6 +325,27 @@ Before finishing: double-check the sunglasses against the reference image(s) one
 }
 
 /**
+ * Turns a supplier's styled product photo (props, backdrops, their logo)
+ * into a clean catalogue shot on plain white, matching the site's own
+ * cutouts, without changing the frame itself.
+ */
+export async function generateProductCutout(options: { imageUrl: string; productName?: string }): Promise<string> {
+  const geminiKey = await getSetting("IMAGE_GEN_API_KEY");
+  if (!geminiKey) {
+    throw new Error("IMAGE_GEN_API_KEY (Gemini) is not set — add it in /admin/settings first");
+  }
+
+  const prompt = `Here is a product photo of a pair of sunglasses${options.productName ? ` ("${options.productName}")` : ""}, styled with props and a backdrop.
+
+Recreate it as a clean e-commerce catalogue shot: only the sunglasses, on a pure, flat white background (#FFFFFF), centred, filling about 80% of the frame width, from the same camera angle as the original. Remove every prop, stand, paper, backdrop and surface. Keep any brand name or logo printed on the lenses, temples or frame exactly as it is: these frames are made in collaboration with Ted Smith and their markings stay on the product. A very soft natural contact shadow under the frame is fine; nothing else.
+
+The sunglasses must be reproduced with total accuracy: exact frame shape and geometry, exact frame colour, material and finish (metal stays metal, acetate stays acetate, gold stays gold), exact lens tint, transparency and gradient, exact bridge, hinges and temple design. Do not restyle, recolour or "improve" the frame. No text, no watermark.`;
+
+  const base64Png = await generateWithGemini(geminiKey, prompt, [options.imageUrl], "square");
+  return uploadGeneratedImage(base64Png, "product-cutouts");
+}
+
+/**
  * Refines an already-generated model photo using a free-text instruction
  * (e.g. "make the jacket red", "have her look straight at the camera") —
  * the /admin/master-inventory lightbox's "Apply Edit" action. Unlike
