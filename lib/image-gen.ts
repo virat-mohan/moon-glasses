@@ -312,7 +312,9 @@ Lighting and color: near-black, true-dark background — not gray, brown, or haz
 
 Photography style: this must look like a real photograph taken on a professional camera at an actual party, not a rendered or AI-generated image. Natural skin texture with visible pores, fine lines, and subtle asymmetry — never airbrushed, waxy, or unnaturally smooth. Real directional lighting with natural shadow falloff, slight authentic film/sensor grain, imperfect flyaway hairs. Avoid the typical AI-image look entirely: no plastic-looking skin, no overly symmetrical features, no synthetic-looking background blur. Sharp focus on the face and sunglasses. No text, no logos, no watermarks.
 
-Before finishing: double-check the sunglasses against the reference image(s) one more time — same frame shape, same frame color/material, same lens tint and shape. This is the single most important requirement of this image.`;
+Lenses: these are light-tint fashion lenses. Render the lens as a light, see-through wash of its exact tint colour, with the model's eyes, eyelashes and eyebrows clearly visible behind it. No glare, no reflections, no specular highlights, no mirror effect and no dark or opaque lens, even when the tint is grey, brown or green. Light the face with soft, even frontal light so nothing reflects off the lens.
+
+Before finishing: double-check the sunglasses against the reference image(s) one more time — same frame shape, same frame color/material, same lens tint and shape, eyes visible through a clean lens with no reflections. This is the single most important requirement of this image.`;
 
   const base64Png = await generateWithGemini(geminiKey, prompt, options.referenceImageUrls, "portrait4x5");
   const url = await uploadGeneratedImage(base64Png, "model-photos");
