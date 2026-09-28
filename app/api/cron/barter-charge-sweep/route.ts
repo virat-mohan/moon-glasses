@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSetting } from "@/lib/settings";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendBarterChargeLinkEmail } from "@/lib/email";
-
-async function assertAuthorized(request: Request) {
-  const secret = await getSetting("CRON_SECRET");
-  if (!secret) return true;
-  const provided = new URL(request.url).searchParams.get("secret") ?? request.headers.get("x-cron-secret");
-  return provided === secret;
-}
 
 /**
  * Enforces the binding condition a gift_first shopper accepted at checkout
@@ -27,7 +20,7 @@ async function assertAuthorized(request: Request) {
  * closes that gap.
  */
 export async function GET(request: Request) {
-  if (!(await assertAuthorized(request))) {
+  if (!(await isCronAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

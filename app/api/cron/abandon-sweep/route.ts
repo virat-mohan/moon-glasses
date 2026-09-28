@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { getSetting } from "@/lib/settings";
 import { retargetOneSession, sendSecondNudgeForSession } from "@/lib/abandoned-cart";
 
 const STAGE_1_AFTER_MINUTES = 5; // first plain reminder
 const STAGE_2_AFTER_STAGE_1_MINUTES = 120; // BUYNOW10 coupon nudge, 2 hours after stage 1
-
-async function assertAuthorized(request: Request) {
-  const secret = await getSetting("CRON_SECRET");
-  if (!secret) return true; // not configured yet — allow (dev/manual-trigger friendly)
-  const provided = new URL(request.url).searchParams.get("secret") ?? request.headers.get("x-cron-secret");
-  return provided === secret;
-}
 
 /**
  * Two-stage abandoned-cart sequence:
@@ -29,7 +22,7 @@ async function assertAuthorized(request: Request) {
  * few minutes.
  */
 export async function GET(request: Request) {
-  if (!(await assertAuthorized(request))) {
+  if (!(await isCronAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

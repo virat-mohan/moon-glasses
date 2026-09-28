@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSetting } from "@/lib/settings";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { trackShiprocketShipment } from "@/lib/shiprocket";
 import { applyShipmentStatusUpdate } from "@/lib/shiprocket-status";
-
-async function assertAuthorized(request: Request) {
-  const secret = await getSetting("CRON_SECRET");
-  if (!secret) return true;
-  const provided = new URL(request.url).searchParams.get("secret") ?? request.headers.get("x-cron-secret");
-  return provided === secret;
-}
 
 /**
  * Self-healing fallback for the Shiprocket webhook: polls every shipment
@@ -21,7 +14,7 @@ async function assertAuthorized(request: Request) {
  * transition check, so re-applying an unchanged status is always a no-op.
  */
 export async function GET(request: Request) {
-  if (!(await assertAuthorized(request))) {
+  if (!(await isCronAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

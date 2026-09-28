@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
-import { getSetting } from "@/lib/settings";
+import { isCronAuthorized } from "@/lib/cron-auth";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { postBriefToInstagram, launchBriefCampaign } from "@/lib/ad-brief-publish";
 
-async function assertAuthorized(request: Request) {
-  const secret = await getSetting("CRON_SECRET");
-  if (!secret) return true;
-  const provided = new URL(request.url).searchParams.get("secret") ?? request.headers.get("x-cron-secret");
-  return provided === secret;
-}
-
 /** Sweeps ad_briefs queued for a future post/launch whose time has come. */
 export async function GET(request: Request) {
-  if (!(await assertAuthorized(request))) {
+  if (!(await isCronAuthorized(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
