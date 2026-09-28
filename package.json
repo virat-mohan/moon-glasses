@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
+    "@retail-os/brand-config": "github:virat-mohan/retail-os-brand-config#40f0246f4bbb59795caee0c842af515f26ea436f",
     "@supabase/supabase-js": "^2.112.2",
     "@vercel/analytics": "^2.0.1",
     "framer-motion": "^13.0.0",
