@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CatalogueGrid } from "@/components/collection/CatalogueCard";
-import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
+import { MobileCatalogueGrid } from "@/components/collection/MobileCatalogue";
 import { STYLE_ORDER, styleRimLens } from "@/lib/chapters";
 import type { Chapter } from "@/types/chapter";
 import type { StockLabel } from "@/lib/inventory";
@@ -163,7 +163,7 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
       ) : (
         <>
           <div className="mt-6 md:hidden">
-            <MobileCatalogue key={`${style}-${rim}-${lens}`} items={filteredItems} />
+            <MobileCatalogueGrid items={filteredItems} />
           </div>
           <div className="mt-10 hidden md:block">
             <CatalogueGrid items={filteredItems} />
