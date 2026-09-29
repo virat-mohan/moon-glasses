@@ -9,6 +9,8 @@ import type { StockLabel } from "@/lib/inventory";
 
 type Item = { chapter: Chapter; stockLabel: StockLabel };
 
+const MIN_PAIRS_PER_STYLE_CHIP = 4;
+
 /**
  * "The Collection" grid plus a shape → rim colour → lens colour filter.
  * `items` must already arrive pre-sorted into style groups (see
@@ -29,9 +31,12 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
     [items]
   );
 
+  // A style only gets a filter chip once it has enough pairs to browse —
+  // a chip that narrows to one or two frames looks thin.
   const styles = useMemo(() => {
-    const present = new Set(withMeta.map((it) => it.meta.style));
-    return STYLE_ORDER.filter((s) => present.has(s));
+    const counts = new Map<string, number>();
+    for (const it of withMeta) counts.set(it.meta.style, (counts.get(it.meta.style) ?? 0) + 1);
+    return STYLE_ORDER.filter((s) => (counts.get(s) ?? 0) >= MIN_PAIRS_PER_STYLE_CHIP);
   }, [withMeta]);
 
   const rims = useMemo(() => {
