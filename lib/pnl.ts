@@ -48,11 +48,24 @@ export async function computePnl(monthKey: string) {
     if (o.is_post_barter) barterValue += o.subtotal ?? 0;
   }
 
+  // COGS is per product from product_costing (actual vendor cost once known,
+  // else the pricing-tier target cost); the flat COGS_PER_UNIT_RUPEES setting
+  // only covers products with no costing row yet.
   let unitsSold = 0;
+  let cogs = 0;
   const orderIds = (orders ?? []).map((o) => o.id);
   if (orderIds.length > 0) {
-    const { data: items } = await supabase.from("order_items").select("quantity, order_id").in("order_id", orderIds);
-    unitsSold = (items ?? []).reduce((sum, i) => sum + (i.quantity ?? 0), 0);
+    const [{ data: items }, { data: costing }] = await Promise.all([
+      supabase.from("order_items").select("quantity, order_id, chapter_slug").in("order_id", orderIds),
+      supabase.from("product_costing").select("chapter_slug, target_cost, actual_cost"),
+    ]);
+    const unitCost = new Map<string, number>(
+      (costing ?? []).map((c) => [c.chapter_slug as string, (c.actual_cost ?? c.target_cost) as number])
+    );
+    for (const i of items ?? []) {
+      unitsSold += i.quantity ?? 0;
+      cogs += (i.quantity ?? 0) * (unitCost.get(i.chapter_slug) ?? costPerCap);
+    }
   }
 
   const { data: expenses } = await supabase
@@ -103,7 +116,6 @@ export async function computePnl(monthKey: string) {
   const expensesTotal = expensesByCategory.reduce((sum, e) => sum + e.amount, 0);
 
   const netSales = grossSales - discountsGiven - refunds;
-  const cogs = unitsSold * costPerCap;
   const grossProfit = netSales - cogs;
   const netProfit = grossProfit - expensesTotal;
 

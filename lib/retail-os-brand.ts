@@ -69,7 +69,7 @@ export const moonglassesBrand: RetailOsBrand = {
   profile: DEFAULT_BRAND_PROFILE,
   titleName: "MOON GLASSES™",
   description:
-    "MOON GLASSES™ — fashion eyewear for after dark. ₹1,499 acetate, ₹1,999 metal. Ships across India.",
+    "MOON GLASSES™ — fashion eyewear for after dark. The Collection from ₹1,499, the Limited Series from ₹1,999. Ships across India.",
   keywords: ["fashion sunglasses India", "MOON GLASSES", "eyewear", "aviator sunglasses"],
   assets: {
     orgLogoPath: "/images/brand/moon-glasses-logo.png",

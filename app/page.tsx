@@ -23,27 +23,34 @@ function chapterName(slug: string) {
 
 export const revalidate = 3600;
 
-/** The most-viewed pairs over the last week, topped up from the collection while traffic is too thin to fill four. */
+// Current Vibe only appears once real interest exists: at least four pairs
+// each viewed this many times in the last week. Until then the homepage is
+// just the Limited Series and The Collection (no padded-out placeholder row).
+const VIBE_MIN_WEEKLY_VIEWS = 25;
+const VIBE_SIZE = 4;
+
+/** The most-viewed pairs over the last week, or nothing while traffic is too thin to mean anything. */
 async function getCurrentVibe<T extends { slug: string }>(collection: T[]): Promise<T[]> {
-  let viewed: T[] = [];
   try {
     const analytics = await computeWebsiteAnalytics(
       new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
       new Date().toISOString()
     );
-    viewed = analytics.topViewedChapters
+    const viewed = analytics.topViewedChapters
+      .filter((v) => v.views >= VIBE_MIN_WEEKLY_VIEWS)
       .map((v) => collection.find((c) => c.slug === v.slug))
       .filter((c): c is T => !!c);
+    return viewed.length >= VIBE_SIZE ? viewed.slice(0, VIBE_SIZE) : [];
   } catch (err) {
     console.error("Homepage: failed to compute Current Vibe", err);
+    return [];
   }
-  return [...viewed, ...collection.filter((c) => !viewed.includes(c))].slice(0, 4);
 }
 
 function buildPillars(shapeCount: number, colourwayCount: number) {
   return [
     { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
-    { title: "Plastic Or Metal", copy: "Acetate frames ₹1,499, metal frames ₹1,999." },
+    { title: "Plastic Or Metal", copy: "The Collection from ₹1,499, the Limited Series from ₹1,999." },
     { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
     {
       title: "Core Collection",
@@ -76,7 +83,7 @@ export default async function Home() {
   });
   const limitedItems = limitedChapters.map(toItem);
 
-  const vibeItems = (await getCurrentVibe(collection)).map(toItem);
+  const vibeItems = (await getCurrentVibe([...collection, ...limitedChapters])).map(toItem);
   const collectionItems = collection.map(toItem);
 
   return (

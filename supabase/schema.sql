@@ -1301,3 +1301,22 @@ create table if not exists instagram_mentions (
 alter table orders add column if not exists barter_post_source text;
 alter table orders add column if not exists barter_post_detected_at timestamptz;
 alter table instagram_mentions add column if not exists reposted_at timestamptz;
+
+-- Per-product pricing tier and vendor costing (drives per-product COGS in
+-- lib/pnl.ts). Tiers: Collection plastic 1499 / metal 1999, Limited Series
+-- plastic 1999 / metal 2499. target_cost = 25% of the GST-exclusive price;
+-- actual_cost overrides it once the vendor price is agreed.
+create table if not exists product_costing (
+  chapter_slug text primary key,
+  pricing_tier text not null,
+  price integer not null,
+  gst_rate numeric not null default 0.18,
+  target_cost_pct numeric not null default 0.25,
+  target_cost integer not null,
+  vendor text,
+  vendor_retail_price integer,
+  actual_cost integer,
+  notes text,
+  updated_at timestamptz not null default now()
+);
+alter table product_costing enable row level security;

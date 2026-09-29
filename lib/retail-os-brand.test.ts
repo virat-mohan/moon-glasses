@@ -27,7 +27,7 @@ test("identity fields preserve the previous hardcoded values", () => {
 test("metadata surface values are unchanged", () => {
   assert.equal(
     brand.description,
-    "MOON GLASSES™ — fashion eyewear for after dark. ₹1,499 acetate, ₹1,999 metal. Ships across India.",
+    "MOON GLASSES™ — fashion eyewear for after dark. The Collection from ₹1,499, the Limited Series from ₹1,999. Ships across India.",
   );
   assert.deepEqual(brand.keywords, ["fashion sunglasses India", "MOON GLASSES", "eyewear", "aviator sunglasses"]);
   assert.equal(`${titleBrandName()} — ${brand.profile.tagline}`, "MOON GLASSES™ — See A Brighter You");
