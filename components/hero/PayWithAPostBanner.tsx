@@ -10,17 +10,19 @@ import { GiftFirstUrgencyBadge } from "@/components/checkout/GiftFirstUrgencyBad
  * two-tier framing used at checkout so a shopper who lands here already
  * knows exactly what to expect once they get there.
  */
-export function PayWithAPostBanner() {
+export function PayWithAPostBanner({ launchSoon = false }: { launchSoon?: boolean }) {
   return (
     <section id="pay-with-a-post" className="scroll-mt-24 border-t border-divider py-20">
       <div className="mx-auto max-w-[720px] text-center">
-        <p className="font-sans text-micro uppercase tracking-[0.3em] text-tan-gold">New</p>
+        <p className="font-sans text-micro uppercase tracking-[0.3em] text-tan-gold">{launchSoon ? "Launching with the drop" : "New"}</p>
         <h2 className="mt-4 text-display-m">
           <PayWithAPostMark />
         </h2>
         <p className="mt-4 font-sans text-body-s text-secondary-text">
-          Skip the payment — post about us on Instagram instead. Choose it right at checkout, no
-          separate sign-up.
+          Skip the payment — post about us on Instagram instead.{" "}
+          {launchSoon
+            ? "It goes live the day we open orders. Get on the list to be first."
+            : "Choose it right at checkout, no separate sign-up."}
         </p>
 
         <div className="mt-10 grid gap-4 text-left sm:grid-cols-2">
@@ -42,20 +44,20 @@ export function PayWithAPostBanner() {
           </div>
         </div>
 
-        <GiftFirstUrgencyBadge className="mt-6" />
+        {!launchSoon && <GiftFirstUrgencyBadge className="mt-6" />}
 
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
-            href="/#shop"
+            href={launchSoon ? "/#join" : "/#shop"}
             className="inline-block border border-ink bg-ink px-8 py-3.5 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-300 hover:bg-cream hover:text-ink"
           >
-            Shop &amp; <PayWithAPostMark />
+            {launchSoon ? "Get on the list" : <>Shop &amp; <PayWithAPostMark /></>}
           </Link>
           <Link
-            href="/"
+            href={launchSoon ? "/#shop" : "/"}
             className="font-sans text-body-s text-secondary-text underline underline-offset-4 transition-colors duration-200 hover:text-ink"
           >
-            Continue Shopping
+            {launchSoon ? "Browse the collection" : "Continue Shopping"}
           </Link>
         </div>
       </div>

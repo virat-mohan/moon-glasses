@@ -10,6 +10,7 @@ import { Hero } from "@/components/hero/HeroVideo";
 import { EditorialSplit } from "@/components/hero/EditorialSplit";
 import { PayWithAPostBanner } from "@/components/hero/PayWithAPostBanner";
 import { isPostBarterEnabled } from "@/lib/post-barter";
+import { isLaunchSoon } from "@/lib/launch";
 import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { getExplorerPosts } from "@/lib/community";
@@ -52,7 +53,11 @@ function buildPillars(shapeCount: number, colourwayCount: number) {
 }
 
 export default async function Home() {
-  const [coreChapters, postBarterEnabled] = await Promise.all([getCoreCollectionChapters(), isPostBarterEnabled()]);
+  const [coreChapters, postBarterEnabled, launchSoon] = await Promise.all([
+    getCoreCollectionChapters(),
+    isPostBarterEnabled(),
+    isLaunchSoon(),
+  ]);
   const collection = groupByStyle(coreChapters);
   // Computed live from what's actually published, rather than a hardcoded
   // "five shapes, 16 colourways" — that line went stale the moment a shape
@@ -135,7 +140,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {postBarterEnabled && <PayWithAPostBanner />}
+        {(postBarterEnabled || launchSoon) && <PayWithAPostBanner launchSoon={launchSoon} />}
 
         <div className="hidden md:block">
           <EditorialSplit

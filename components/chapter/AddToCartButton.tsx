@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
+import { useLaunchSoon } from "@/components/launch/LaunchContext";
 import type { Chapter } from "@/types/chapter";
 
 export function AddToCartButton({
@@ -18,6 +19,10 @@ export function AddToCartButton({
 }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
+  const launchSoon = useLaunchSoon();
+
+  // Pre-launch: BuyNowButton alongside already says "Launching soon".
+  if (launchSoon) return null;
 
   if (added) {
     return (

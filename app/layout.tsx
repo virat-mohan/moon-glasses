@@ -7,6 +7,9 @@ import { WhatsAppFloatButton } from "@/components/contact/WhatsAppFloatButton";
 import { AmbientTechno } from "@/components/audio/AmbientTechno";
 import { CartProvider } from "@/lib/cart";
 import { getSetting } from "@/lib/settings";
+import { isLaunchSoon } from "@/lib/launch";
+import { LaunchSoonProvider } from "@/components/launch/LaunchContext";
+import { LaunchingSoonBar } from "@/components/launch/LaunchingSoonBar";
 import { brand, titleBrandName } from "@/lib/retail-os-brand";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -80,7 +83,7 @@ const organizationJsonLd = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const pixelId = await getSetting("META_PIXEL_ID");
+  const [pixelId, launchSoon] = await Promise.all([getSetting("META_PIXEL_ID"), isLaunchSoon()]);
 
   return (
     <html
@@ -93,15 +96,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <MetaPixelTracker pixelId={pixelId} />
-        <CartProvider>
-          <ScrollToTop />
-          <div>
-            <Navbar />
-          </div>
-          {children}
-          <WhatsAppFloatButton />
-          <AmbientTechno />
-        </CartProvider>
+        <LaunchSoonProvider soon={launchSoon}>
+          <CartProvider>
+            <ScrollToTop />
+            <div>
+              {launchSoon && <LaunchingSoonBar />}
+              <Navbar />
+            </div>
+            {children}
+            <WhatsAppFloatButton />
+            <AmbientTechno />
+          </CartProvider>
+        </LaunchSoonProvider>
         <Analytics />
       </body>
     </html>

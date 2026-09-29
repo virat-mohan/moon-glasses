@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useLaunchSoon } from "@/components/launch/LaunchContext";
+import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 
 export function NewsletterBlock() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const launchSoon = useLaunchSoon();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,12 +27,21 @@ export function NewsletterBlock() {
   }
 
   return (
-    <section className="border-t border-divider py-20 text-center">
+    <section id="join" className="scroll-mt-20 border-t border-divider py-20 text-center">
+      {launchSoon && (
+        <p className="mb-3 font-sans text-micro font-bold uppercase tracking-[0.12em] text-tan-gold">Launching soon</p>
+      )}
       <p className="font-display text-heading-l uppercase text-ink md:text-heading-xl">
         Join the crew
       </p>
       <p className="mx-auto mt-3 max-w-md font-sans text-body-s text-secondary-text">
-        We&apos;ll keep in touch!
+        {launchSoon ? (
+          <>
+            Be first in line for the drop, and for <PayWithAPostMark />.
+          </>
+        ) : (
+          "We\u2019ll keep in touch!"
+        )}
       </p>
 
       {status === "done" ? (

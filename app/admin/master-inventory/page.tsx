@@ -44,6 +44,24 @@ export default function MasterInventoryPage() {
   const [zoomImage, setZoomImage] = useState<{ url: string; alt: string } | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [launchSoon, setLaunchSoon] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/launch-status")
+      .then((res) => res.json())
+      .then((data) => setLaunchSoon(Boolean(data.soon)));
+  }, []);
+
+  async function toggleLaunchSoon() {
+    const next = !launchSoon;
+    if (!confirm(next ? "Switch the site to \"Launching soon\" (no orders)?" : "Go live and start taking orders?")) return;
+    const res = await fetch("/api/admin/launch-status", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ soon: next }),
+    });
+    if (res.ok) setLaunchSoon(next);
+  }
 
   function load() {
     fetch("/api/admin/master-inventory")
@@ -200,6 +218,21 @@ export default function MasterInventoryPage() {
         <strong>Live</strong> to publish/unpublish, and pick which collection it belongs to, all
         from here — for supplier drafts and for the original 16 / Limited Series alike.
       </p>
+
+      {launchSoon !== null && (
+        <div className="mt-6 flex flex-wrap items-center gap-3 border border-divider px-4 py-3">
+          <span className="text-body-s text-ink">
+            Storefront: <strong>{launchSoon ? "Launching soon (browsing only, no orders)" : "Live (taking orders)"}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={toggleLaunchSoon}
+            className="ml-auto border border-ink px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-ink hover:text-cream"
+          >
+            {launchSoon ? "Go live" : "Switch to launching soon"}
+          </button>
+        </div>
+      )}
 
       <div className="mt-6 max-w-xl">
         <p className="mb-1.5 text-micro uppercase tracking-[0.05em] text-secondary-text">

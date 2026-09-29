@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { isLaunchSoon } from "@/lib/launch";
 import { createRazorpayOrder } from "@/lib/razorpay";
 import { computeTrustedOrderTotal, getCodAdvanceRupees } from "@/lib/order-pricing";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 export async function POST(request: Request) {
+  if (await isLaunchSoon()) {
+    return NextResponse.json({ error: "We're launching soon and not taking orders just yet." }, { status: 403 });
+  }
   const body = await request.json().catch(() => null);
   if (!body?.items?.length) {
     return NextResponse.json({ error: "Missing items" }, { status: 400 });

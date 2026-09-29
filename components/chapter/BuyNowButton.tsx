@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { useCart } from "@/lib/cart";
+import { useLaunchSoon } from "@/components/launch/LaunchContext";
 import type { Chapter } from "@/types/chapter";
 
 export function BuyNowButton({
@@ -25,8 +27,24 @@ export function BuyNowButton({
   const { clear, addItem } = useCart();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const launchSoon = useLaunchSoon();
 
   if (disabled) return null;
+
+  if (launchSoon) {
+    return (
+      <Link
+        href="/#join"
+        className={
+          variant === "minimal"
+            ? "font-sans text-caption font-medium tracking-[0.02em] text-[var(--moon-gold)] transition-colors duration-200 hover:text-white"
+            : "border border-ink px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors hover:bg-ink hover:text-cream"
+        }
+      >
+        Launching soon
+      </Link>
+    );
+  }
 
   function handleClick() {
     setLoading(true);

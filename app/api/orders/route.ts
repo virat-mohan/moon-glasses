@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isLaunchSoon } from "@/lib/launch";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { markCartSessionConverted } from "@/lib/cart-session-convert";
 import { getCurrentCustomer, findOrCreateCustomerForGuest } from "@/lib/auth";
@@ -38,6 +39,9 @@ type OrderPayload = {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: Request) {
+  if (await isLaunchSoon()) {
+    return NextResponse.json({ error: "We're launching soon and not taking orders just yet." }, { status: 403 });
+  }
   let body: OrderPayload;
   try {
     body = await request.json();
