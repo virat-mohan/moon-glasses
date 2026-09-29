@@ -248,7 +248,7 @@ export function chapterImageSrc(folder: string, file: string) {
 }
 
 /** Display order for grouping the catalogue by shape — matches the "five shapes" copy on-site. */
-export const STYLE_ORDER = ["Wayfarer", "Round", "Rectangle", "Aviator", "Octagon"] as const;
+export const STYLE_ORDER = ["Wayfarer", "Round", "Rectangle", "Aviator", "Oval", "Octagon"] as const;
 
 /**
  * Every product name follows "MOON <n> <Shape> [(Material)] — <Rim> <Lens>",
@@ -259,15 +259,18 @@ export const STYLE_ORDER = ["Wayfarer", "Round", "Rectangle", "Aviator", "Octago
  * shape → rim colour → lens colour filters.
  */
 export function styleRimLens(chapter: Chapter): { style: string; rim: string; lens: string } {
-  // The "MOON <n>" code prefix is optional (admin-added products from
-  // /admin/add-chapter don't get one), and a trailing "(descriptor)" —
-  // e.g. "(Special Edition)" — is ignored rather than swallowed into lens.
-  const match = chapter.name.match(
-    /^(?:MOON\s+\d+\s+)?(\S+)(?:\s+\([^)]+\))?\s+—\s+(\S+)\s+(.+?)(?:\s+\([^)]+\))?$/
-  );
-  if (!match) return { style: "Other", rim: "", lens: "" };
-  const [, style, rim, lens] = match;
-  return { style, rim, lens };
+  // "[MOON <n>] [Model] <Shape> [(descriptor)] — <Rim> [Lens] [(descriptor)]".
+  // The shape is the last word before the dash, so model names in front
+  // ("Eclipse Octagon — Gold Grey") and "(Metal)"-style descriptors are skipped.
+  const [left, right] = chapter.name.split(/\s+—\s+/);
+  if (!right) return { style: "Other", rim: "", lens: "" };
+  const shapeWords = left.replace(/\([^)]*\)/g, " ").trim().split(/\s+/);
+  const colourWords = right.replace(/\([^)]*\)/g, " ").trim().split(/\s+/);
+  return {
+    style: shapeWords[shapeWords.length - 1] || "Other",
+    rim: colourWords[0] ?? "",
+    lens: colourWords.slice(1).join(" "),
+  };
 }
 
 /** Sorts chapters into STYLE_ORDER groups (unrecognized styles sink to the end), stable within each group. */
