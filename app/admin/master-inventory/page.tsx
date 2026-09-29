@@ -195,7 +195,8 @@ export default function MasterInventoryPage() {
     <main className="mx-auto w-full max-w-[1200px] px-6 pt-28 pb-24 md:px-12">
       <h1 className="mt-2 font-display text-heading-l uppercase text-ink">Inventory Master</h1>
       <p className="mt-2 max-w-2xl text-body-s text-secondary-text">
-        Every product — live on site or still a draft. Generate a model photo, toggle{" "}
+        Every product — live on site or still a draft. Edit the price, generate a model photo (click
+        it to switch between past male/female shots), toggle{" "}
         <strong>Live</strong> to publish/unpublish, and pick which collection it belongs to, all
         from here — for supplier drafts and for the original 16 / Limited Series alike.
       </p>
@@ -270,8 +271,22 @@ export default function MasterInventoryPage() {
 
               <div className="min-w-0 flex-1">
                 <p className="truncate text-body-s text-ink">{row.name}</p>
-                <p className="text-caption text-secondary-text">
-                  {row.series} · ₹{row.price.toLocaleString("en-IN")}
+                <p className="flex items-center gap-1 text-caption text-secondary-text">
+                  {row.series} · ₹
+                  <input
+                    key={`${row.slug}-${row.price}`}
+                    type="number"
+                    min={0}
+                    step={100}
+                    defaultValue={row.price}
+                    onBlur={(e) => {
+                      const price = Number(e.target.value);
+                      if (price > 0 && price !== row.price) updateRow(row, { price });
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    className="w-20 border border-ink/30 bg-surface px-1.5 py-0.5 font-sans text-caption text-ink"
+                    title="Edit price — saves when you leave the field"
+                  />
                 </p>
                 <div className="mt-1">
                   <StatusPill live={row.live} />
