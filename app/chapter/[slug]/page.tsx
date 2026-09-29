@@ -56,10 +56,12 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const chapter = staticChapters.find((c) => c.slug === slug);
+  // Resolve through getAllChapters so admin-added products and name/story
+  // overrides get a real title, not the static fallback or the site default.
+  const chapter = (await getAllChapters()).find((c) => c.slug === slug);
   if (!chapter) return {};
   const image = chapterImageSrc(chapter.folder, chapter.sideImage);
-  const description = `${chapter.name} — ${chapter.story}`.slice(0, 200);
+  const description = (chapter.story ?? chapter.name).slice(0, 200);
   return {
     title: chapter.name,
     description,
