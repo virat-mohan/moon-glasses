@@ -23,7 +23,7 @@ export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
       <div
         ref={trackRef}
         onScroll={onScroll}
-        className="-mx-6 flex snap-x snap-mandatory overflow-x-auto px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-6 flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ scrollPaddingInline: "1.5rem", gap: "1.5rem" }}
       >
         {items.map((item) => (
