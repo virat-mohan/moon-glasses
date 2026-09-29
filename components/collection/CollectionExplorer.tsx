@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CatalogueGrid } from "@/components/collection/CatalogueCard";
-import { MobileCatalogueGrid } from "@/components/collection/MobileCatalogue";
+import { MobileCatalogue, MobileCatalogueGrid } from "@/components/collection/MobileCatalogue";
 import { STYLE_ORDER, styleRimLens } from "@/lib/chapters";
 import type { Chapter } from "@/types/chapter";
 import type { StockLabel } from "@/lib/inventory";
@@ -163,12 +163,35 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
       ) : (
         <>
           <div className="mt-6 md:hidden">
-            <MobileCatalogueGrid items={filteredItems} />
+            <MobileCatalogue key={`${style}-${rim}-${lens}`} items={filteredItems} />
+            {filteredItems.length > 2 && <SeeAll items={filteredItems} />}
           </div>
           <div className="mt-10 hidden md:block">
             <CatalogueGrid items={filteredItems} />
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+/** Under the mobile swipe: expands to every pair in a 2-up grid for anyone who'd rather scroll the whole lot. */
+function SeeAll({ items }: { items: Item[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-8">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full border border-divider py-3 font-sans text-caption font-bold uppercase tracking-[0.1em] text-ink transition-colors hover:border-[var(--moon-gold)]"
+      >
+        {open ? "Hide the full list" : `See all ${items.length} pairs`}
+      </button>
+      {open && (
+        <div className="mt-6">
+          <MobileCatalogueGrid items={items} />
+        </div>
       )}
     </div>
   );
