@@ -1,6 +1,7 @@
 import { getBrandProfile } from "@/lib/brand";
 import { getSetting } from "@/lib/settings";
 import { getOrCreateReferralCode } from "@/lib/referrals";
+import { GST_RATE, SUNGLASSES_HSN, exGst, getGstin, gstIncluded } from "@/lib/gst";
 
 type InvoiceOrder = {
   id: string;
@@ -32,7 +33,7 @@ type InvoiceItem = { chapter_name: string; unit_price: number; quantity: number 
  * flush to the card edge.
  */
 export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[]) {
-  const brand = await getBrandProfile();
+  const [brand, gstin] = await Promise.all([getBrandProfile(), getGstin()]);
   const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
   const date = new Date(order.created_at).toLocaleDateString("en-IN", {
@@ -149,7 +150,9 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
                     </table>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;border-top:1px solid ${BORDER};">
                       <tr><td colspan="2" style="padding-top:10px;"></td></tr>
-                      ${row("Total", `₹${order.total.toLocaleString("en-IN")}`, { bold: true })}
+                      ${row("Total (incl. GST)", `₹${order.total.toLocaleString("en-IN")}`, { bold: true })}
+                      ${row(`Taxable value`, `₹${exGst(order.total).toLocaleString("en-IN")}`, { color: MUTED })}
+                      ${row(`GST @ ${Math.round(GST_RATE * 100)}% included (HSN ${SUNGLASSES_HSN})`, `₹${gstIncluded(order.total).toLocaleString("en-IN")}`, { color: MUTED })}
                     </table>
                     ${
                       order.payment_type === "cod_advance"
@@ -194,8 +197,8 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
             <td style="padding:28px 40px 36px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${BORDER};">
                 <tr><td style="padding-top:18px;font-size:11px;color:#6a6a6a;line-height:1.7;text-align:center;">
-                  Prices are inclusive of applicable GST.<br />
-                  Moonglasses · GSTIN — add in Admin Settings<br />
+                  All prices are inclusive of GST.<br />
+                  Moonglasses${gstin ? ` · GSTIN ${gstin}` : ""}<br />
                   Delhi, India
                 </td></tr>
               </table>

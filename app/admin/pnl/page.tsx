@@ -69,6 +69,8 @@ export default async function AdminPnlPage({
     expensesTotal,
     costPerCap,
     netSales,
+    gstOnSales,
+    revenueExGst,
     cogs,
     grossProfit,
     netProfit,
@@ -82,6 +84,8 @@ export default async function AdminPnlPage({
     expensesTotal: 0,
     costPerCap: 250,
     netSales: 0,
+    gstOnSales: 0,
+    revenueExGst: 0,
     cogs: 0,
     grossProfit: 0,
     netProfit: 0,
@@ -120,17 +124,21 @@ export default async function AdminPnlPage({
       </div>
       <p className="mt-2 max-w-lg text-body-s text-secondary-text">
         Live — recalculated from real orders, refunds, and logged expenses for the selected month.
-        Cost per unit: {money(costPerCap)} (edit in Settings → Finance).
+        Prices are GST-inclusive, so GST is taken out before profit. Cost of goods uses each
+        product&apos;s agreed vendor cost (target cost until agreed); {money(costPerCap)} per unit
+        covers anything without one.
       </p>
 
       <div className="mt-10">
         <Row label="Gross Sales" value={grossSales} />
         <Row label="Discounts, Referrals, Good Vibes & Coupons" value={-discountsGiven} indent />
         <Row label="Refunds" value={-refunds} indent />
-        <Row label="Net Sales" value={netSales} bold />
+        <Row label="Net Sales (incl. GST)" value={netSales} bold />
+        <Row label="GST included in sales (18%, payable)" value={-gstOnSales} indent />
+        <Row label="Revenue (ex-GST)" value={revenueExGst} bold />
 
         <div className="mt-6" />
-        <Row label={`Cost of Goods (${unitsSold} units × ${money(costPerCap)})`} value={-cogs} indent />
+        <Row label={`Cost of Goods (${unitsSold} units, per-product cost)`} value={-cogs} indent />
         <Row label="Gross Profit" value={grossProfit} bold />
 
         <div className="mt-6" />

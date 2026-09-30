@@ -179,7 +179,7 @@ export default function CartPage() {
               <p className="font-display text-heading-m text-ink">₹{total.toLocaleString("en-IN")}</p>
             </div>
             <p className="mt-2 text-caption text-secondary-text">
-              Shipping and any taxes are calculated at checkout.
+              All prices include GST. Shipping is calculated at checkout.
             </p>
 
             <Link

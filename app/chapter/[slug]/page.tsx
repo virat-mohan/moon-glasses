@@ -185,6 +185,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
           <div className="md:pt-4">
             <h1 className="font-display text-heading-xl uppercase text-ink">{shortProductName(chapter.name)}</h1>
             <p className="mt-3 font-sans text-body-l text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
+            <p className="font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">Inclusive of all taxes</p>
             {reviewSummary && (
               <a href="#reviews" className="mt-2 inline-block font-sans text-caption text-secondary-text">
                 <span className="text-tan-gold">★</span> {reviewSummary.average} ({reviewSummary.count})

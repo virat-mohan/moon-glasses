@@ -1,6 +1,7 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
 import { getAccountInsights } from "@/lib/meta-insights";
+import { gstIncluded } from "@/lib/gst";
 
 export function currentMonthKey() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit" });
@@ -115,8 +116,12 @@ export async function computePnl(monthKey: string) {
   const expensesByCategory = Array.from(byCategory.entries()).map(([category, amount]) => ({ category, amount }));
   const expensesTotal = expensesByCategory.reduce((sum, e) => sum + e.amount, 0);
 
+  // Listed prices are GST-inclusive, so the GST inside net sales is owed to
+  // the government, not revenue — profit is computed on the ex-GST amount.
   const netSales = grossSales - discountsGiven - refunds;
-  const grossProfit = netSales - cogs;
+  const gstOnSales = gstIncluded(netSales);
+  const revenueExGst = netSales - gstOnSales;
+  const grossProfit = revenueExGst - cogs;
   const netProfit = grossProfit - expensesTotal;
 
   return {
@@ -129,6 +134,8 @@ export async function computePnl(monthKey: string) {
     unitsSold,
     cogs,
     netSales,
+    gstOnSales,
+    revenueExGst,
     grossProfit,
     expensesByCategory,
     expensesTotal,
