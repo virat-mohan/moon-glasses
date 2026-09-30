@@ -11,3 +11,6 @@ The viratmohan.com Claude Code session (repo "Virat Mohan Website", Supabase pro
 
 ## Client access
 Any access requested from a client to their accounts (Google Analytics, Search Console, Shopify staff, WordPress/WooCommerce, Shiprocket, any tool invite) is always for **tech@viratmohan.com**. Meta access is by the DevShop Business ID. The contact and sending address stays founder@viratmohan.com.
+
+## NCNDA: the non-compete never binds DevShop
+In every NCNDA, NDA, proposal, terms page or partnership document, the non-compete applies to the other party only (not to replicate DevShop Retail OS, its commercial model or Pay with a Post™). DevShop must stay free to build, operate, invest in and provide services to any other brand, including brands in the same product category as the client or competing with it. DevShop's only obligation to a brand is confidentiality: not disclosing or using that brand's information for anyone else. Never write a clause that stops DevShop working in a category, soliciting a category, or "launching or supporting a competing brand". The online NCNDA is v2 (src/lib/lead-nda.ts); the template is public/retail-os/docs/DevShop-Retail-OS-NCNDA.docx. If a client sends their own NDA, check it for a DevShop non-compete before Virat signs.
