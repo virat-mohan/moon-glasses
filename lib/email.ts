@@ -365,8 +365,8 @@ export async function sendReviewRequestEmail(
       </div>
       <p style="font-size:16px;">Hi ${customerName ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">
-        Your ${itemsLine} should have arrived by now — how is it? A quick review helps other
-        travellers pick the right Chapter, and takes under a minute.
+        Your ${itemsLine} should have arrived by now — how is it? A quick review helps others
+        pick their pair, and takes under a minute.
       </p>
       <a href="${googleReviewUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Leave a Review</a>
       <p style="margin-top:20px;font-size:13px;color:#666;">

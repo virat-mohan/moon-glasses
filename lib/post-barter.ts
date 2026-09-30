@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import { logTrackingEvent } from "@/lib/tracking";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
 import { getPublicFollowerCount, getBusinessDiscoveryProfile, parseInstagramHandle } from "@/lib/instagram";
@@ -362,6 +363,9 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     customer_phone: savedOrder.customer_phone,
     total: pricing.total,
   });
+  // Server-side Purchase so the founder console credits this order to the
+  // session's channel (the checkout page only fires it for paid flows).
+  await logTrackingEvent("Purchase", { sessionKey: payload.sessionKey, value: pricing.total });
 
   if (isGiftFirst) {
     await decrementInventoryAndShip(savedOrder.id);

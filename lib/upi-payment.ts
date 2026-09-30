@@ -1,4 +1,5 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { logTrackingEvent } from "@/lib/tracking";
 import { getSetting } from "@/lib/settings";
 import { getBrandProfile } from "@/lib/brand";
 import { computeTrustedOrderTotal } from "@/lib/order-pricing";
@@ -149,6 +150,9 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
       customer_phone: savedOrder.customer_phone,
       total: pricing.total,
     }),
+    // Server-side Purchase so the founder console credits this order to the
+    // session's channel (the checkout page only fires it for card payments).
+    logTrackingEvent("Purchase", { sessionKey: payload.sessionKey, value: pricing.total }),
   ]);
   if (itemsError) throw itemsError;
 
