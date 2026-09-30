@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { chapters } from "@/lib/chapters";
+import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapters-dynamic";
 import { getBrandProfile } from "@/lib/brand";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -21,7 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "" ? 1 : 0.6,
   }));
 
-  const chapterPages = chapters.map((c) => ({
+  // Only what's actually live on the storefront (Collection + Limited Series),
+  // so held/draft products never get indexed.
+  const live = [...(await getCoreCollectionChapters()), ...(await getLimitedSeriesChapters())];
+  const chapterPages = live.map((c) => ({
     url: `${base}/chapter/${c.slug}`,
     lastModified: now,
     changeFrequency: "weekly" as const,
