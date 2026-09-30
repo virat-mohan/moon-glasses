@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRazorpayCredentials } from "@/lib/razorpay";
-import { getCodAdvanceRupees } from "@/lib/order-pricing";
+import { getCodAdvanceRupees, COD_DISABLED } from "@/lib/order-pricing";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
 import { isPostBarterEnabled } from "@/lib/post-barter";
 
@@ -22,6 +22,7 @@ export async function GET() {
   return NextResponse.json({
     razorpayEnabled: !RAZORPAY_DISABLED && !!creds,
     razorpayKeyId: creds?.keyId ?? null,
+    codEnabled: !COD_DISABLED,
     codAdvanceRupees,
     upiEnabled: !!upi,
     upiId: upi?.upiId ?? null,

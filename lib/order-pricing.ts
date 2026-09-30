@@ -8,6 +8,14 @@ import { getSetting } from "@/lib/settings";
 import { resolveReferralDiscount } from "@/lib/referrals";
 import { resolveCouponDiscount } from "@/lib/coupons";
 
+// Cash on delivery is off across DevShop Retail OS: in India, COD drives high
+// RTO (return-to-origin) and the courier/logistics economics don't work.
+// Storefront checkout offers prepaid/UPI only; this flag hides the COD tile
+// (checkout config) and rejects any cod_advance from the customer order route.
+// One place to flip if a brand ever needs it back. Admin manual orders are
+// unaffected. See LEARNINGS.md 2026-09-30.
+export const COD_DISABLED = true;
+
 /** The fixed amount charged upfront for a COD order — the rest is collected by the courier on delivery. */
 export async function getCodAdvanceRupees() {
   const setting = await getSetting("COD_ADVANCE_AMOUNT_RUPEES");
