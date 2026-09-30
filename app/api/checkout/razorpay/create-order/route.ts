@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isLaunchSoon } from "@/lib/launch";
 import { createRazorpayOrder } from "@/lib/razorpay";
-import { computeTrustedOrderTotal, getCodAdvanceRupees } from "@/lib/order-pricing";
+import { computeTrustedOrderTotal, getCodAdvanceRupees, COD_DISABLED } from "@/lib/order-pricing";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 export async function POST(request: Request) {
@@ -11,6 +11,9 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body?.items?.length) {
     return NextResponse.json({ error: "Missing items" }, { status: 400 });
+  }
+  if (COD_DISABLED && body.paymentType === "cod_advance") {
+    return NextResponse.json({ error: "Cash on delivery isn't available. Please pay by UPI or card." }, { status: 400 });
   }
 
   try {

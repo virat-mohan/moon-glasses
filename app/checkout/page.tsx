@@ -58,10 +58,11 @@ export default function CheckoutPage() {
   const [isGift, setIsGift] = useState(false);
   const [giftNote, setGiftNote] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(true);
-  const [razorpay, setRazorpay] = useState<{ enabled: boolean; keyId: string | null; codAdvanceRupees: number }>({
+  const [razorpay, setRazorpay] = useState<{ enabled: boolean; keyId: string | null; codAdvanceRupees: number; codEnabled: boolean }>({
     enabled: false,
     keyId: null,
     codAdvanceRupees: 200,
+    codEnabled: false,
   });
   const [upi, setUpi] = useState<{ enabled: boolean; id: string | null; qrImageUrl: string | null }>({
     enabled: false,
@@ -412,6 +413,7 @@ export default function CheckoutPage() {
           enabled: !!data.razorpayEnabled,
           keyId: data.razorpayKeyId,
           codAdvanceRupees: data.codAdvanceRupees ?? 99,
+          codEnabled: !!data.codEnabled,
         });
         setUpi({ enabled: !!data.upiEnabled, id: data.upiId ?? null, qrImageUrl: data.upiQrImageUrl ?? null });
         setPostBarterEnabled(!!data.postBarterEnabled);
@@ -423,7 +425,7 @@ export default function CheckoutPage() {
           setPaymentType("upi_qr");
         }
       })
-      .catch(() => setRazorpay({ enabled: false, keyId: null, codAdvanceRupees: 200 }))
+      .catch(() => setRazorpay({ enabled: false, keyId: null, codAdvanceRupees: 200, codEnabled: false }))
       .finally(() => setConfigLoaded(true));
   }, []);
 
@@ -951,18 +953,20 @@ export default function CheckoutPage() {
                     <span className="block font-bold uppercase tracking-[0.03em]">Prepaid</span>
                     <span className="block text-caption opacity-80">Free shipping, pay ₹{total.toLocaleString("en-IN")} now</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentType("cod_advance")}
-                    className={`flex-1 border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
-                      paymentType === "cod_advance" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
-                    }`}
-                  >
-                    <span className="block font-bold uppercase tracking-[0.03em]">Cash On Delivery</span>
-                    <span className="block text-caption opacity-80">
-                      Pay ₹{razorpay.codAdvanceRupees.toLocaleString("en-IN")} now, balance on delivery (shipping extra)
-                    </span>
-                  </button>
+                  {razorpay.codEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentType("cod_advance")}
+                      className={`flex-1 border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
+                        paymentType === "cod_advance" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
+                      }`}
+                    >
+                      <span className="block font-bold uppercase tracking-[0.03em]">Cash On Delivery</span>
+                      <span className="block text-caption opacity-80">
+                        Pay ₹{razorpay.codAdvanceRupees.toLocaleString("en-IN")} now, balance on delivery (shipping extra)
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
