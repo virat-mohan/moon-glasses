@@ -9,7 +9,6 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import QRCode from "qrcode";
-import { GetPostOnWhatsApp } from "@/components/checkout/GetPostOnWhatsApp";
 
 type OrderSummary = {
   id: string;
@@ -335,18 +334,12 @@ function OrderConfirmedContent() {
                 ? "We've emailed you the full step-by-step for your post — no need to wait, your order is already on its way."
                 : "We've emailed you the full step-by-step, along with a link to check your progress and drop your post link once it's live."}
             </p>
-            <div className="mt-5">
-              <GetPostOnWhatsApp code={barter.code} className="w-full sm:w-auto" />
-              <p className="mt-2 text-micro text-secondary-text">
-                Tap, send the pre-filled message, and we&apos;ll reply on WhatsApp with your post image and steps.
-              </p>
-            </div>
             {orderId && (
               <Link
                 href={`/barter/${orderId}`}
-                className="mt-4 inline-block border border-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream"
+                className="mt-5 block w-full bg-[var(--moon-gold)] px-6 py-4 text-center font-sans text-body-s font-bold uppercase tracking-[0.08em] text-black transition hover:brightness-110"
               >
-                View Instructions &amp; Progress
+                Get your post &amp; share to Instagram
               </Link>
             )}
           </div>

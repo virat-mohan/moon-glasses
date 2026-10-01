@@ -250,6 +250,14 @@ export function ShareToInstagramButton({
     setStatus("building");
     const blob = blobRef.current ?? (await buildShareCard(couponCode, siteDomain, heroImageUrl, productName));
 
+    // Instagram drops text passed through the share sheet, so copy the
+    // caption first: it's ready to paste the moment Instagram opens.
+    try {
+      await navigator.clipboard.writeText(caption);
+    } catch {
+      // caption is shown on the page either way
+    }
+
     if (blob) {
       const file = new File([blob], "moon-glasses-good-vibes.png", { type: "image/png" });
       // Web Share API (level 2, files) is the real "share to Instagram" path
@@ -276,13 +284,13 @@ export function ShareToInstagramButton({
       a.click();
       URL.revokeObjectURL(url);
       setStatus("downloaded");
-    }
-
-    try {
-      await navigator.clipboard.writeText(caption);
-      if (status !== "shared") setStatus("copied");
-    } catch {
-      // caption is shown on the page either way
+      // On a phone without file sharing: image saved, caption copied, now
+      // jump straight into the Instagram app to post it.
+      if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
+        setTimeout(() => {
+          window.location.href = "instagram://library";
+        }, 800);
+      }
     }
   }
 
@@ -342,7 +350,7 @@ export function ShareToInstagramButton({
         <p className="mt-1 text-caption text-secondary-text">
           Tap Share To Instagram — your phone&apos;s share sheet opens with Instagram as an option. Pick it,
           then choose Post or Story (same image works for both, whichever you&apos;re confident can get you{" "}
-          {requiredOrders} sales). The caption below is added automatically; edit it if you like.
+          {requiredOrders} sales). Your caption with your code is already copied: just paste it in Instagram.
         </p>
       </div>
 
