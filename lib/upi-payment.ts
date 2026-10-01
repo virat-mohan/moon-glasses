@@ -35,9 +35,33 @@ export async function getUpiPaymentConfig() {
     getSetting("UPI_QR_IMAGE_URL"),
     getSetting("UPI_PAYEE_NAME"),
   ]);
-  if (!upiId || !qrImageUrl) return null;
+  // The QR shown to the shopper is generated per order (exact amount baked in),
+  // so a static QR image is optional now — only the UPI ID is required.
+  if (!upiId) return null;
   const brand = await getBrandProfile();
   return { upiId, qrImageUrl, payeeName: payeeNameSetting || brand.brandName };
+}
+
+/**
+ * A raw UPI transfer carries no order reference we can read back, so each
+ * pending UPI order is told apart by its exact amount: the rupee total plus a
+ * 1–99 paise tag no other unpaid UPI order of the same total is using. The
+ * bank's credit SMS (forwarded to /api/webhooks/bank-sms) is matched on it.
+ */
+async function pickUniqueUpiAmountPaise(totalRupees: number): Promise<number> {
+  const base = totalRupees * 100;
+  const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const { data } = await getSupabaseServerClient()
+    .from("orders")
+    .select("upi_amount_paise")
+    .eq("payment_type", "upi_qr")
+    .neq("payment_status", "paid")
+    .gte("created_at", since)
+    .gte("upi_amount_paise", base)
+    .lt("upi_amount_paise", base + 100);
+  const taken = new Set((data ?? []).map((r) => r.upi_amount_paise as number));
+  const free = Array.from({ length: 99 }, (_, i) => base + i + 1).filter((p) => !taken.has(p));
+  return free.length ? free[Math.floor(Math.random() * free.length)] : base + 1 + Math.floor(Math.random() * 99);
 }
 
 export type UpiOrderPayload = {
@@ -80,7 +104,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
     ),
     getCurrentCustomer(),
   ]);
-  if (!config) throw new Error("UPI payment isn't set up yet — add UPI_ID and UPI_QR_IMAGE_URL in /admin/settings");
+  if (!config) throw new Error("UPI payment isn't set up yet — add UPI_ID in /admin/settings");
   if (pricing.total <= 0) throw new Error("Order total must be greater than zero");
 
   const wasGuest = !customer;
@@ -90,6 +114,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   const effectiveCustomerId = customer?.id ?? guestCustomer?.id ?? null;
 
   const supabase = getSupabaseServerClient();
+  const upiAmountPaise = await pickUniqueUpiAmountPaise(pricing.total);
   const { data: savedOrder, error: orderError } = await supabase
     .from("orders")
     .insert({
@@ -115,6 +140,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
       gift_note: payload.giftNote ?? null,
       customer_id: effectiveCustomerId,
       status: "pending_upi_payment",
+      upi_amount_paise: upiAmountPaise,
     })
     .select()
     .single();
@@ -156,9 +182,10 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   ]);
   if (itemsError) throw itemsError;
 
+  const payAmount = (upiAmountPaise / 100).toFixed(2);
   const upiLink =
     `upi://pay?pa=${encodeURIComponent(config.upiId)}&pn=${encodeURIComponent(config.payeeName)}` +
-    `&am=${pricing.total}&cu=INR&tn=${encodeURIComponent(`Order ${savedOrder.id.slice(0, 8).toUpperCase()}`)}`;
+    `&am=${payAmount}&cu=INR&tn=${encodeURIComponent(`Order ${savedOrder.id.slice(0, 8).toUpperCase()}`)}`;
 
   return {
     orderId: savedOrder.id as string,

@@ -7,6 +7,7 @@ import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import QRCode from "qrcode";
 
 type OrderSummary = {
   id: string;
@@ -54,6 +55,14 @@ export default function OrderConfirmedPage() {
       upiLink: params.get("link") ?? "",
     };
   });
+  // UPI: the QR is generated from this order's pay link (exact amount, down to
+  // the paise tag the bank-SMS matcher relies on), and the page watches the
+  // order until the forwarded credit SMS confirms it.
+  const upiPayAmount = upiPending
+    ? Number(new URLSearchParams(upiPending.upiLink.split("?")[1] ?? "").get("am") ?? upiPending.amount) || upiPending.amount
+    : 0;
+  const [upiQr, setUpiQr] = useState<string | null>(null);
+  const [upiStatus, setUpiStatus] = useState<"waiting" | "paid" | "slow">("waiting");
   const [order, setOrder] = useState<OrderSummary | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [referralCode, setReferralCode] = useState<string | null>(null);
@@ -100,6 +109,43 @@ export default function OrderConfirmedPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!upiPending) return;
+    if (upiPending.upiLink) {
+      QRCode.toDataURL(upiPending.upiLink, { width: 440, margin: 1 })
+        .then(setUpiQr)
+        .catch(() => setUpiQr(null));
+    }
+    if (!orderId) return;
+    const started = Date.now();
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/orders/${orderId}/summary`, { cache: "no-store" });
+        const data = await res.json();
+        if (data.order?.payment_status === "paid") {
+          setOrder(data.order);
+          setUpiStatus("paid");
+          return;
+        }
+      } catch {
+        // keep polling
+      }
+      const elapsed = Date.now() - started;
+      if (elapsed > 10 * 60 * 1000) setUpiStatus((s) => (s === "paid" ? s : "slow"));
+      if (!stopped && elapsed < 60 * 60 * 1000) timer = setTimeout(poll, elapsed > 10 * 60 * 1000 ? 20000 : 5000);
+    };
+    timer = setTimeout(poll, 5000);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const upiPaid = !!upiPending && upiStatus === "paid";
+
   async function sendInvite(e: React.FormEvent) {
     e.preventDefault();
     if (!orderId) return;
@@ -133,11 +179,13 @@ export default function OrderConfirmedPage() {
     <>
       <main className="mx-auto w-full max-w-[600px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
         <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">
-          {upiPending ? "Awaiting Payment" : barter ? <PayWithAPostMark linked /> : paid ? "Order Confirmed" : "Order Sent"}
+          {upiPaid ? "Payment Received" : upiPending ? "Awaiting Payment" : barter ? <PayWithAPostMark linked /> : paid ? "Order Confirmed" : "Order Sent"}
         </p>
         <CheckoutSteps current="confirmed" />
         <h1 className="mt-6 font-display text-heading-xl uppercase text-ink md:text-display-m">
-          {upiPending
+          {upiPaid
+            ? "Thank You For Your Purchase."
+            : upiPending
             ? "Scan To Pay."
             : barter
               ? barter.tier === "gift_first"
@@ -148,8 +196,10 @@ export default function OrderConfirmedPage() {
                 : "Check WhatsApp."}
         </h1>
         <p className="mt-4 text-body text-secondary-text">
-          {upiPending
-            ? "Scan the QR below with any UPI app to pay. We'll confirm receipt and email you the moment it's on its way."
+          {upiPaid
+            ? "Payment received. We've emailed your invoice and sent a confirmation on WhatsApp, and your order is on its way to being packed."
+            : upiPending
+            ? "Scan the QR below with any UPI app, or tap the button on your phone. This page confirms automatically the moment your payment lands."
             : barter
               ? barter.tier === "gift_first"
                 ? "Your order is on its way — no need to wait for anything. Once it arrives, wear it, post a photo, and add us as a collaborator."
@@ -159,21 +209,27 @@ export default function OrderConfirmedPage() {
                 : "Your order details opened in WhatsApp — send that message through and we'll confirm payment and delivery with you directly, usually within a few hours."}
         </p>
 
-        {upiPending && (
+        {upiPending && !upiPaid && (
           <div className="mt-8 flex flex-col items-center gap-3 border border-divider p-6 text-center">
-            {upiPending.qrImageUrl && (
-              <Image
-                src={upiPending.qrImageUrl}
-                alt="Scan to pay via UPI"
-                width={220}
-                height={264}
-                className="border border-ink/20"
-              />
+            {upiQr ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={upiQr} alt="Scan to pay via UPI" width={220} height={220} className="border border-ink/20 bg-white p-2" />
+            ) : (
+              upiPending.qrImageUrl && (
+                <Image src={upiPending.qrImageUrl} alt="Scan to pay via UPI" width={220} height={264} className="border border-ink/20" />
+              )
             )}
             {upiPending.upiId && (
               <p className="text-caption text-secondary-text">UPI ID: {upiPending.upiId}</p>
             )}
-            <p className="font-display text-heading-s text-ink">₹{upiPending.amount.toLocaleString("en-IN")}</p>
+            <p className="font-display text-heading-s text-ink">
+              ₹{upiPayAmount.toLocaleString("en-IN", { minimumFractionDigits: upiPayAmount % 1 ? 2 : 0, maximumFractionDigits: 2 })}
+            </p>
+            {upiPayAmount % 1 !== 0 && (
+              <p className="max-w-[340px] text-caption text-secondary-text">
+                Please pay this exact amount. The paise are how we match your payment to your order instantly.
+              </p>
+            )}
             {upiPending.upiLink && (
               <a
                 href={upiPending.upiLink}
@@ -184,16 +240,24 @@ export default function OrderConfirmedPage() {
             )}
 
             <div className="mt-6 w-full border-t border-divider pt-5">
-              <p className="text-body-s font-bold text-ink">Already paid?</p>
-              <p className="mt-1.5 max-w-[380px] text-caption text-secondary-text">
-                Send us your payment screenshot on WhatsApp — from the same number you ordered with,
-                and make sure the amount and transaction ID are visible. We&apos;ll match it to your
-                order, confirm your payment, and get it packed. You&apos;ll get a confirmation on
-                WhatsApp and an email the moment it ships.
-              </p>
+              {upiStatus === "waiting" ? (
+                <p className="text-caption uppercase tracking-[0.08em] text-secondary-text">
+                  Waiting for your payment · this page updates on its own
+                </p>
+              ) : (
+                <>
+                  <p className="text-body-s font-bold text-ink">Paid but still waiting?</p>
+                  <p className="mt-1.5 max-w-[380px] text-caption text-secondary-text">
+                    Sometimes the bank takes a little longer to confirm. Send us your payment screenshot
+                    with the UPI reference number on WhatsApp, from the number you ordered with, and
+                    we&apos;ll confirm it by hand and get your order packed.
+                  </p>
+                </>
+              )}
+              {upiStatus === "slow" && (
               <a
                 href={`https://wa.me/919318311657?text=${encodeURIComponent(
-                  `Hi! I've just paid ₹${upiPending.amount.toLocaleString("en-IN")} for my MOON Glasses order${
+                  `Hi! I've just paid ₹${upiPayAmount} for my MOON Glasses order${
                     orderId ? ` (Order #${orderId.slice(0, 8).toUpperCase()})` : ""
                   }.${
                     items.length > 0
@@ -207,6 +271,7 @@ export default function OrderConfirmedPage() {
               >
                 Send Payment Screenshot On WhatsApp
               </a>
+              )}
             </div>
           </div>
         )}

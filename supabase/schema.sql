@@ -1320,3 +1320,19 @@ create table if not exists product_costing (
   updated_at timestamptz not null default now()
 );
 alter table product_costing enable row level security;
+
+-- UPI auto-confirm from forwarded bank credit SMS (lib/bank-sms.ts).
+-- Each unpaid UPI order carries a unique exact amount (rupees + 1-99 paise)
+-- that the credit SMS is matched on.
+alter table orders add column if not exists upi_amount_paise integer;
+create index if not exists orders_upi_pending_idx on orders (upi_amount_paise) where payment_type='upi_qr' and payment_status <> 'paid';
+create table if not exists bank_sms_log (
+  id uuid primary key default gen_random_uuid(),
+  body text not null,
+  amount_paise integer,
+  upi_ref text,
+  matched_order_id uuid,
+  status text not null,
+  created_at timestamptz not null default now()
+);
+alter table bank_sms_log enable row level security;

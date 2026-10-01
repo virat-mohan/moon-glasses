@@ -1,4 +1,4 @@
-import Image from "next/image";
+import QRCode from "qrcode";
 import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
@@ -28,6 +28,13 @@ export default async function BarterChargePage({ params }: { params: Promise<{ o
 
   const alreadyCharged = order.barter_charged_at || order.payment_status === "paid";
   const upiConfig = await getUpiPaymentConfig();
+  // QR generated with the amount baked in, so the shopper can't mistype it.
+  const qr = upiConfig
+    ? await QRCode.toDataURL(
+        `upi://pay?pa=${encodeURIComponent(upiConfig.upiId)}&pn=${encodeURIComponent(upiConfig.payeeName)}&am=${order.total}&cu=INR&tn=${encodeURIComponent(`Order ${order.id.slice(0, 8).toUpperCase()}`)}`,
+        { width: 440, margin: 1 }
+      )
+    : null;
 
   return (
     <main className="mx-auto w-full max-w-[560px] px-6 pt-32 pb-24 text-center md:px-12 md:pt-40">
@@ -50,13 +57,10 @@ export default async function BarterChargePage({ params }: { params: Promise<{ o
 
           {upiConfig ? (
             <div className="mt-8 flex flex-col items-center gap-3 border border-divider p-6">
-              <Image
-                src={upiConfig.qrImageUrl}
-                alt="Scan to pay via UPI"
-                width={220}
-                height={264}
-                className="border border-ink/20"
-              />
+              {qr && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qr} alt="Scan to pay via UPI" width={220} height={220} className="border border-ink/20 bg-white p-2" />
+              )}
               <p className="text-caption text-secondary-text">UPI ID: {upiConfig.upiId}</p>
               <p className="font-display text-heading-s text-ink">₹{order.total.toLocaleString("en-IN")}</p>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { OrderStatusCell } from "@/components/admin/OrderStatusCell";
+import { BankSmsPanel } from "@/components/admin/BankSmsPanel";
 import { ShipmentStatusCell } from "@/components/admin/ShipmentStatusCell";
 import { ShipmentCell } from "@/components/admin/ShipmentCell";
 import { RefundActions } from "@/components/admin/RefundActions";
@@ -262,6 +263,7 @@ export default async function AdminOrdersPage() {
         </table>
         </div>
       </form>
+      <BankSmsPanel />
     </main>
   );
 }
