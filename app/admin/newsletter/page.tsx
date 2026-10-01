@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { VoiceFindings, voiceBlocked } from "@/components/admin/VoiceFindings";
 
 type ArticleRow = {
   slug: string;
@@ -76,11 +77,12 @@ function AnnounceDropForm() {
         placeholder="Link path (e.g. /limited-series)"
         className="w-full border border-divider bg-surface px-3 py-2 text-body-s text-ink"
       />
+      <VoiceFindings text={`${dropName}\n${description}`} kind="email" />
       {error && <p className="text-caption text-paint-orange">{error}</p>}
       {result && <p className="text-caption text-tan-gold">{result}</p>}
       <button
         type="submit"
-        disabled={sending}
+        disabled={sending || voiceBlocked(`${dropName}\n${description}`, "email")}
         className="border border-ink px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream disabled:opacity-50"
       >
         {sending ? "Sending..." : "Send Announcement"}

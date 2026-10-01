@@ -8,7 +8,7 @@ const COOLING_OFF_DROP_RATIO = 0.5; // this week's units must be ≤ half of the
 
 const SIGNAL_INSTRUCTIONS: Record<"selling_fast" | "cooling_off", string> = {
   selling_fast:
-    "This product is genuinely selling fast this week — lean into real urgency and social proof (e.g. limited stock, high demand), not generic hype.",
+    "This product is genuinely selling fast this week — lead with it and lean on real social proof (people we know are wearing it), never urgency or scarcity language (brand rule: ritual over urgency, no 'limited time' or 'hurry').",
   cooling_off:
     "Sales for this product have cooled off noticeably compared to last week — write a fresh re-engagement angle (a new use-case, a different emotional hook, a reminder) rather than urgency, since urgency won't ring true for a product that isn't currently in high demand.",
 };

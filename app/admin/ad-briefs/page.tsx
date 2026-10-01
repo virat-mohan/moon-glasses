@@ -3,6 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { chapters } from "@/lib/chapters";
+import { VoiceFindings, voiceBlocked } from "@/components/admin/VoiceFindings";
+
+/** The customer-facing copy of a brief (caption + ad copy + on-image text), for the brand book check. */
+function briefVoiceText(b: { headline: string; primary_text: string; cta: string; hashtags: string[] | null; overlay_text: string | null; ad_cta_override?: string | null }) {
+  return [b.headline, b.primary_text, b.ad_cta_override || b.cta, b.overlay_text, (b.hashtags ?? []).map((h) => `#${h.replace(/^#/, "")}`).join(" ")]
+    .filter(Boolean)
+    .join("\n");
+}
 
 type Brief = {
   id: string;
@@ -1073,7 +1081,7 @@ export default function AdBriefsPage() {
                                   />
                                   <button
                                     onClick={() => postToStory(brief.id, i)}
-                                    disabled={postingStory[slotKey]}
+                                    disabled={postingStory[slotKey] || voiceBlocked(briefVoiceText(brief), "ad")}
                                     className="block w-full border border-divider px-2 py-1.5 text-micro uppercase text-ink hover:border-ink disabled:opacity-40"
                                   >
                                     {postingStory[slotKey] ? "Posting..." : "Post To Story"}
@@ -1257,6 +1265,15 @@ export default function AdBriefsPage() {
                       Auto-drafted — {brief.sales_signal === "selling_fast" ? "Selling Fast" : "Cooling Off"}
                     </span>
                   )}
+                  <VoiceFindings
+                    className="mb-2"
+                    kind="ad"
+                    text={
+                      editingCopyFor === brief.id
+                        ? [copyDraft.headline, copyDraft.primaryText, copyDraft.cta, brief.overlay_text, copyDraft.hashtags.split(",").map((h) => `#${h.trim().replace(/^#/, "")}`).join(" ")].filter(Boolean).join("\n")
+                        : briefVoiceText(brief)
+                    }
+                  />
                   {editingCopyFor === brief.id ? (
                     <div className="space-y-2">
                       <label className="block text-micro uppercase tracking-[0.05em] text-secondary-text">Headline</label>
@@ -1378,6 +1395,7 @@ export default function AdBriefsPage() {
                             onClick={() => postNow(brief)}
                             disabled={
                               posting[brief.id] ||
+                              voiceBlocked(briefVoiceText(brief), "ad") ||
                               (brief.is_carousel
                                 ? (brief.image_urls ?? []).filter(Boolean).length <
                                   Math.max(brief.image_prompts?.length ?? 0, 2)
@@ -1401,7 +1419,7 @@ export default function AdBriefsPage() {
                           />
                           <button
                             onClick={() => postToStory(brief.id)}
-                            disabled={postingStory[brief.id] || !brief.image_url}
+                            disabled={postingStory[brief.id] || !brief.image_url || voiceBlocked(briefVoiceText(brief), "ad")}
                             className="border border-divider px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
                           >
                             {postingStory[brief.id] ? "Posting..." : "Post To Story"}
@@ -1501,6 +1519,7 @@ export default function AdBriefsPage() {
                           onClick={() => launch(brief)}
                           disabled={
                             launching[brief.id] ||
+                            voiceBlocked(briefVoiceText(brief), "ad") ||
                             (brief.is_carousel
                               ? (brief.image_urls ?? []).filter(Boolean).length <
                                 Math.max(brief.image_prompts?.length ?? 0, 2)
@@ -1556,7 +1575,7 @@ export default function AdBriefsPage() {
                             </select>
                             <button
                               onClick={() => queueBrief(brief)}
-                              disabled={!scheduleAt[brief.id] || scheduling[brief.id]}
+                              disabled={!scheduleAt[brief.id] || scheduling[brief.id] || voiceBlocked(briefVoiceText(brief), "ad")}
                               className="border border-divider px-3 py-1.5 text-micro uppercase tracking-[0.05em] text-ink hover:border-ink disabled:opacity-40"
                             >
                               {scheduling[brief.id] ? "Queuing..." : "Queue"}

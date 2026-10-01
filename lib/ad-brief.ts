@@ -1,6 +1,15 @@
 import { getSetting } from "@/lib/settings";
 import { getBrandProfile } from "@/lib/brand";
 import type { ChapterSales } from "@/lib/sales-metrics";
+import { brandVoicePrompt, checkVoice, type VoiceFinding } from "@/lib/brand-voice";
+
+/** checkVoice over an ad's customer-facing copy (run on AI output before it is shown). */
+export function adCopyFindings(c: { headline?: string; primaryText?: string; cta?: string; overlayText?: string; hashtags?: string[] }): VoiceFinding[] {
+  return checkVoice(
+    [c.headline, c.primaryText, c.cta, c.overlayText, (c.hashtags ?? []).map((h) => `#${h}`).join(" ")].filter(Boolean).join("\n"),
+    "ad"
+  );
+}
 
 /**
  * For a generic brand-awareness image (no specific chapter/product tied to
@@ -33,6 +42,7 @@ export type AdBrief = {
   creativeStyle?: CreativeStyle;
   overlayText?: string;
   hashtags: string[];
+  voiceFindings?: VoiceFinding[];
 };
 
 function extractJson(text: string) {
@@ -61,8 +71,8 @@ export async function generateAdBrief(
   const brand = await getBrandProfile();
 
   const salesLine = sales
-    ? `It sold ${sales.unitsSold} units and ₹${sales.revenue.toLocaleString("en-IN")} in revenue over the last 30 days — lean into "selling fast" energy if that number is strong.`
-    : "No recent sales data is available for this product yet — write for cold-audience discovery instead of urgency.";
+    ? `It sold ${sales.unitsSold} units and ₹${sales.revenue.toLocaleString("en-IN")} in revenue over the last 30 days — let it inform which product leads, but never use urgency or scarcity language (brand rule: ritual over urgency).`
+    : "No recent sales data is available for this product yet — write for cold-audience discovery.";
 
   const overrideLine = customInstructions
     ? `\nThe admin has given this specific direction for this brief — follow it, even if it overrides the default strategy above: "${customInstructions}"`
@@ -94,7 +104,8 @@ export async function generateAdBrief(
 
   const prompt = `You are writing a Meta (Instagram/Facebook) ad brief for ${brand.brandName} ("${brand.tagline}"), a D2C brand selling a ${brand.productNoun}.
 
-Brand voice: ${brand.voice}
+Brand voice notes from the brand profile: ${brand.voice}
+The brand book in the system prompt wins on any conflict.
 
 ${productLine}${overrideLine}
 
@@ -102,7 +113,7 @@ Return ONLY a JSON object, no commentary, in this exact shape:
 {
   "headline": "string, under 40 characters, punchy",
   "primaryText": "string, 1-3 sentences, the actual ad body copy",
-  "cta": "one of: SHOP_NOW, LEARN_MORE, SIGN_UP",
+  "cta": "one of: LEARN_MORE, SIGN_UP, SHOP_NOW (prefer LEARN_MORE: the brand avoids imperative calls to buy)",
   "targetAudience": "one line describing who this ad should target (interests/demographics), for setting up Meta ad targeting",
   ${
     isCarousel
@@ -110,8 +121,8 @@ Return ONLY a JSON object, no commentary, in this exact shape:
         ? `"imagePrompts": "an array of EXACTLY ${multiChapters.length} detailed visual scene descriptions for an image generator, in the SAME ORDER as the products listed above — card ${1} must be "${multiChapters[0]?.name}", and so on. Each should describe setting, lighting, mood and how that specific product should be worn/used. Do not describe any on-image text, headline or logo — clean lifestyle photos with no text baked in."`
         : `"imagePrompts": "an array of detailed visual scene descriptions for an image generator, one per carousel card — YOU decide how many cards this ad actually needs (Meta allows 2 to 10; most ads work best with 3-6), each a distinct angle/setting/moment (never near-identical shots), together telling a small visual story or showing the product from different real-world contexts. Do not pad to a round number — stop once the story is told. Describe setting, lighting, mood and how the product should be worn/used in each. Do not describe any on-image text, headline or logo — clean lifestyle photos with no text baked in."`
       : `"imagePrompt": "a detailed visual scene description for an image generator — describe the setting, lighting, mood and how the product should be worn/used. Do not describe any on-image text, headline or logo — the image should be a clean lifestyle photo with no text baked in.",
-  "creativeStyle": "one of: ai_photo, real_photo_text_overlay — YOU decide which creative approach actually fits this specific ad, don't default to one. Pick real_photo_text_overlay for promotional/urgent/announcement-driven angles (a strong sales number to lean into, a new drop, a limited-time or scarcity angle, a direct-response feel) — real product photography with bold on-image text reads as more authentic and converts better for that kind of push. Pick ai_photo for aspirational/editorial/brand-story angles where a clean, text-free lifestyle photo feels more premium and sits more naturally in an Instagram feed.",
-  "overlayText": "ONLY meaningful when creativeStyle is real_photo_text_overlay: a short, bold line of on-image text, under 6 words (e.g. 'NEW DROP' or 'SELLING FAST' or 'BACK IN STOCK') to render directly on top of the photo. Leave as an empty string when creativeStyle is ai_photo."`
+  "creativeStyle": "one of: ai_photo, real_photo_text_overlay — YOU decide which creative approach actually fits this specific ad, don't default to one. Pick real_photo_text_overlay for announcement-driven angles (a new drop, back in stock) — real product photography with a short on-image label. Never a scarcity or urgency angle. Pick ai_photo for aspirational/editorial/brand-story angles where a clean, text-free lifestyle photo feels more premium and sits more naturally in an Instagram feed.",
+  "overlayText": "ONLY meaningful when creativeStyle is real_photo_text_overlay: a short, bold line of on-image text, under 6 words (e.g. 'THE DROP' or 'BACK IN STOCK' or 'LIGHT TINTS. BIG MOOD.'; a label, never a command or urgency) to render directly on top of the photo. Leave as an empty string when creativeStyle is ai_photo."`
   },
   "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, mixing broad reach tags (e.g. streetwear, travel) with niche/branded ones (e.g. the brand name, product name) — ready to prefix with # and post"]
 }`;
@@ -126,6 +137,7 @@ Return ONLY a JSON object, no commentary, in this exact shape:
     body: JSON.stringify({
       model: "claude-sonnet-5",
       max_tokens: 4096,
+      system: brandVoicePrompt("ad"),
       messages: [{ role: "user", content: prompt }],
     }),
   });
@@ -139,7 +151,7 @@ Return ONLY a JSON object, no commentary, in this exact shape:
   const text = data.content?.find((block: { type: string; text?: string }) => block.type === "text")?.text ?? "";
   const parsed = JSON.parse(extractJson(text));
 
-  return {
+  const brief: AdBrief = {
     headline: parsed.headline,
     primaryText: parsed.primaryText,
     cta: parsed.cta,
@@ -150,6 +162,9 @@ Return ONLY a JSON object, no commentary, in this exact shape:
     overlayText: typeof parsed.overlayText === "string" ? parsed.overlayText : undefined,
     hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : [],
   };
+  const voiceFindings = adCopyFindings(brief);
+  if (voiceFindings.length) console.warn("Ad brief brand-voice findings", voiceFindings);
+  return { ...brief, voiceFindings };
 }
 
 export type AdBriefCopy = {
@@ -177,7 +192,8 @@ export async function reviseAdBriefCopy(current: AdBriefCopy, instruction: strin
 
   const prompt = `You are revising an existing Meta (Instagram/Facebook) ad brief for ${brand.brandName} ("${brand.tagline}"), a D2C brand selling a ${brand.productNoun}.
 
-Brand voice: ${brand.voice}
+Brand voice notes from the brand profile: ${brand.voice}
+The brand book in the system prompt wins on any conflict.
 
 Current brief:
 Headline: "${current.headline}"
@@ -192,7 +208,7 @@ Apply that instruction. Keep everything else about the brief's voice and intent 
 {
   "headline": "string, under 40 characters, punchy",
   "primaryText": "string, 1-3 sentences, the actual ad body copy",
-  "cta": "one of: SHOP_NOW, LEARN_MORE, SIGN_UP",
+  "cta": "one of: LEARN_MORE, SIGN_UP, SHOP_NOW (prefer LEARN_MORE: the brand avoids imperative calls to buy)",
   "targetAudience": "one line describing who this ad should target (interests/demographics), for setting up Meta ad targeting",
   "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol"]
 }`;
@@ -207,6 +223,7 @@ Apply that instruction. Keep everything else about the brief's voice and intent 
     body: JSON.stringify({
       model: "claude-sonnet-5",
       max_tokens: 4096,
+      system: brandVoicePrompt("ad"),
       messages: [{ role: "user", content: prompt }],
     }),
   });

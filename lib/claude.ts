@@ -1,5 +1,6 @@
 import { getSetting } from "@/lib/settings";
 import { chapters } from "@/lib/chapters";
+import { brandVoicePrompt, checkVoice, type VoiceFinding } from "@/lib/brand-voice";
 
 export type GeneratedJournalDraft = {
   title: string;
@@ -9,6 +10,8 @@ export type GeneratedJournalDraft = {
   body: string[];
   relatedChapterSlugs: string[];
   readingTime: number;
+  /** checkVoice on the generated copy, run before the draft is shown. */
+  voiceFindings: VoiceFinding[];
 };
 
 const CATEGORIES = [
@@ -43,7 +46,7 @@ export async function generateJournalDraft(topic: string): Promise<GeneratedJour
 
   const chapterList = chapters.map((c) => `${c.slug}: "${c.name}" — ${c.story.slice(0, 100)}...`).join("\n");
 
-  const prompt = `You are writing a Journal article for Moonglasses, a premium Indian sunglasses brand ("Stories You Can Wear"). The brand voice is warm, specific, editorial — nightlife and fashion stories that happen to feature a pair of sunglasses, never a hard sell. Every article ties back to a real place or moment.
+  const prompt = `You are writing a Journal article for Moonglasses, an Indian sunglasses brand. Follow the brand voice in the system prompt exactly — nightlife and fashion stories that happen to feature a pair of sunglasses, never a hard sell. Every article ties back to a real place or moment.
 
 Topic: "${topic}"
 
@@ -78,6 +81,7 @@ Write 4-6 paragraphs in "body", including exactly one pull-quote paragraph start
     body: JSON.stringify({
       model: "claude-sonnet-5",
       max_tokens: 2000,
+      system: brandVoicePrompt("site"),
       messages: [{ role: "user", content: prompt }],
     }),
   });
@@ -96,7 +100,13 @@ Write 4-6 paragraphs in "body", including exactly one pull-quote paragraph start
 
   const wordCount = (parsed.body as string[]).join(" ").split(/\s+/).length;
 
+  const voiceFindings = checkVoice(
+    [parsed.title, parsed.subtitle, parsed.excerpt, ...((parsed.body as string[]) ?? [])].join("\n\n").replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, "$1"),
+    "site"
+  );
+
   return {
+    voiceFindings,
     title: parsed.title,
     subtitle: parsed.subtitle,
     category: parsed.category,

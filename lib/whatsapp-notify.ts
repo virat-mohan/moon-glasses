@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendMsg91Template } from "@/lib/msg91";
 import { sendMetaCloudTemplate } from "@/lib/whatsapp-cloud";
 import { generateAndUploadPwapShareCard } from "@/lib/pwap-share-card";
+import { voiceGate } from "@/lib/brand-voice";
 
 type OrderForWhatsApp = { id: string; customer_name: string; customer_phone: string; total: number };
 type CartSessionForWhatsApp = {
@@ -52,9 +53,14 @@ async function sendTemplateByName(
   providerTemplateName: string | null,
   variables: string[],
   logAgainst: { cartSessionId?: string; orderId?: string },
-  header?: { type: "image" | "document"; url: string; filename?: string }
+  header?: { type: "image" | "document"; url: string; filename?: string },
+  opts: { internal?: boolean } = {}
 ) {
   if (!providerTemplateName) return false;
+  // Brand book lock: the template body is fixed by Meta, so only the rendered
+  // variables are checked. A "block" stops the send (reported as not sent).
+  const gate = voiceGate(variables.join("\n"), "whatsapp", `WhatsApp template ${templateName}`, opts);
+  if (!gate.ok) return false;
   const provider = (await getSetting("WHATSAPP_PROVIDER")) === "meta_cloud" ? "meta_cloud" : "msg91";
   const result =
     provider === "meta_cloud"
@@ -116,7 +122,10 @@ export async function sendShipNotificationWhatsApp(
     labelUrl,
   ];
   const results = await Promise.all(
-    numbers.map((phone) => sendTemplateByName(phone, "ship_notification", msg91TemplateName, variables, { orderId }))
+    numbers.map((phone) =>
+      // Internal: warehouse team, items line carries supplier model names on purpose.
+      sendTemplateByName(phone, "ship_notification", msg91TemplateName, variables, { orderId }, undefined, { internal: true })
+    )
   );
   return results.some(Boolean);
 }

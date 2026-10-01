@@ -1,5 +1,13 @@
 import { getSetting } from "@/lib/settings";
 import { getBrandProfile } from "@/lib/brand";
+import { voiceGate } from "@/lib/brand-voice";
+
+/** Brand book lock: a "block" in the ad copy stops the ad being created (thrown, like the other create failures). */
+function assertAdCopyOnBrand(brief: { headline: string; primaryText: string; cta: string; hashtags?: string[] }) {
+  const text = [brief.headline, brief.primaryText, brief.cta, (brief.hashtags ?? []).map((h) => `#${h.replace(/^#/, "")}`).join(" ")].join("\n");
+  const gate = voiceGate(text, "ad", "Meta ad create");
+  if (!gate.ok) throw new Error(gate.reason);
+}
 
 const GRAPH_VERSION = "v21.0";
 
@@ -68,6 +76,7 @@ export async function createPausedMetaCampaign(brief: {
   hashtags?: string[];
   targeting?: AdTargeting;
 }) {
+  assertAdCopyOnBrand(brief);
   const creds = await getMetaCredentials();
   if (!creds) {
     throw new Error(
@@ -150,6 +159,7 @@ export async function createPausedMetaCarouselCampaign(brief: {
   hashtags?: string[];
   targeting?: AdTargeting;
 }) {
+  assertAdCopyOnBrand(brief);
   const creds = await getMetaCredentials();
   if (!creds) {
     throw new Error(

@@ -108,7 +108,7 @@ function renderDropAnnouncementHtml(
         <p style="text-transform:uppercase;letter-spacing:0.15em;font-size:12px;color:${GOLD};margin:0 0 8px;">New Drop</p>
         <h1 style="font-size:26px;margin:0 0 14px;text-transform:uppercase;">${dropName}</h1>
         <p style="font-size:14px;line-height:1.7;color:#cfcfcf;margin:0 0 22px;">${description}</p>
-        <a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;background:${GOLD};color:#101010;text-decoration:none;text-transform:uppercase;letter-spacing:0.08em;font-size:13px;font-weight:bold;">Shop The Drop</a>
+        <a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;background:${GOLD};color:#101010;text-decoration:none;text-transform:uppercase;letter-spacing:0.08em;font-size:13px;font-weight:bold;">See the drop</a>
       </div>
       <div style="margin:28px 32px 0;border-top:1px solid ${BORDER};padding:20px 0 28px;text-align:center;">
         <p style="font-size:13px;line-height:1.6;color:#cfcfcf;margin:0;">

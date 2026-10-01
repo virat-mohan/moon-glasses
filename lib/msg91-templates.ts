@@ -1,5 +1,6 @@
 import { getSetting, setSetting, type SettingKey } from "@/lib/settings";
 import { getBrandProfile } from "@/lib/brand";
+import { voiceGate } from "@/lib/brand-voice";
 
 type TemplateDef = {
   settingKey: SettingKey;
@@ -191,6 +192,15 @@ export async function createMsg91Templates(): Promise<{ results: TemplateCreateR
   }
   const results: TemplateCreateResult[] = await Promise.all(
     (await templateDefs()).map(async (def): Promise<TemplateCreateResult> => {
+      // Brand book lock: a template body with a "block" is never submitted.
+      // ready_to_ship goes to the warehouse team only (internal).
+      const gate = voiceGate(
+        [def.body, def.button?.text].filter(Boolean).join("\n"),
+        "whatsapp",
+        `WhatsApp template submit ${def.name}`,
+        { internal: def.settingKey === "MSG91_SHIP_NOTIFICATION_TEMPLATE_ID" }
+      );
+      if (!gate.ok) return { name: def.name, ok: false, detail: gate.reason ?? "Brand voice block" };
       try {
         const res = await fetch("https://control.msg91.com/api/v5/whatsapp/client-panel-template/", {
           method: "POST",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { chapters, chapterImageSrc } from "@/lib/chapters";
 import { journalIssues } from "@/lib/journal";
+import { voiceGate } from "@/lib/brand-voice";
 
 function slugify(title: string) {
   return title
@@ -33,6 +34,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!draft.title || !draft.body?.length) {
       return NextResponse.json({ error: "Draft is missing title/body" }, { status: 400 });
     }
+    // Brand book lock: a "block" cannot be published.
+    const gate = voiceGate(
+      [draft.title, draft.subtitle, draft.excerpt, ...(draft.body as string[])]
+        .filter(Boolean)
+        .join("\n\n")
+        .replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, "$1"),
+      "site",
+      `journal publish ${id}`
+    );
+    if (!gate.ok) return NextResponse.json({ error: gate.reason, voiceFindings: gate.findings }, { status: 422 });
 
     const relatedSlugs: string[] = draft.related_chapter_slugs ?? [];
     const heroChapter = chapters.find((c) => c.slug === relatedSlugs[0]);

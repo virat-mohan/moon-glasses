@@ -1,5 +1,12 @@
 import { getSetting } from "@/lib/settings";
 import { getInstagramConnection } from "@/lib/instagram-connection";
+import { voiceGate } from "@/lib/brand-voice";
+
+/** Brand book lock: a "block" in the caption stops the publish (thrown, like every other publish failure here). */
+function assertCaptionOnBrand(caption: string, where: string) {
+  const gate = voiceGate(caption, "social", where);
+  if (!gate.ok) throw new Error(gate.reason);
+}
 
 const GRAPH_VERSION = "v21.0";
 
@@ -87,6 +94,7 @@ function buildUserTags(usernames?: string[]) {
 }
 
 export async function postToInstagramFeed(imageUrl: string, caption: string, taggedUsernames?: string[]) {
+  assertCaptionOnBrand(caption, "Instagram feed post");
   const auth = await getPublishAuth();
   const { igUserId } = auth;
 
@@ -114,6 +122,7 @@ export async function postToInstagramCarouselFeed(
   caption: string,
   taggedUsernames?: string[]
 ) {
+  assertCaptionOnBrand(caption, "Instagram carousel post");
   const auth = await getPublishAuth();
   const { igUserId } = auth;
   if (imageUrls.length < 2) throw new Error("A carousel post needs at least 2 images");
@@ -404,6 +413,7 @@ export async function postVideoToInstagramStory(videoUrl: string) {
 
 /** Publishes a Reel from a public video URL (MP4/MOV, 3s–15min). Video processing is slower than images, so this waits longer. */
 export async function postReelToInstagram(videoUrl: string, caption: string, coverUrl?: string) {
+  assertCaptionOnBrand(caption, "Instagram reel");
   const auth = await getPublishAuth();
   const created = await igPost(auth, `${auth.igUserId}/media`, {
     media_type: "REELS",

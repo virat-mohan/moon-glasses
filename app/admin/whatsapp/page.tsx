@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WhatsAppTemplatesPanel } from "@/components/admin/WhatsAppTemplatesPanel";
+import { VoiceFindings, voiceBlocked } from "@/components/admin/VoiceFindings";
 
 type Conversation = {
   id: string;
@@ -167,6 +168,7 @@ export default function WhatsAppInboxPage() {
 
               <div className="border-t border-divider p-4">
                 {error && <p className="mb-2 text-caption text-paint-orange">{error}</p>}
+                <VoiceFindings text={replyText} kind="whatsapp" className="mb-2" />
                 <div className="flex gap-2">
                   <textarea
                     rows={2}
@@ -177,7 +179,7 @@ export default function WhatsAppInboxPage() {
                   />
                   <button
                     onClick={sendReply}
-                    disabled={sending || !replyText.trim()}
+                    disabled={sending || !replyText.trim() || voiceBlocked(replyText, "whatsapp")}
                     className="shrink-0 border border-ink bg-ink px-4 py-2 text-caption font-bold uppercase tracking-[0.05em] text-cream disabled:opacity-40"
                   >
                     {sending ? "Sending..." : "Send"}

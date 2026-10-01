@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       .select()
       .single();
     if (error) throw error;
-    return NextResponse.json({ draft: data });
+    return NextResponse.json({ draft: data, voiceFindings: draft.voiceFindings });
   } catch (err) {
     console.error("Failed to generate journal draft", err);
     return NextResponse.json(

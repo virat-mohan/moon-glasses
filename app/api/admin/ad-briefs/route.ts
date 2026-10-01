@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       .single();
     if (error) throw error;
 
-    return NextResponse.json({ brief: data });
+    return NextResponse.json({ brief: data, voiceFindings: brief.voiceFindings ?? [] });
   } catch (err) {
     console.error("Failed to generate ad brief", err);
     return NextResponse.json(

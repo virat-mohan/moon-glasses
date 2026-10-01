@@ -6,6 +6,7 @@ import { chapters, chapterImageSrc } from "@/lib/chapters";
 import { journalArticles, journalIssues, type JournalArticle } from "@/lib/journal";
 import { MagazineCover } from "@/components/journal/MagazineCover";
 import { MagazineReader } from "@/components/journal/MagazineReader";
+import { VoiceFindings, voiceBlocked } from "@/components/admin/VoiceFindings";
 
 type Draft = {
   id: string;
@@ -22,6 +23,14 @@ type Draft = {
   published_slug: string | null;
   created_at: string;
 };
+
+/** The customer-facing text of a draft, for the brand book check ([[slug|Name]] links read as their names). */
+function draftVoiceText(d: Draft) {
+  return [d.title, d.subtitle, d.excerpt, ...(d.body ?? [])]
+    .filter(Boolean)
+    .join("\n\n")
+    .replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, "$1");
+}
 
 type Asset = { id: string; url: string; label: string | null };
 
@@ -189,7 +198,7 @@ export default function JournalDraftsPage() {
                         </select>
                         <button
                           onClick={() => publish(d.id)}
-                          disabled={publishing === d.id}
+                          disabled={publishing === d.id || voiceBlocked(draftVoiceText(d), "site")}
                           className="border border-ink px-4 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition-colors duration-300 hover:bg-ink hover:text-cream disabled:opacity-50"
                         >
                           {publishing === d.id ? "Publishing..." : "Publish"}
@@ -198,6 +207,7 @@ export default function JournalDraftsPage() {
                     )}
                   </div>
                 </div>
+                {d.status !== "published" && <VoiceFindings text={draftVoiceText(d)} kind="site" className="mt-2" />}
 
                 {pickerForId === d.id && (
                   <div className="mt-3 border border-divider p-3">

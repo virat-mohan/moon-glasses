@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { reviseAdBriefCopy } from "@/lib/ad-brief";
+import { adCopyFindings, reviseAdBriefCopy } from "@/lib/ad-brief";
 
 /** Revises an ad brief's copy against a free-text instruction, via Claude — see reviseAdBriefCopy for why this isn't a from-scratch regeneration. */
 export async function POST(request: Request) {
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const { error } = await supabase.from("ad_briefs").update(patch).eq("id", body.id);
     if (error) throw error;
 
-    return NextResponse.json({ ok: true, brief: patch });
+    return NextResponse.json({ ok: true, brief: patch, voiceFindings: adCopyFindings(revised) });
   } catch (err) {
     console.error("Failed to revise ad brief copy", err);
     return NextResponse.json(

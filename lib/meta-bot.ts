@@ -1,4 +1,5 @@
 import { getSetting } from "@/lib/settings";
+import { voiceGate } from "@/lib/brand-voice";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
 import { chapters } from "@/lib/chapters";
@@ -35,6 +36,7 @@ async function getPageToken() {
 }
 
 async function sendMessage(recipientId: string, text: string) {
+  if (!voiceGate(text, "social", "Instagram/Messenger DM").ok) return false;
   const [accessToken, pageId] = await Promise.all([getPageToken(), getSetting("META_PAGE_ID")]);
   if (!accessToken || !pageId) {
     console.log("Meta not configured — would have sent:", text);
@@ -60,6 +62,7 @@ async function sendMessage(recipientId: string, text: string) {
 }
 
 async function sendPrivateReplyToComment(commentId: string, text: string) {
+  if (!voiceGate(text, "social", "Instagram comment private reply").ok) return false;
   const [accessToken, pageId] = await Promise.all([getPageToken(), getSetting("META_PAGE_ID")]);
   if (!accessToken || !pageId) return false;
   const res = await fetch(
@@ -219,7 +222,7 @@ export async function handleIncomingMessage(
 
     if (convo.intent === "buying" && chapter) {
       const link = `${brand.siteUrl.replace(/\/$/, "")}/chapter/${chapter.slug}`;
-      await sendMessage(senderId, `Here's the link to grab the ${chapter.name}: ${link}`);
+      await sendMessage(senderId, `Here's the ${chapter.name}: ${link}`);
     } else if (convo.intent === "buying") {
       await sendMessage(
         senderId,

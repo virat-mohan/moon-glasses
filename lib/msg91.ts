@@ -1,4 +1,5 @@
 import { getSetting } from "@/lib/settings";
+import { voiceGate } from "@/lib/brand-voice";
 
 function toMobile(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -219,6 +220,8 @@ export async function sendMsg91Template(
  * if delivery status doesn't come back.
  */
 export async function sendWhatsAppSessionMessage(phone: string, text: string) {
+  const gate = voiceGate(text, "whatsapp", "WhatsApp session message");
+  if (!gate.ok) return { sent: false as const, error: gate.reason };
   const authKey = await getSetting("MSG91_AUTH_KEY");
   const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
   if (!authKey || !integratedNumber) {
@@ -261,6 +264,8 @@ export async function sendOtpViaMsg91(phone: string, code: string) {
  * back to a text message with the image link if the image send is refused.
  */
 export async function sendWhatsAppSessionImage(phone: string, imageUrl: string, caption: string) {
+  const gate = voiceGate(caption, "whatsapp", "WhatsApp session image caption");
+  if (!gate.ok) return { sent: false as const, error: gate.reason };
   const authKey = await getSetting("MSG91_AUTH_KEY");
   const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
   if (!authKey || !integratedNumber) return { sent: false as const };

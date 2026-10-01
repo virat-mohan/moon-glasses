@@ -1,3 +1,4 @@
+import { brandVoicePrompt } from "@/lib/brand-voice";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
 import { computeWebsiteAnalytics } from "@/lib/website-analytics";
@@ -116,6 +117,8 @@ Only include a recommendation when the data actually supports it — do not pad 
     body: JSON.stringify({
       model: "claude-sonnet-5",
       max_tokens: 2048,
+      // Recommendations are internal, but any copy angle they suggest must follow the brand book.
+      system: `Any copy, hook or angle you suggest must follow this brand book.\n\n${brandVoicePrompt("ai")}`,
       messages: [{ role: "user", content: prompt }],
     }),
   });

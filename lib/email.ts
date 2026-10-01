@@ -1,6 +1,7 @@
 import { getSetting } from "@/lib/settings";
 import { renderInvoiceHtml } from "@/lib/invoice";
 import { getBrandProfile } from "@/lib/brand";
+import { stripHtml, voiceGate } from "@/lib/brand-voice";
 
 type InvoiceOrder = Parameters<typeof renderInvoiceHtml>[0];
 type InvoiceItem = Parameters<typeof renderInvoiceHtml>[1][number];
@@ -36,8 +37,17 @@ export async function sendEmail(
   to: string,
   subject: string,
   bodyHtml: string,
-  attachments?: { url: string; name: string }[]
+  attachments?: { url: string; name: string }[],
+  opts: { internal?: boolean } = {}
 ) {
+  // Brand book lock (docs/BRAND-BOOK-STANDARD.md): customer copy is checked
+  // before it leaves; a "block" stops the send. Mail to the team's own
+  // @moon-glasses.store inboxes (and explicit internal sends like the
+  // warehouse sheet, which names supplier models on purpose) is not customer copy.
+  const internal = opts.internal || /@moon-glasses\.store$/i.test(to.trim());
+  const gate = voiceGate(`${subject}\n${stripHtml(bodyHtml)}`, "email", `email "${subject}" to ${to}`, { internal });
+  if (!gate.ok) return false;
+
   const apiKey = await getSetting("RESEND_API_KEY");
   if (!apiKey) {
     console.log(`RESEND_API_KEY not set — skipping email "${subject}" to ${to}`);
@@ -107,7 +117,7 @@ export async function sendOrderNotificationEmail(order: InvoiceOrder, items: Inv
     .map((e) => e.trim())
     .filter(Boolean);
   const recipients = [...new Map([...ORDER_NOTIFICATION_RECIPIENTS, ...warehouse].map((e) => [e.toLowerCase(), e])).values()];
-  await Promise.all(recipients.map((to) => sendEmail(to, `New order confirmed — #${orderNumber}`, invoiceHtml)));
+  await Promise.all(recipients.map((to) => sendEmail(to, `New order confirmed — #${orderNumber}`, invoiceHtml, undefined, { internal: true })));
 }
 
 /** Fires once when a Chapter's stock crosses at/under the low-stock threshold — see lib/inventory.ts for the guard against repeat alerts. */
@@ -266,8 +276,8 @@ export async function sendRestockEmail(email: string, name: string | null, chapt
         <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
-      <p style="font-size:14px;color:#444;line-height:1.6;">${chapterName} is back in stock — grab it before it sells out again.</p>
-      <a href="${chapterUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Shop ${chapterName}</a>
+      <p style="font-size:14px;color:#444;line-height:1.6;">${chapterName} is back in stock.</p>
+      <a href="${chapterUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">See the ${chapterName}</a>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
@@ -312,11 +322,11 @@ export async function sendDropLiveEmail(email: string, name: string) {
         The full collection just dropped — you get first access before everyone else. Your deposit is
         already credited at checkout.
       </p>
-      <a href="${siteUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Shop Now</a>
+      <a href="${siteUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">See the edit</a>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
-  return sendEmail(email, `${brand.brandName} just dropped — shop now`, html);
+  return sendEmail(email, `${brand.brandName} just dropped`, html);
 }
 
 /** Sent immediately when a customer invites a friend from their account page. */
@@ -341,7 +351,7 @@ export async function sendReferralInviteEmail(
         ${referrerName ?? "A friend"} thinks you&apos;d like ${brand.brandName} — fashion-forward
         sunglasses, from ₹1,499. Use their link and get ₹${discountRupees} off your first order.
       </p>
-      <a href="${referralUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Shop &amp; Save ₹${discountRupees}</a>
+      <a href="${referralUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">See the edit · ₹${discountRupees} off</a>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
@@ -399,7 +409,7 @@ export async function sendWinbackEmail(toEmail: string, name: string | null, mil
       </div>
       <p style="font-size:16px;">Hi ${name ?? "there"},</p>
       <p style="font-size:14px;color:#444;line-height:1.6;">It's been a while — ${milesLine}</p>
-      <a href="${shopUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Shop the Collection</a>
+      <a href="${shopUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">See the edit</a>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
@@ -578,7 +588,7 @@ export async function sendWarehouseNotificationEmail(
   const attachments = labelUrl ? [{ url: labelUrl, name: `label-${orderNumber}.pdf` }] : undefined;
   const results = await Promise.all(
     recipients.map((recipient) =>
-      sendEmail(recipient, `Ship this — Order #${orderNumber}`, html, attachments)
+      sendEmail(recipient, `Ship this — Order #${orderNumber}`, html, attachments, { internal: true })
     )
   );
   return results.every(Boolean);
@@ -716,7 +726,7 @@ export async function sendPostBarterQualifiedEmail(toEmail: string, phone: strin
         Your network showed up for you — your order is shipping now, completely free. We'll follow up
         on WhatsApp (${phone}) with tracking.
       </p>
-      <a href="${brand.siteUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Spread More Good Vibes — Shop Another Pair</a>
+      <a href="${brand.siteUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Spread More Good Vibes — See the edit</a>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
