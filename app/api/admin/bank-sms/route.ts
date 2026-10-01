@@ -30,7 +30,9 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(15);
   const accounts = await readBankMailAccounts();
+  const { data: inboundRow } = await supabase.from("app_settings").select("value").eq("key", "MSG91_INBOUND_WEBHOOK_TOKEN").maybeSingle();
   return NextResponse.json({
+    whatsappInboundUrl: `${base}/api/webhooks/msg91-whatsapp-inbound${inboundRow?.value ? `?token=${inboundRow.value}` : ""}`,
     url: `${base}/api/webhooks/bank-sms?token=${row.value}`,
     recent: recent ?? [],
     mailboxes: accounts.map((a) => ({ address: a.address, lastCheck: a.lastCheck ?? null })),

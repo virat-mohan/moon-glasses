@@ -17,7 +17,8 @@ const LABEL: Record<string, string> = {
 /** Set-up + log for UPI auto-confirm via forwarded bank credit SMS (see app/api/webhooks/bank-sms). */
 export function BankSmsPanel() {
   type Mailbox = { address: string; lastCheck: { at: string; ok: boolean; error?: string; processed?: number } | null };
-  const [data, setData] = useState<{ url: string; recent: Row[]; mailboxes: Mailbox[] } | null>(null);
+  const [data, setData] = useState<{ url: string; recent: Row[]; mailboxes: Mailbox[]; whatsappInboundUrl?: string } | null>(null);
+  const [inboundCopied, setInboundCopied] = useState(false);
   const [mailError, setMailError] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [appPassword, setAppPassword] = useState("");
@@ -61,6 +62,23 @@ export function BankSmsPanel() {
   if (!data) return null;
   return (
     <section className="mt-10 border border-divider p-5">
+      {data.whatsappInboundUrl && (
+        <div className="mb-6 border border-divider p-4">
+          <p className="text-body-s font-bold text-ink">WhatsApp incoming messages (MSG91)</p>
+          <p className="mt-1 max-w-2xl text-caption text-secondary-text">
+            Paste this in MSG91 → WhatsApp → your number → Webhook (inbound / incoming messages). It powers the
+            &ldquo;Get my post on WhatsApp&rdquo; auto-reply. Keep it private.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigator.clipboard.writeText(data.whatsappInboundUrl!).then(() => setInboundCopied(true))}
+            className="mt-2 border border-ink px-3 py-1 text-caption uppercase text-ink"
+          >
+            {inboundCopied ? "Copied" : "Copy inbound webhook link"}
+          </button>
+        </div>
+      )}
+
       <h2 className="font-display text-heading-s uppercase text-ink">UPI auto-confirm from bank alerts</h2>
 
       <div className="mt-3 border border-divider p-4">
