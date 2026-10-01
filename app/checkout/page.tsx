@@ -43,7 +43,7 @@ type Account = {
 type IdentityStep = "checking" | "identify" | "otp" | "guest" | "verified";
 
 export default function CheckoutPage() {
-  const { items, subtotal, clear } = useCart();
+  const { items, subtotal, clear, removeItem, setQuantity } = useCart();
   const discountRule = useDiscountRule();
   const discount = calculateDiscount(items, discountRule);
   const router = useRouter();
@@ -1338,14 +1338,28 @@ export default function CheckoutPage() {
                 )}
               </div>
             ) : (
-              <div className="mt-4 border border-ink/20 bg-surface-alt p-4">
-                <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">
-                  <PayWithAPostMark linked /> — One Item Only
+              <div className="mt-4 border border-ink/30 p-4">
+                <p className="flex items-center gap-2 text-body-s font-bold">
+                  <span className="inline-block h-3.5 w-3.5 flex-none rounded-full border-2 border-ink/50" />
+                  <PayWithAPostMark />
                 </p>
                 <p className="mt-1 text-caption text-secondary-text">
-                  This cart has {unitCount} items. Checkout with just one to pay with a post instead of
-                  currency.
+                  Pay With A Post covers one pair. Your cart has {unitCount}.
                 </p>
+                {items[0] && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Keep the first pair (qty 1), drop the rest, select Pay With A Post.
+                      items.slice(1).forEach((i) => removeItem(i.slug));
+                      setQuantity(items[0].slug, 1);
+                      setPaymentType("post_barter");
+                    }}
+                    className="mt-3 w-full border-2 border-[var(--moon-gold)] px-4 py-3 text-left font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink"
+                  >
+                    Use it for {items[0].name}
+                  </button>
+                )}
               </div>
             ))}
 
