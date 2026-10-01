@@ -26,10 +26,6 @@ export default function RefundPolicyPage() {
               To cancel, message us on WhatsApp at +91 00000 00000 or email hello@moon-glasses.store with
               your order number.
             </p>
-            <p className="mt-3">
-              For Cash on Delivery orders, the advance amount paid at checkout to confirm the order is
-              non-refundable on cancellation, as it covers courier charges already incurred.
-            </p>
           </section>
 
           <section>
@@ -37,8 +33,9 @@ export default function RefundPolicyPage() {
             <p className="mt-3">
               We accept returns and exchanges within 7 days of delivery, as long as the pair is unused,
               unworn, and in its original condition with tags attached. To start a return, email us at
-              hello@moon-glasses.store with your order number and the reason for return — we&apos;ll confirm
-              pickup or return-shipping instructions.
+              hello@moon-glasses.store with your order number, the reason for return, and photos of the
+              product case, the sunglasses and the cleaning cloth in their original condition — we&apos;ll
+              confirm pickup or return-shipping instructions.
             </p>
             <p className="mt-3">
               Pairs marked as final sale, or damaged through normal wear, are not eligible for return.
@@ -49,8 +46,8 @@ export default function RefundPolicyPage() {
             <h2 className="font-display text-heading-s uppercase text-ink">Damaged or Incorrect Items</h2>
             <p className="mt-3">
               If your order arrives damaged, defective, or isn&apos;t what you ordered, contact us within 48
-              hours of delivery with photos of the item — we&apos;ll arrange a free replacement or a full
-              refund, and cover the return shipping cost.
+              hours of delivery with photos of the product case, the sunglasses and the cleaning cloth —
+              we&apos;ll arrange a free replacement or a full refund, and cover the return shipping cost.
             </p>
           </section>
 
