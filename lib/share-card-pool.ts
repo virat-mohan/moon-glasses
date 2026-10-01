@@ -69,3 +69,37 @@ export function pickShareCardProduct(pool: ShareCardProduct[], seed: string): Sh
   if (pool.length === 0) return null;
   return pool[hashToIndex(seed, pool.length)];
 }
+
+/**
+ * The lookbook pick for a Pay With A Post order: every live product with a
+ * model photo, in a fixed order that alternates styles, and each new order
+ * takes the next one (its position among all Pay With A Post orders). So
+ * consecutive customers always post a different look, and the brand's tagged
+ * posts build up into a lookbook. Same order always gets the same pick.
+ */
+export async function pickShareCardForOrder(orderId: string): Promise<ShareCardProduct | null> {
+  const { getCoreCollectionChapters, getLimitedSeriesChapters } = await import("@/lib/chapters-dynamic");
+  const { styleRimLens } = await import("@/lib/chapters");
+  const live = [...(await getLimitedSeriesChapters()), ...(await getCoreCollectionChapters())].filter((c) => !!c.modelImage);
+  if (live.length === 0) return null;
+
+  // Round-robin across styles (Octagon, Aviator, Oval…) so neighbours differ.
+  const byStyle = new Map<string, typeof live>();
+  for (const c of [...live].sort((a, b) => a.slug.localeCompare(b.slug))) {
+    const key = styleRimLens(c).style;
+    byStyle.set(key, [...(byStyle.get(key) ?? []), c]);
+  }
+  const ordered: typeof live = [];
+  const queues = [...byStyle.values()];
+  while (queues.some((q) => q.length)) for (const q of queues) if (q.length) ordered.push(q.shift()!);
+
+  const supabase = getSupabaseServerClient();
+  const { data: order } = await supabase.from("orders").select("created_at").eq("id", orderId).maybeSingle();
+  const { count } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("is_post_barter", true)
+    .lt("created_at", order?.created_at ?? new Date().toISOString());
+  const pick = ordered[(count ?? 0) % ordered.length];
+  return { imageUrl: pick.modelImage!, productName: pick.name };
+}

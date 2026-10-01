@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getBrandProfile } from "@/lib/brand";
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { getShareCardProductPool, pickShareCardProduct } from "@/lib/share-card-pool";
+import { pickShareCardForOrder } from "@/lib/share-card-pool";
 
 const W = 1080;
 const H = 1350;
@@ -28,7 +28,7 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
   const brand = await getBrandProfile();
   const site = brand.siteUrl.replace(/\/$/, "").replace(/^https:\/\/(?!www\.)/, "https://www.");
   const domain = site.replace(/^https?:\/\/(www\.)?/, "").toUpperCase();
-  const pick = pickShareCardProduct(await getShareCardProductPool(), orderId);
+  const pick = await pickShareCardForOrder(orderId);
   if (!pick) return null;
 
   const [hero, logo] = await Promise.all([

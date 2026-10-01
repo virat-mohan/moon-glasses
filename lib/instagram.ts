@@ -275,6 +275,39 @@ export async function getBusinessDiscoveryProfile(
   }
 }
 
+/**
+ * Followers plus how real the audience looks: post count and the median likes
+ * on the latest posts. Used by Pay With A Post to stop bought-follower
+ * accounts qualifying for "we ship first".
+ */
+export async function getAccountEngagement(
+  instagramHandle: string
+): Promise<{ followersCount: number; mediaCount: number; medianLikes: number } | null> {
+  try {
+    const { accessToken, igUserId } = await getInstagramAuth();
+    const username = parseInstagramHandle(instagramHandle);
+    if (!username) return null;
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${igUserId}?` +
+        new URLSearchParams({
+          fields: `business_discovery.username(${username}){followers_count,media_count,media.limit(12){like_count}}`,
+          access_token: accessToken,
+        })
+    );
+    const data = await res.json();
+    const bd = data?.business_discovery;
+    if (!res.ok || typeof bd?.followers_count !== "number") return null;
+    const likes = ((bd.media?.data ?? []) as { like_count?: number }[])
+      .map((m) => m.like_count ?? 0)
+      .sort((x, y) => x - y);
+    const medianLikes = likes.length ? likes[Math.floor(likes.length / 2)] : 0;
+    return { followersCount: bd.followers_count, mediaCount: bd.media_count ?? 0, medianLikes };
+  } catch (err) {
+    console.error("Instagram engagement lookup failed", instagramHandle, err);
+    return null;
+  }
+}
+
 export type InstagramTaggedMedia = {
   id: string;
   caption: string | null;

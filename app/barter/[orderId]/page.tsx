@@ -5,7 +5,7 @@ import { getBrandProfile } from "@/lib/brand";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { ShareToInstagramButton } from "@/components/checkout/ShareToInstagramButton";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
-import { getShareCardProductPool, pickShareCardProduct } from "@/lib/share-card-pool";
+import { pickShareCardForOrder } from "@/lib/share-card-pool";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +30,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   // same order always shows the same pick) — the point being that a stream
   // of these posts, once tagged/collaborator-added, reads as a varied
   // lookbook rather than the same single photo shared by every barterer.
-  const productPool = await getShareCardProductPool();
-  const shareProduct = pickShareCardProduct(productPool, order.id);
+  const shareProduct = await pickShareCardForOrder(order.id);
 
   let ordersSoFar = 0;
   if (order.barter_coupon_code) {

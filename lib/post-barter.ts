@@ -2,7 +2,7 @@ import { createHmac } from "crypto";
 import { logTrackingEvent } from "@/lib/tracking";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
-import { getPublicFollowerCount, getBusinessDiscoveryProfile, parseInstagramHandle } from "@/lib/instagram";
+import { getAccountEngagement, getBusinessDiscoveryProfile, parseInstagramHandle } from "@/lib/instagram";
 import { computeTrustedOrderTotal } from "@/lib/order-pricing";
 import { findOrCreateCustomerForGuest } from "@/lib/auth";
 import { applyNewsletterOptIn } from "@/lib/newsletter";
@@ -96,10 +96,35 @@ export type TierResult = { tier: BarterTier; followerCount: number | null; minFo
  */
 export async function classifyPostBarterApplicant(instagramHandle: string): Promise<TierResult> {
   const { minFollowers, giftFirstDailyCap } = await getPostBarterConfig();
-  const followerCount = await getPublicFollowerCount(instagramHandle);
+  const engagement = await getAccountEngagement(instagramHandle);
+  const followerCount = engagement?.followersCount ?? null;
   const meetsFollowerBar = followerCount != null && followerCount >= minFollowers;
 
   if (!meetsFollowerBar) {
+    return { tier: "sell_first", followerCount, minFollowers, capReached: false };
+  }
+
+  // "We ship first" only for a real audience: enough posts and real likes
+  // (median of the latest 12 posts ≥ 0.5% of followers, at least 20).
+  // Bought-follower accounts fall back to "post first, ship after sales".
+  const realAudience =
+    !!engagement && engagement.mediaCount >= 9 && engagement.medianLikes >= Math.max(20, followerCount! * 0.005);
+  if (!realAudience) {
+    return { tier: "sell_first", followerCount, minFollowers, capReached: false };
+  }
+
+  // Ship-first at most once per Instagram account every 90 days.
+  const handle = parseInstagramHandle(instagramHandle);
+  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const { count: recentGiftFirst } = await getSupabaseServerClient()
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("is_post_barter", true)
+    .eq("barter_tier", "gift_first")
+    .ilike("barter_instagram_handle", handle)
+    .neq("status", "cancelled")
+    .gte("created_at", since);
+  if ((recentGiftFirst ?? 0) > 0) {
     return { tier: "sell_first", followerCount, minFollowers, capReached: false };
   }
 
@@ -268,7 +293,12 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     .select("id, barter_coupon_code, barter_required_orders, barter_tier")
     .eq("is_post_barter", true)
     .is("barter_qualified_at", null)
-    .or(`customer_phone.eq.${payload.customer.phone},customer_email.eq.${payload.customer.email}`)
+    // ...and per Instagram account, so one handle can't run several at once
+    // from different phone numbers.
+    .or(
+      `customer_phone.eq.${payload.customer.phone},customer_email.eq.${payload.customer.email},barter_instagram_handle.ilike.${parseInstagramHandle(payload.instagramHandle)}`
+    )
+    .neq("status", "cancelled")
     .maybeSingle();
   if (existing) {
     return {
