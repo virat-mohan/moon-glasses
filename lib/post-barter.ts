@@ -20,6 +20,7 @@ import {
   sendPwapNextPairProgressEmail,
 } from "@/lib/email";
 import {
+  sendOrderAlertWhatsApp,
   sendOrderConfirmationWhatsApp,
   sendPostBarterConfirmedWhatsApp,
   sendPostBarterProgressWhatsApp,
@@ -421,6 +422,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   await Promise.allSettled([
     sendPostBarterOrderConfirmationEmail(savedOrder.customer_email, savedOrder.customer_name, savedOrder.id, couponCode, requiredOrders, tier),
     sendOrderNotificationEmail(savedOrder, orderItems),
+    sendOrderAlertWhatsApp(savedOrder, "created", orderItems.reduce((sum, i) => sum + i.quantity, 0)),
     // Post First shoppers need their code and target on WhatsApp; Gift First
     // ships now, so it gets the ordinary order confirmation.
     tier === "sell_first"

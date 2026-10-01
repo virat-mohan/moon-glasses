@@ -13,8 +13,8 @@ import { decrementStockForOrder, getInventoryMap } from "@/lib/inventory";
 import { hasStockFor } from "@/lib/checkout-rules";
 import { shipOrder } from "@/lib/order-shipping";
 import { markCartSessionConverted, sendPurchaseConversion } from "@/lib/cart-session-convert";
-import { sendInvoiceEmail, sendOrderNotificationEmail, sendStockShortRefundAlert } from "@/lib/email";
-import { sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
+import { sendInvoiceEmail, sendOrderNotificationEmail, sendOrderPlacedTeamEmail, sendStockShortRefundAlert } from "@/lib/email";
+import { sendOrderAlertWhatsApp, sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
 import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
 
 /**
@@ -196,6 +196,13 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   ]);
   if (itemsError) throw itemsError;
 
+  // Team heads-up the moment the order exists (unpaid). Never blocks checkout.
+  const itemCount = orderItems.reduce((sum, i) => sum + i.quantity, 0);
+  await Promise.allSettled([
+    sendOrderAlertWhatsApp(savedOrder, "created", itemCount),
+    sendOrderPlacedTeamEmail(savedOrder, orderItems),
+  ]);
+
   if (pricing.total <= 0) {
     await confirmUpiOrderPayment(savedOrder.id);
     return { orderId: savedOrder.id as string, total: 0, free: true as const };
@@ -322,6 +329,7 @@ export async function confirmUpiOrderPayment(orderId: string) {
     sendInvoiceEmail(order, items ?? []),
     sendOrderNotificationEmail(order, items ?? []),
     sendOrderConfirmationWhatsApp(order),
+    sendOrderAlertWhatsApp(order, "paid"),
   ]);
 
   try {

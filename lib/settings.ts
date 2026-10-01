@@ -83,6 +83,8 @@ export const SETTINGS_KEYS = [
   "UPI_QR_IMAGE_URL",
   "UPI_PAYEE_NAME",
   "SUPPORT_WHATSAPP",
+  "ORDER_ALERT_WHATSAPP",
+  "MSG91_ORDER_ALERT_TEMPLATE_ID",
 ] as const;
 
 export type SettingKey = (typeof SETTINGS_KEYS)[number];

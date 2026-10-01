@@ -152,6 +152,14 @@ async function templateDefs(): Promise<TemplateDef[]> {
       example: ["Anun", "250"],
     },
     {
+      // Internal: goes to the team's own number (ORDER_ALERT_WHATSAPP), no customer details.
+      settingKey: "MSG91_ORDER_ALERT_TEMPLATE_ID",
+      name: "new_order_alert",
+      category: "UTILITY",
+      body: `New ${name} order {{1}}: {{2}} item(s), ₹{{3}}, {{4}}. Open it here: {{5}} — sent to the team.`,
+      example: ["#AB12CD34", "2", "2,998", "UPI pending", `${site}/admin/orders`],
+    },
+    {
       settingKey: "MSG91_LEGACY_WINBACK_TEMPLATE_ID",
       name: "first_customer_offer",
       category: "MARKETING",
@@ -198,7 +206,7 @@ export async function createMsg91Templates(): Promise<{ results: TemplateCreateR
         [def.body, def.button?.text].filter(Boolean).join("\n"),
         "whatsapp",
         `WhatsApp template submit ${def.name}`,
-        { internal: def.settingKey === "MSG91_SHIP_NOTIFICATION_TEMPLATE_ID" }
+        { internal: def.settingKey === "MSG91_SHIP_NOTIFICATION_TEMPLATE_ID" || def.settingKey === "MSG91_ORDER_ALERT_TEMPLATE_ID" }
       );
       if (!gate.ok) return { name: def.name, ok: false, detail: gate.reason ?? "Brand voice block" };
       try {

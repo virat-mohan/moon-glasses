@@ -4,6 +4,14 @@ import { sendMsg91Template } from "@/lib/msg91";
 import { sendMetaCloudTemplate } from "@/lib/whatsapp-cloud";
 import { generateAndUploadPwapShareCard } from "@/lib/pwap-share-card";
 import { voiceGate } from "@/lib/brand-voice";
+import {
+  alreadyAlerted,
+  buildOrderAlertParams,
+  normalizeAlertNumber,
+  orderAlertLogName,
+  type OrderAlertEvent,
+  type OrderAlertOrder,
+} from "@/lib/order-alert";
 
 type OrderForWhatsApp = { id: string; customer_name: string; customer_phone: string; total: number };
 type CartSessionForWhatsApp = {
@@ -384,4 +392,49 @@ export async function sendPostBarterShippedWhatsApp(orderId: string, phone: stri
 export async function sendPwapFreePairWhatsApp(orderId: string, phone: string, name: string, freeCode: string) {
   const templateName = await getSetting("MSG91_PWAP_FREE_PAIR_TEMPLATE_ID");
   return sendTemplateByName(phone, "pwap_free_pair", templateName, [name, freeCode], { orderId });
+}
+
+/**
+ * Internal order alert to the team's number (ORDER_ALERT_WHATSAPP, default
+ * 919999277240) via the UTILITY template new_order_alert. Fires on order
+ * creation and again when a UPI payment is confirmed. Deduped per order +
+ * event against whatsapp_messages (template_name order_alert_created /
+ * order_alert_paid), so retries and double confirms send once. Skips
+ * silently until the template is approved (MSG91_ORDER_ALERT_TEMPLATE_ID is
+ * set by the hourly msg91-template-sync cron). Never throws.
+ */
+export async function sendOrderAlertWhatsApp(
+  order: OrderAlertOrder,
+  event: OrderAlertEvent,
+  itemCount?: number
+): Promise<boolean> {
+  try {
+    const templateName = await getSetting("MSG91_ORDER_ALERT_TEMPLATE_ID");
+    if (!templateName) return false;
+    const supabase = getSupabaseServerClient();
+    const { data: rows } = await supabase
+      .from("whatsapp_messages")
+      .select("order_id, template_name")
+      .eq("order_id", order.id)
+      .eq("template_name", orderAlertLogName(event));
+    if (alreadyAlerted(rows ?? [], order.id, event)) return false;
+    let count = itemCount;
+    if (count == null) {
+      const { data: items } = await supabase.from("order_items").select("quantity").eq("order_id", order.id);
+      count = (items ?? []).reduce((sum, i) => sum + (i.quantity ?? 0), 0);
+    }
+    const phone = normalizeAlertNumber(await getSetting("ORDER_ALERT_WHATSAPP"));
+    return await sendTemplateByName(
+      phone,
+      orderAlertLogName(event),
+      templateName,
+      buildOrderAlertParams(order, count, event),
+      { orderId: order.id },
+      undefined,
+      { internal: true }
+    );
+  } catch (err) {
+    console.error("Order alert WhatsApp failed", order.id, event, err);
+    return false;
+  }
 }

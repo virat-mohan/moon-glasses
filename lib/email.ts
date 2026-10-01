@@ -129,6 +129,28 @@ export async function sendCustomerIssueAlert(subject: string, lines: string[], o
   await Promise.all(CUSTOMER_ISSUE_RECIPIENTS.map((to) => sendEmail(to, subject, html, undefined, { internal: true })));
 }
 
+const FOUNDER_ORDER_EMAIL = "founder@viratmohan.com";
+
+/** Internal heads-up when a UPI order is placed but not yet paid. Team + founder only, never warehouse or customer. */
+export async function sendOrderPlacedTeamEmail(
+  order: { id: string; total: number | string },
+  items: { chapter_name: string; quantity: number }[]
+) {
+  const orderNumber = order.id.slice(0, 8).toUpperCase();
+  const count = items.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
+  const html = `
+    <div style="max-width:480px;margin:0 auto;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;">
+      <p style="font-size:15px;margin:6px 0;"><strong>New UPI order #${orderNumber}, payment pending</strong></p>
+      <p style="font-size:15px;margin:6px 0;">${count} item(s), ₹${Number(order.total).toLocaleString("en-IN")}</p>
+      <p style="font-size:13px;"><a href="https://www.moon-glasses.store/admin/orders">Open orders in admin</a></p>
+    </div>
+  `;
+  const recipients = [...ORDER_NOTIFICATION_RECIPIENTS, FOUNDER_ORDER_EMAIL];
+  await Promise.all(
+    recipients.map((to) => sendEmail(to, `New UPI order, payment pending — #${orderNumber}`, html, undefined, { internal: true }))
+  );
+}
+
 /** Internal heads-up the moment an order is confirmed — same invoice, sent to the team instead of the customer. */
 export async function sendOrderNotificationEmail(order: InvoiceOrder, items: InvoiceItem[]) {
   const invoiceHtml = await renderInvoiceHtml(order, items);
@@ -139,7 +161,8 @@ export async function sendOrderNotificationEmail(order: InvoiceOrder, items: Inv
     .split(",")
     .map((e) => e.trim())
     .filter(Boolean);
-  const recipients = [...new Map([...ORDER_NOTIFICATION_RECIPIENTS, ...warehouse].map((e) => [e.toLowerCase(), e])).values()];
+  // founder@viratmohan.com gets every order (UPI confirm, PWAP, Razorpay, manual) until the WhatsApp alert is live.
+  const recipients = [...new Map([...ORDER_NOTIFICATION_RECIPIENTS, FOUNDER_ORDER_EMAIL, ...warehouse].map((e) => [e.toLowerCase(), e])).values()];
   await Promise.all(recipients.map((to) => sendEmail(to, `New order confirmed — #${orderNumber}`, invoiceHtml, undefined, { internal: true })));
 }
 

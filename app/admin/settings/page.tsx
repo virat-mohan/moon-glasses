@@ -22,6 +22,7 @@ const GROUPS: { label: string; fields: Field[] }[] = [
       { key: "UPI_QR_IMAGE_URL", label: "UPI QR Image URL", hint: "Upload your QR image at /admin/marketing-assets first, then paste its URL here. Shown at checkout as a real, standalone payment method — no Razorpay account needed. Orders placed this way stay unpaid until you confirm the payment landed and click \"Mark Paid\" in /admin/orders." },
       { key: "UPI_PAYEE_NAME", label: "Payee Name", hint: "Shown alongside the QR and used in the UPI deep link. Defaults to your brand name if unset." },
       { key: "SUPPORT_WHATSAPP", label: "Support WhatsApp Number", hint: "Digits with country code, e.g. 919999277240. Every quiet \"whatsapp us\" help link on the site opens a chat with this number. Defaults to 919999277240 if unset." },
+      { key: "ORDER_ALERT_WHATSAPP", label: "Order Alert WhatsApp Number", hint: "Digits with country code. Gets a WhatsApp alert (new_order_alert template) on every new order and every UPI payment confirmed. Separate from the support number. Defaults to 919999277240 if unset." },
     ],
   },
   {
