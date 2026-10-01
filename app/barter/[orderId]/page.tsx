@@ -101,10 +101,12 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
         <div className="mt-4 border-2 border-[var(--moon-gold)] p-4">
           <p className="text-body-s font-bold text-ink">Free pairs earned</p>
           <ul className="mt-2 space-y-1.5">
-            {rewards.map((r) => (
+            {rewards.map((r, i) => (
+              // The code itself is only sent on WhatsApp/email: this page can be
+              // opened by anyone the link reaches, and the code is single-use.
               <li key={r.code} className="flex items-center justify-between gap-2 text-caption">
-                <code className="tracking-[0.08em] text-ink">{r.code}</code>
-                <span className="text-secondary-text">{r.used ? "Used" : "Use at checkout"}</span>
+                <span className="text-ink">Free pair {i + 1}</span>
+                <span className="text-secondary-text">{r.used ? "Used" : "Code sent on WhatsApp & email"}</span>
               </li>
             ))}
           </ul>
