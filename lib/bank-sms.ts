@@ -28,7 +28,9 @@ export async function handleBankSms(body: string) {
   const log = (status: string, extra: Record<string, unknown> = {}) =>
     supabase.from("bank_sms_log").insert({
       // Only credit SMS text is kept; anything else (OTPs, debits) is dropped.
-      body: parsed ? body.slice(0, 1000) : "(not stored: not a credit SMS)",
+      // Only credit SMS text is kept in full; for anything unreadable keep just
+      // the first 80 characters (digits masked) to diagnose phone set-up.
+      body: parsed ? body.slice(0, 1000) : `(unreadable) ${body.slice(0, 80).replace(/\d/g, "#")}`,
       amount_paise: parsed?.amountPaise ?? null,
       upi_ref: parsed?.upiRef ?? null,
       status,

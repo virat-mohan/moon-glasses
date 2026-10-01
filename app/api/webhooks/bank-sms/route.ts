@@ -22,11 +22,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // iPhone Shortcuts may send the message as plain text, as {"text": "..."},
+  // or as a nested object (the Message variable serialised) — so flatten
+  // whatever arrived into one string and let the parser search all of it.
   const raw = await request.text();
   let text = raw;
   try {
     const json = JSON.parse(raw);
-    text = String(json.text ?? json.message ?? json.body ?? json.sms ?? raw);
+    const pick = json?.text ?? json?.message ?? json?.body ?? json?.sms ?? json;
+    text = typeof pick === "string" ? pick : JSON.stringify(pick);
   } catch {
     // plain-text body
   }
