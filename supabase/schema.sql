@@ -1336,3 +1336,4 @@ create table if not exists bank_sms_log (
   created_at timestamptz not null default now()
 );
 alter table bank_sms_log enable row level security;
+alter table bank_sms_log add column if not exists payer_name text;

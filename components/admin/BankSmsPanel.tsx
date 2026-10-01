@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Row = { created_at: string; amount_paise: number | null; upi_ref: string | null; status: string; matched_order_id: string | null };
+type Row = { created_at: string; amount_paise: number | null; upi_ref: string | null; payer_name: string | null; status: string; matched_order_id: string | null };
 
 const LABEL: Record<string, string> = {
   confirmed: "Matched & confirmed",
@@ -62,7 +62,7 @@ export function BankSmsPanel() {
         </p>
       </details>
       <div className="mt-4">
-        <p className="text-caption uppercase tracking-[0.05em] text-secondary-text">Latest forwarded SMS</p>
+        <p className="text-caption uppercase tracking-[0.05em] text-secondary-text">Latest bank alerts (SMS or email)</p>
         {data.recent.length === 0 ? (
           <p className="mt-1 text-caption text-secondary-text">None yet.</p>
         ) : (
@@ -72,6 +72,7 @@ export function BankSmsPanel() {
                 {new Date(r.created_at).toLocaleString("en-IN")} · {r.amount_paise != null ? `₹${(r.amount_paise / 100).toFixed(2)}` : "—"} ·{" "}
                 {LABEL[r.status] ?? r.status}
                 {r.matched_order_id ? ` · #${r.matched_order_id.slice(0, 8).toUpperCase()}` : ""}
+                {r.payer_name ? ` · from ${r.payer_name}` : ""}
                 {r.upi_ref ? ` · ref ${r.upi_ref}` : ""}
               </li>
             ))}

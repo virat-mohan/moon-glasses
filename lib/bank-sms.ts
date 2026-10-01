@@ -9,7 +9,9 @@ export const BANK_SMS_TOKEN_KEY = "BANK_SMS_WEBHOOK_TOKEN";
  * ("Rs.1499.37 credited…", "INR 1,499.37 received…", "₹1499.37 deposited…").
  * Anything that reads as a debit returns null so it can never confirm an order.
  */
-export function parseBankCreditSms(text: string): { amountPaise: number; upiRef: string | null } | null {
+export function parseBankCreditSms(
+  text: string
+): { amountPaise: number; upiRef: string | null; payerName: string | null } | null {
   const t = text.replace(/\s+/g, " ");
   if (/\bdebited\b|\bspent\b|\bwithdrawn\b|\bsent\b/i.test(t) && !/\bcredited\b|\breceived\b/i.test(t)) return null;
   if (!/\bcredited\b|\breceived\b|\bdeposited\b/i.test(t)) return null;
@@ -20,7 +22,9 @@ export function parseBankCreditSms(text: string): { amountPaise: number; upiRef:
   const ref =
     t.match(/reference\s*(?:no\.?|number)?\s*(?:is)?\s*[:\-]?\s*(\d{9,14})/i) ??
     t.match(/(?:upi(?:\s*ref(?:erence)?\.?\s*(?:no\.?|number)?)?|ref\.?\s*no\.?|rrn)\s*[:\-]?\s*\(?\s*(\d{9,14})/i);
-  return { amountPaise, upiRef: ref?.[1] ?? null };
+  // HDFC's email names the payer ("Sender: JOHN DOE (VPA: …)"); the SMS doesn't.
+  const payer = t.match(/sender\s*:\s*([A-Za-z][A-Za-z .']{1,60}?)\s*\(/i);
+  return { amountPaise, upiRef: ref?.[1] ?? null, payerName: payer?.[1]?.trim() ?? null };
 }
 
 /** Matches a credit SMS to the one unpaid UPI order with that exact amount and confirms it. */
@@ -35,6 +39,7 @@ export async function handleBankSms(body: string) {
       body: parsed ? body.slice(0, 1000) : `(unreadable) ${body.slice(0, 80).replace(/\d/g, "#")}`,
       amount_paise: parsed?.amountPaise ?? null,
       upi_ref: parsed?.upiRef ?? null,
+      payer_name: parsed?.payerName ?? null,
       status,
       ...extra,
     });
@@ -45,16 +50,32 @@ export async function handleBankSms(body: string) {
   }
 
   const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: candidates } = await supabase
+  const { data: amountMatches } = await supabase
     .from("orders")
-    .select("id")
+    .select("id, customer_name")
     .eq("payment_type", "upi_qr")
     .neq("payment_status", "paid")
     .eq("upi_amount_paise", parsed.amountPaise)
-    .gte("created_at", since);
+    .gte("created_at", since)
+    // A payment can only be for an order that already existed when it landed.
+    .lte("created_at", new Date().toISOString());
 
-  if (!candidates || candidates.length !== 1) {
-    const status = candidates?.length ? "ambiguous" : "no_match";
+  // The exact amount is the match. The payer's name only breaks a tie, since
+  // UPI shows the account holder, who is often a family member, not the buyer.
+  let candidates = amountMatches ?? [];
+  if (candidates.length > 1 && parsed.payerName) {
+    const words = parsed.payerName.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
+    const byName = candidates.filter((c) =>
+      String(c.customer_name ?? "")
+        .toLowerCase()
+        .split(/\s+/)
+        .some((w) => words.includes(w))
+    );
+    if (byName.length === 1) candidates = byName;
+  }
+
+  if (candidates.length !== 1) {
+    const status = candidates.length ? "ambiguous" : "no_match";
     await log(status);
     return { status };
   }

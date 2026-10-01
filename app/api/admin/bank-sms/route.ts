@@ -17,7 +17,7 @@ export async function GET() {
   const base = brand.siteUrl.replace(/\/$/, "").replace("://moon-glasses.store", "://www.moon-glasses.store");
   const { data: recent } = await supabase
     .from("bank_sms_log")
-    .select("created_at, amount_paise, upi_ref, status, matched_order_id")
+    .select("created_at, amount_paise, upi_ref, payer_name, status, matched_order_id")
     .order("created_at", { ascending: false })
     .limit(15);
   return NextResponse.json({ url: `${base}/api/webhooks/bank-sms?token=${row.value}`, recent: recent ?? [] });
