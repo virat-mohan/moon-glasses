@@ -143,7 +143,7 @@ export async function postToInstagramCarouselFeed(
     media_type: "CAROUSEL",
     children: childIds,
     caption,
-    // Milestone posts only (founder social rules): invites e.g. @vmviews as
+    // Milestone posts only (founder social rules): invites e.g. @viratmohan_devshop as
     // collaborator; they accept the invite in the app.
     ...(opts.collaborators?.length ? { collaborators: opts.collaborators.map((u) => u.replace(/^@/, "")) } : {}),
   });
