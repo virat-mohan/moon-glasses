@@ -130,6 +130,13 @@
   --radius-pill: 2px;
 }
 
+/* Never let the page slide sideways on a phone: anything wider than the
+   screen is clipped (clip, not hidden, so sticky elements keep working). */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);

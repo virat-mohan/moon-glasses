@@ -9,7 +9,7 @@
  */
 export function Hero() {
   return (
-    <section className="relative -mx-6 mb-20 flex min-h-[100vh] flex-col items-center justify-end overflow-hidden pb-24 md:-mx-12">
+    <section className="relative mb-20 flex min-h-[100vh] w-full flex-col items-center justify-end overflow-hidden pb-24">
       <div
         className="absolute inset-0"
         style={{

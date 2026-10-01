@@ -15,7 +15,7 @@ export function PayWithAPostBanner({ launchSoon = false }: { launchSoon?: boolea
     <section id="pay-with-a-post" className="scroll-mt-24 border-t border-divider py-20">
       <div className="mx-auto max-w-[720px] text-center">
         <p className="font-sans text-micro uppercase tracking-[0.3em] text-tan-gold">{launchSoon ? "Launching with the drop" : "New"}</p>
-        <h2 className="mt-4 text-display-m">
+        <h2 className="mt-4 text-heading-l md:text-display-m">
           <PayWithAPostMark />
         </h2>
         <p className="mt-4 font-sans text-body-s text-secondary-text">
