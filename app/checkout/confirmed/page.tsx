@@ -244,8 +244,8 @@ function OrderConfirmedContent() {
                     <a
                       key={app.name}
                       href={app.href}
-                      className={`border px-3 py-3 font-sans text-caption font-bold uppercase tracking-[0.05em] ${
-                        app.primary ? "border-ink bg-ink text-cream" : "border-ink/40 text-ink"
+                      className={`px-3 py-3.5 font-sans text-caption font-bold uppercase tracking-[0.05em] transition ${
+                        app.primary ? "bg-[var(--moon-gold)] text-black hover:brightness-110" : "border border-ink/40 text-ink"
                       }`}
                     >
                       {app.name}
@@ -494,21 +494,16 @@ function OrderConfirmedContent() {
  * scheme. "Other UPI app" is the generic upi:// link.
  */
 function upiAppLinks(upiLink: string, device: "android" | "ios" | "desktop") {
+  // Google Pay + the generic UPI chooser only: Paytm/PhonePe app links were
+  // unreliable for payments to this UPI ID.
   const query = upiLink.split("?")[1] ?? "";
-  if (device === "android") {
-    const intent = (pkg: string) => `intent://pay?${query}#Intent;scheme=upi;package=${pkg};end`;
-    return [
-      { name: "Google Pay", href: intent("com.google.android.apps.nbu.paisa.user"), primary: true },
-      { name: "PhonePe", href: intent("com.phonepe.app") },
-      { name: "Paytm", href: intent("net.one97.paytm") },
-      { name: "Other UPI app", href: upiLink },
-    ];
-  }
+  const gpay =
+    device === "android"
+      ? `intent://pay?${query}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`
+      : `gpay://upi/pay?${query}`;
   return [
-    { name: "Google Pay", href: `gpay://upi/pay?${query}`, primary: true },
-    { name: "PhonePe", href: `phonepe://pay?${query}` },
-    { name: "Paytm", href: `paytmmp://pay?${query}` },
-    { name: "Other UPI app", href: upiLink },
+    { name: "Google Pay", href: gpay, primary: true },
+    { name: "Other UPI app", href: upiLink, primary: true },
   ];
 }
 

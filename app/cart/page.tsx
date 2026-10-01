@@ -184,7 +184,7 @@ export default function CartPage() {
 
             <Link
               href="/checkout"
-              className="mt-8 block w-full py-4 text-center font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
+              className="mt-8 block w-full bg-[var(--moon-gold)] text-black hover:brightness-110 py-4 text-center font-sans text-body-s font-bold uppercase tracking-[0.1em] transition"
             >
               Proceed to Checkout
             </Link>

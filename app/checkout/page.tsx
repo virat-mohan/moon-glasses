@@ -1130,7 +1130,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={!configLoaded || shippingBlocking}
-                className="w-full border border-ink bg-ink py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-200 hover:bg-cream hover:text-ink disabled:opacity-60"
+                className="w-full bg-[var(--moon-gold)] py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-black transition hover:brightness-110 disabled:opacity-50"
               >
                 {!configLoaded ? "Loading..." : shippingBlocking ? "Undeliverable Pincode" : "Continue to payment"}
               </button>
@@ -1187,19 +1187,22 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() => setPaymentType("upi_qr")}
                   className={`block w-full border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
-                    paymentType === "upi_qr" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
+                    paymentType === "upi_qr" ? "border-2 border-[var(--moon-gold)] bg-[var(--moon-gold)]/10 text-ink" : "border-ink/30 text-ink hover:border-ink"
                   }`}
                 >
-                  <span className="block font-bold uppercase tracking-[0.03em]">Pay via UPI QR</span>
+                  <span className="flex items-center gap-2 font-bold uppercase tracking-[0.03em]">
+                    <span className={`inline-block h-3.5 w-3.5 flex-none rounded-full border-2 ${paymentType === "upi_qr" ? "border-[var(--moon-gold)] bg-[var(--moon-gold)]" : "border-ink/50"}`} />
+                    Pay via UPI
+                  </span>
                   <span className="block text-caption opacity-80">
-                    Scan to pay ₹{total.toLocaleString("en-IN")} directly — GPay, PhonePe, Paytm, any UPI app.
+                    Pay ₹{total.toLocaleString("en-IN")} with Google Pay or any UPI app.
                   </span>
                 </button>
 
                 {paymentType === "upi_qr" && (
                   <p className="mx-auto mt-3 max-w-[340px] text-center text-caption text-secondary-text">
-                    Tap Pay and we&apos;ll show your QR with the exact amount. It confirms automatically once
-                    paid, usually within a minute or two.
+                    Tap Pay to open Google Pay or your UPI app with the exact amount (or scan a QR on a
+                    laptop). It confirms automatically once paid, usually within a minute or two.
                   </p>
                 )}
               </div>
@@ -1212,10 +1215,11 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() => setPaymentType("post_barter")}
                   className={`block w-full border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
-                    paymentType === "post_barter" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
+                    paymentType === "post_barter" ? "border-2 border-[var(--moon-gold)] bg-[var(--moon-gold)]/10 text-ink" : "border-ink/30 text-ink hover:border-ink"
                   }`}
                 >
-                  <span className="block text-body-s font-bold">
+                  <span className="flex items-center gap-2 text-body-s font-bold">
+                    <span className={`inline-block h-3.5 w-3.5 flex-none rounded-full border-2 ${paymentType === "post_barter" ? "border-[var(--moon-gold)] bg-[var(--moon-gold)]" : "border-ink/50"}`} />
                     <PayWithAPostMark />
                   </span>
                   <span className="mt-0.5 block text-caption opacity-80">
@@ -1358,7 +1362,7 @@ export default function CheckoutPage() {
                   (paymentType === "post_barter" && (!barterHandle.trim() || barterSubmitting)) ||
                   (paymentType === "upi_qr" && upiSubmitting)
                 }
-                className="w-full py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)] disabled:opacity-60"
+                className="w-full bg-[var(--moon-gold)] py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-black transition hover:brightness-110 disabled:opacity-50"
               >
                 {!configLoaded
                   ? "Loading..."
