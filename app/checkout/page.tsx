@@ -234,6 +234,12 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error(data.error ?? "Could not start your order");
       setLeaving(true);
       clear();
+      // Fully covered by a code (e.g. a Pay With A Post free-pair reward):
+      // already confirmed server-side, so skip the QR.
+      if (data.free) {
+        router.push(`/checkout/confirmed?order=${data.orderId}&paid=1`);
+        return;
+      }
       router.push(
         `/checkout/confirmed?order=${data.orderId}&upi=1&amount=${data.total}&upiId=${encodeURIComponent(data.upiId)}&qr=${encodeURIComponent(data.qrImageUrl)}&link=${encodeURIComponent(data.upiLink)}`
       );
@@ -1256,7 +1262,8 @@ export default function CheckoutPage() {
                             </p>
                             <p className="mt-1 text-body-s text-secondary-text">
                               {barterPreview.followerCount?.toLocaleString("en-IN")} followers. Confirm it&apos;s
-                              you below, and we ship today — you post once it arrives.
+                              you below, and we ship today — you post once it arrives. Then every 3 sales on
+                              your code earns you another free pair.
                             </p>
                           </>
                         ) : (
@@ -1269,6 +1276,7 @@ export default function CheckoutPage() {
                                 ? `${barterPreview.followerCount.toLocaleString("en-IN")} followers — under 5,000.`
                                 : "Couldn't verify your follower count (make sure your Instagram is Business or Creator, not Personal)."}{" "}
                               Share your code — the moment 3 people buy with it, your pair ships free.
+                              After that, every 3 more sales earns you another free pair.
                             </p>
                           </>
                         )}
@@ -1367,7 +1375,9 @@ export default function CheckoutPage() {
                       : paymentType === "upi_qr"
                         ? upiSubmitting
                           ? "Confirming..."
-                          : `Pay ₹${total.toLocaleString("en-IN")}`
+                          : total <= 0
+                            ? "Place Order — Free"
+                            : `Pay ₹${total.toLocaleString("en-IN")}`
                         : razorpay.enabled
                           ? paying
                             ? "Processing..."

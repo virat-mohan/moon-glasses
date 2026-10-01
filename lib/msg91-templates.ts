@@ -81,6 +81,13 @@ async function templateDefs(): Promise<TemplateDef[]> {
       example: ["Anun", "Wayfarer, Black Green"],
     },
     {
+      settingKey: "MSG91_PWAP_FREE_PAIR_TEMPLATE_ID",
+      name: "pwap_free_pair",
+      category: "MARKETING",
+      body: `{{1}}, your code just hit another 3 sales, so you've earned another free pair! Use code {{2}} at checkout on ${domain} for any style, free. Valid 90 days.\n\nKeep sharing: every 3 more sales on your Pay With A Post code earns you another pair.`,
+      example: ["Anun", "FREEANUN2XQ"],
+    },
+    {
       settingKey: "MSG91_ABANDONED_CART_TEMPLATE_ID",
       name: "cart_reminder",
       category: "MARKETING",

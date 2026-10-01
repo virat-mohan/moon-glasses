@@ -14,12 +14,15 @@ import {
   sendPostBarterQualifiedEmail,
   sendPostBarterProgressEmail,
   sendOrderNotificationEmail,
+  sendPwapFreePairEmail,
+  sendPwapNextPairProgressEmail,
 } from "@/lib/email";
 import {
   sendOrderConfirmationWhatsApp,
   sendPostBarterConfirmedWhatsApp,
   sendPostBarterProgressWhatsApp,
   sendPostBarterShippedWhatsApp,
+  sendPwapFreePairWhatsApp,
 } from "@/lib/whatsapp-notify";
 
 const DEFAULT_MIN_FOLLOWERS = 5000;
@@ -442,10 +445,10 @@ export async function maybeQualifyBarterOrderForCoupon(
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, customer_name, customer_phone, customer_email, barter_required_orders, barter_qualified_at")
+    .select("id, customer_name, customer_phone, customer_email, barter_required_orders, barter_qualified_at, barter_tier, barter_rewards_issued")
     .eq("is_post_barter", true)
     .eq("barter_coupon_code", couponCode.toUpperCase())
-    .is("barter_qualified_at", null)
+    .neq("status", "cancelled")
     .maybeSingle();
   if (!order) return;
 
@@ -480,36 +483,104 @@ export async function maybeQualifyBarterOrderForCoupon(
     return !samePhone && !sameEmail;
   }).length;
 
-  if (qualifyingCount < order.barter_required_orders) {
+  await supabase.from("orders").update({ barter_sales_count: qualifyingCount }).eq("id", order.id);
+
+  if (!order.barter_qualified_at) {
+    if (qualifyingCount < order.barter_required_orders) {
+      await Promise.allSettled([
+        sendPostBarterProgressEmail(order.customer_email, qualifyingCount, order.barter_required_orders),
+        sendPostBarterProgressWhatsApp(
+          order.id,
+          order.customer_phone,
+          order.customer_name,
+          qualifyingCount,
+          order.barter_required_orders,
+          couponCode.toUpperCase()
+        ),
+      ]).then((results) =>
+        results.forEach((r) => r.status === "rejected" && console.error("Barter progress notify failed", order.id, r.reason))
+      );
+      return;
+    }
+
+    await supabase.from("orders").update({ barter_qualified_at: new Date().toISOString() }).eq("id", order.id);
+    await decrementInventoryAndShip(order.id);
+
+    const { data: firstItem } = await supabase
+      .from("order_items")
+      .select("chapter_name")
+      .eq("order_id", order.id)
+      .limit(1)
+      .maybeSingle();
     await Promise.allSettled([
-      sendPostBarterProgressEmail(order.customer_email, qualifyingCount, order.barter_required_orders),
-      sendPostBarterProgressWhatsApp(
-        order.id,
-        order.customer_phone,
-        order.customer_name,
-        qualifyingCount,
-        order.barter_required_orders,
-        couponCode.toUpperCase()
-      ),
+      sendPostBarterQualifiedEmail(order.customer_email, order.customer_phone),
+      sendPostBarterShippedWhatsApp(order.id, order.customer_phone, order.customer_name, firstItem?.chapter_name ?? "pair"),
     ]).then((results) =>
-      results.forEach((r) => r.status === "rejected" && console.error("Barter progress notify failed", order.id, r.reason))
+      results.forEach((r) => r.status === "rejected" && console.error("Barter qualified notify failed", order.id, r.reason))
     );
+  }
+
+  await issueRepeatRewards(order, qualifyingCount);
+}
+
+/**
+ * The code keeps counting after the first target: every further block of
+ * `barter_required_orders` paid sales earns another free pair. "Post first"
+ * shoppers' first block shipped their original pair; "ship first" shoppers
+ * got theirs upfront, so every block counts. Each reward is a one-time code
+ * worth one pair of any style (₹2,499), valid 90 days.
+ */
+async function issueRepeatRewards(
+  order: {
+    id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email: string;
+    barter_required_orders: number;
+    barter_tier: string | null;
+    barter_rewards_issued: number | null;
+  },
+  salesCount: number
+) {
+  const supabase = getSupabaseServerClient();
+  const required = Math.max(1, order.barter_required_orders);
+  const blocks = Math.floor(salesCount / required);
+  const earned = Math.max(0, blocks - (order.barter_tier === "gift_first" ? 0 : 1));
+  let issued = order.barter_rewards_issued ?? 0;
+
+  if (earned <= issued) {
+    // Between rewards: tell them how close the next free pair is.
+    const towardNext = salesCount % required;
+    if (order.barter_tier === "gift_first" || salesCount > required) {
+      await sendPwapNextPairProgressEmail(order.customer_email, towardNext, required).catch((err) =>
+        console.error("Next-pair progress email failed", order.id, err)
+      );
+    }
     return;
   }
 
-  await supabase.from("orders").update({ barter_qualified_at: new Date().toISOString() }).eq("id", order.id);
-  await decrementInventoryAndShip(order.id);
-
-  const { data: firstItem } = await supabase
-    .from("order_items")
-    .select("chapter_name")
-    .eq("order_id", order.id)
-    .limit(1)
-    .maybeSingle();
-  await Promise.allSettled([
-    sendPostBarterQualifiedEmail(order.customer_email, order.customer_phone),
-    sendPostBarterShippedWhatsApp(order.id, order.customer_phone, order.customer_name, firstItem?.chapter_name ?? "pair"),
-  ]).then((results) =>
-    results.forEach((r) => r.status === "rejected" && console.error("Barter qualified notify failed", order.id, r.reason))
-  );
+  const firstName = (order.customer_name ?? "").split(" ")[0].replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 8) || "MOON";
+  while (issued < earned) {
+    issued++;
+    const code = `FREE${firstName}${issued}${randomSuffix().slice(0, 2)}`;
+    const { error } = await supabase.from("coupon_codes").insert({
+      code,
+      discount_type: "flat",
+      discount_value: 2499,
+      usage_limit: 1,
+      expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      active: true,
+    });
+    if (error) {
+      console.error("Could not create free-pair code", order.id, error);
+      issued--;
+      break;
+    }
+    await supabase.from("pwap_rewards").insert({ barter_order_id: order.id, coupon_code: code, sales_at_earn: salesCount });
+    await supabase.from("orders").update({ barter_rewards_issued: issued }).eq("id", order.id);
+    await Promise.allSettled([
+      sendPwapFreePairEmail(order.customer_email, order.customer_name, code, order.id),
+      sendPwapFreePairWhatsApp(order.id, order.customer_phone, order.customer_name, code),
+    ]);
+  }
 }

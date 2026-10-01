@@ -15,7 +15,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   const { data: order } = await supabase
     .from("orders")
     .select(
-      "id, customer_name, barter_tier, barter_coupon_code, barter_required_orders, barter_post_url, barter_qualified_at, shiprocket_awb_code"
+      "id, customer_name, barter_tier, barter_coupon_code, barter_required_orders, barter_post_url, barter_qualified_at, shiprocket_awb_code, barter_sales_count"
     )
     .eq("id", orderId)
     .eq("is_post_barter", true)
@@ -32,15 +32,25 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   // lookbook rather than the same single photo shared by every barterer.
   const shareProduct = await pickShareCardForOrder(order.id);
 
-  let ordersSoFar = 0;
-  if (order.barter_coupon_code) {
-    const { data: coupon } = await supabase
-      .from("coupon_codes")
-      .select("times_used")
-      .eq("code", order.barter_coupon_code)
-      .maybeSingle();
-    ordersSoFar = coupon?.times_used ?? 0;
-  }
+  // Real, paid, non-self sales on the code (kept up to date as orders land).
+  const required = Math.max(1, order.barter_required_orders ?? 3);
+  const sales = order.barter_sales_count ?? 0;
+  const firstPairDone = isGiftFirst || !!order.barter_qualified_at;
+  // After the first pair, every further block of `required` sales = another free pair.
+  const towardNext = firstPairDone ? sales % required : sales;
+  const { data: rewardRows } = await supabase
+    .from("pwap_rewards")
+    .select("coupon_code, created_at")
+    .eq("barter_order_id", order.id)
+    .order("created_at", { ascending: true });
+  const rewardCodes = (rewardRows ?? []).map((r) => r.coupon_code as string);
+  const { data: rewardCoupons } = rewardCodes.length
+    ? await supabase.from("coupon_codes").select("code, times_used, expires_at").in("code", rewardCodes)
+    : { data: [] as { code: string; times_used: number; expires_at: string | null }[] };
+  const rewards = rewardCodes.map((code) => {
+    const c = (rewardCoupons ?? []).find((x) => x.code === code);
+    return { code, used: (c?.times_used ?? 0) > 0, expires: c?.expires_at ?? null };
+  });
 
   const tagLink = (
     <a href={instagramProfileUrl} target="_blank" rel="noreferrer" className="underline">
@@ -54,18 +64,45 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
       <code className="mt-3 inline-block border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s tracking-[0.1em] text-ink">
         {order.barter_coupon_code}
       </code>
-      {!isGiftFirst && (
-        <>
-          <p className="mt-4 text-body-s text-ink">
-            {ordersSoFar} / {order.barter_required_orders} orders so far
-          </p>
-          <div className="mt-2 h-2 w-full max-w-[280px] bg-surface-alt">
-            <div
-              className="h-2 bg-tan-gold"
-              style={{ width: `${Math.min(100, (ordersSoFar / order.barter_required_orders) * 100)}%` }}
-            />
-          </div>
-        </>
+      <p className="mt-4 text-body-s text-ink">
+        {firstPairDone ? (
+          <>
+            {sales} {sales === 1 ? "sale" : "sales"} on your code · {towardNext} / {required} towards your next free pair
+          </>
+        ) : (
+          <>
+            {sales} / {required} orders so far, then your pair ships free
+          </>
+        )}
+      </p>
+      <div className="mt-2 h-2 w-full max-w-[280px] bg-surface-alt">
+        <div className="h-2 bg-tan-gold" style={{ width: `${Math.min(100, (towardNext / required) * 100)}%` }} />
+      </div>
+      <p className="mt-2 text-caption text-secondary-text">
+        It doesn&apos;t stop at {required}: every {required} more sales on your code earns you another pair, free. Your
+        code never expires.
+      </p>
+      {rewards.length > 0 && (
+        <div className="mt-5 border-t border-divider pt-4">
+          <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Free pairs you&apos;ve earned</p>
+          <ul className="mt-2 space-y-1.5">
+            {rewards.map((r) => (
+              <li key={r.code} className="flex flex-wrap items-center gap-2 text-body-s text-ink">
+                <code className="border border-ink/30 px-2 py-0.5 tracking-[0.08em]">{r.code}</code>
+                <span className="text-caption text-secondary-text">
+                  {r.used
+                    ? "Used"
+                    : `Any style, free · use at checkout${r.expires ? ` by ${new Date(r.expires).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {rewards.some((r) => !r.used) && (
+            <Link href="/#shop" className="mt-3 inline-block border border-ink px-4 py-2 text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream">
+              Pick your free pair
+            </Link>
+          )}
+        </div>
       )}
       <div className="mt-5">
         {shareProduct ? (

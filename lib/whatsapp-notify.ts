@@ -327,3 +327,9 @@ export async function sendPostBarterShippedWhatsApp(orderId: string, phone: stri
   const templateName = await getSetting("MSG91_PWAP_SHIPPED_TEMPLATE_ID");
   return sendTemplateByName(phone, "pwap_shipped", templateName, [name, itemName], { orderId });
 }
+
+/** A further free pair earned on a Pay With A Post code (every 3 more sales). */
+export async function sendPwapFreePairWhatsApp(orderId: string, phone: string, name: string, freeCode: string) {
+  const templateName = await getSetting("MSG91_PWAP_FREE_PAIR_TEMPLATE_ID");
+  return sendTemplateByName(phone, "pwap_free_pair", templateName, [name, freeCode], { orderId });
+}

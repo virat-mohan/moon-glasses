@@ -31,7 +31,7 @@ export function PayWithAPostBanner({ launchSoon = false }: { launchSoon?: boolea
               Under 5,000 Followers
             </p>
             <p className="mt-1.5 text-caption leading-relaxed text-secondary-text">
-              Post first. We ship after 3 sales.
+              Post first. We ship after 3 sales on your code.
             </p>
           </div>
           <div className="border border-divider bg-surface-alt p-5">
@@ -43,6 +43,10 @@ export function PayWithAPostBanner({ launchSoon = false }: { launchSoon?: boolea
             </p>
           </div>
         </div>
+
+        <p className="mt-5 text-center font-sans text-body-s text-ink">
+          And it keeps going: <strong>every 3 more sales on your code = another pair, free.</strong>
+        </p>
 
         {!launchSoon && <GiftFirstUrgencyBadge className="mt-6" />}
 

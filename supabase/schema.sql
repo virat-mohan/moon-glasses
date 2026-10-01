@@ -1339,3 +1339,16 @@ alter table bank_sms_log enable row level security;
 alter table bank_sms_log add column if not exists payer_name text;
 alter table product_costing add column if not exists supplier_model text;
 alter table product_costing add column if not exists supplier_sku text;
+
+-- Pay With A Post repeat rewards: the code keeps counting; every further
+-- block of barter_required_orders paid sales earns a one-time free-pair code.
+alter table orders add column if not exists barter_sales_count integer not null default 0;
+alter table orders add column if not exists barter_rewards_issued integer not null default 0;
+create table if not exists pwap_rewards (
+  id uuid primary key default gen_random_uuid(),
+  barter_order_id uuid not null references orders(id),
+  coupon_code text not null unique,
+  sales_at_earn integer not null,
+  created_at timestamptz not null default now()
+);
+alter table pwap_rewards enable row level security;

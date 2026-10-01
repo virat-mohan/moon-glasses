@@ -105,7 +105,9 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
     getCurrentCustomer(),
   ]);
   if (!config) throw new Error("UPI payment isn't set up yet — add UPI_ID in /admin/settings");
-  if (pricing.total <= 0) throw new Error("Order total must be greater than zero");
+  // A ₹0 total is only allowed when a code (e.g. a Pay With A Post free-pair
+  // reward) covers it — that order confirms immediately below, no QR.
+  if (pricing.total <= 0 && !pricing.coupon) throw new Error("Order total must be greater than zero");
 
   const wasGuest = !customer;
   const guestCustomer = wasGuest
@@ -181,6 +183,11 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
     logTrackingEvent("Purchase", { sessionKey: payload.sessionKey, value: pricing.total }),
   ]);
   if (itemsError) throw itemsError;
+
+  if (pricing.total <= 0) {
+    await confirmUpiOrderPayment(savedOrder.id);
+    return { orderId: savedOrder.id as string, total: 0, free: true as const };
+  }
 
   const payAmount = (upiAmountPaise / 100).toFixed(2);
   const upiLink =
