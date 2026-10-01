@@ -75,6 +75,22 @@ export async function handleBankSms(body: string) {
   }
 
   if (candidates.length !== 1) {
+    if (!candidates.length) {
+      // The same payment often arrives twice (SMS and email): if an order with
+      // this exact amount was just confirmed, say so rather than "no match".
+      const { data: paid } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("payment_type", "upi_qr")
+        .eq("payment_status", "paid")
+        .eq("upi_amount_paise", parsed.amountPaise)
+        .gte("created_at", since)
+        .limit(1);
+      if (paid?.length) {
+        await log("already_confirmed", { matched_order_id: paid[0].id });
+        return { status: "already_confirmed" as const };
+      }
+    }
     const status = candidates.length ? "ambiguous" : "no_match";
     await log(status);
     return { status };

@@ -6,6 +6,7 @@ type Row = { created_at: string; amount_paise: number | null; upi_ref: string | 
 
 const LABEL: Record<string, string> = {
   confirmed: "Matched & confirmed",
+  already_confirmed: "Duplicate alert (order already confirmed)",
   no_match: "No matching order",
   ambiguous: "More than one match (confirm by hand)",
   not_a_credit: "Not a credit SMS",
