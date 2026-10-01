@@ -1244,7 +1244,7 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={checkBarterTier}
                         disabled={!barterHandle.trim() || barterChecking}
-                        className="shrink-0 border border-ink px-4 py-3 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-40"
+                        className="shrink-0 bg-[var(--moon-gold)] px-5 py-3 font-sans text-caption font-bold uppercase tracking-[0.05em] text-black transition hover:brightness-110 disabled:opacity-40"
                       >
                         {barterChecking ? "Checking…" : "Check"}
                       </button>
@@ -1252,7 +1252,7 @@ export default function CheckoutPage() {
 
                     {!barterPreview && (
                       <p className="text-caption text-secondary-text">
-                        Enter your Instagram and we&apos;ll tell you exactly what to do.
+                        Enter your Instagram, tap Check.
                       </p>
                     )}
 
@@ -1264,9 +1264,7 @@ export default function CheckoutPage() {
                               You Qualify — We Ship Now
                             </p>
                             <p className="mt-1 text-body-s text-secondary-text">
-                              {barterPreview.followerCount?.toLocaleString("en-IN")} followers. Confirm it&apos;s
-                              you below, and we ship today — you post once it arrives. Then every 3 sales on
-                              your code earns you another free pair.
+                              Verify it&apos;s you below. We ship today, you post when it arrives.
                             </p>
                           </>
                         ) : (
@@ -1275,11 +1273,7 @@ export default function CheckoutPage() {
                               Post First, Ship After 3 Sales
                             </p>
                             <p className="mt-1 text-body-s text-secondary-text">
-                              {barterPreview.followerCount != null
-                                ? `${barterPreview.followerCount.toLocaleString("en-IN")} followers — under 5,000.`
-                                : "Couldn't verify your follower count (make sure your Instagram is Business or Creator, not Personal)."}{" "}
-                              Share your code — the moment 3 people buy with it, your pair ships free.
-                              After that, every 3 more sales earns you another free pair.
+                              Post, share your code. 3 sales = your pair ships free. Every 3 more = another pair.
                             </p>
                           </>
                         )}
@@ -1289,7 +1283,7 @@ export default function CheckoutPage() {
                     {barterPreview?.tier === "gift_first" && barterPreview.verificationCode && (
                       <div className="border border-ink/20 bg-surface-alt p-3">
                         <p className="text-body-s font-bold text-ink">
-                          Prove it&apos;s you — add this to your Instagram bio for a minute:
+                          Add this to your Instagram bio, then tap Verify:
                         </p>
                         <code className="mt-2 inline-block border border-ink/30 bg-surface px-3 py-1.5 font-sans text-body-s tracking-[0.08em] text-ink">
                           {barterPreview.verificationCode}
@@ -1302,15 +1296,14 @@ export default function CheckoutPage() {
                               type="button"
                               onClick={verifyOwnership}
                               disabled={ownershipChecking}
-                              className="border border-ink px-3 py-1.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-40"
+                              className="bg-[var(--moon-gold)] px-4 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-black transition hover:brightness-110 disabled:opacity-40"
                             >
                               {ownershipChecking ? "Checking…" : "I've Added It — Verify"}
                             </button>
                           )}
                         </div>
                         <p className="mt-2 text-caption text-secondary-text">
-                          Skip this and we&apos;ll still take your order — it just ships once your code
-                          drives 3 real orders instead of right away.
+                          Skip it and your pair ships after 3 sales instead.
                         </p>
                       </div>
                     )}
