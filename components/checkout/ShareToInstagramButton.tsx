@@ -327,6 +327,11 @@ export function ShareToInstagramButton({
 
   return (
     <div>
+      {!previewUrl && (
+        <div className="mb-4 flex aspect-[4/5] w-full max-w-[280px] items-center justify-center border border-ink/20">
+          <p className="animate-pulse text-caption uppercase tracking-[0.1em] text-secondary-text">Preparing your post…</p>
+        </div>
+      )}
       {previewUrl && (
         <div className="mb-4 max-w-[280px]">
           <p className="mb-2 text-caption uppercase tracking-[0.1em] text-secondary-text">This is what gets posted</p>
@@ -340,7 +345,7 @@ export function ShareToInstagramButton({
         type="button"
         onClick={share}
         disabled={status === "building"}
-        className="border border-ink bg-ink px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-cream hover:bg-cream hover:text-ink disabled:opacity-60"
+        className="w-full max-w-[280px] bg-[var(--moon-gold)] px-5 py-3.5 font-sans text-body-s font-bold uppercase tracking-[0.08em] text-black transition hover:brightness-110 disabled:opacity-60"
       >
         {label}
       </button>

@@ -201,9 +201,8 @@ export default function CheckoutPage() {
       if (!res.ok) throw new Error(data.error ?? "Could not create your order");
       setLeaving(true);
       clear();
-      router.push(
-        `/checkout/confirmed?order=${data.orderId}&code=${data.couponCode}&required=${data.requiredOrders}&tier=${data.tier}`
-      );
+      // Straight to their post: image, Share to Instagram, caption ready.
+      router.push(`/barter/${data.orderId}`);
     } catch (err) {
       setBarterError(err instanceof Error ? err.message : "Could not create your order");
     } finally {

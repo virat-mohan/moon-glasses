@@ -59,6 +59,34 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
     </a>
   );
 
+  // The post comes first: image, Share to Instagram, caption copied. Shown
+  // the moment the order is placed (checkout lands here directly).
+  const shareBlock = order.barter_coupon_code && (
+    <section className="mt-6 border-2 border-[var(--moon-gold)] p-5">
+      <p className="font-display text-heading-s uppercase text-ink">Share your post</p>
+      <p className="mt-1 text-caption text-secondary-text">
+        Your caption with code {order.barter_coupon_code} and our tag is copied when you tap share. Just paste it.
+      </p>
+      <div className="mt-4">
+        {shareProduct ? (
+          <ShareToInstagramButton
+            couponCode={order.barter_coupon_code}
+            instagramHandle={brand.instagramHandle}
+            siteUrl={brand.siteUrl}
+            requiredOrders={order.barter_required_orders}
+            heroImageUrl={shareProduct.imageUrl}
+            productName={shareProduct.productName}
+          />
+        ) : (
+          <p className="text-caption text-secondary-text">
+            Share image isn&apos;t ready yet — check back in a moment.
+          </p>
+        )}
+        <OpenOnPhoneQr />
+      </div>
+    </section>
+  );
+
   const codeBlock = order.barter_coupon_code && (
     <div className="mt-8 border border-divider p-6">
       <p className="text-caption uppercase tracking-[0.1em] text-secondary-text">Your Code</p>
@@ -105,23 +133,6 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           )}
         </div>
       )}
-      <div className="mt-5">
-        {shareProduct ? (
-          <ShareToInstagramButton
-            couponCode={order.barter_coupon_code}
-            instagramHandle={brand.instagramHandle}
-            siteUrl={brand.siteUrl}
-            requiredOrders={order.barter_required_orders}
-            heroImageUrl={shareProduct.imageUrl}
-            productName={shareProduct.productName}
-          />
-        ) : (
-          <p className="text-caption text-secondary-text">
-            Share image isn&apos;t ready yet — check back in a moment.
-          </p>
-        )}
-        <OpenOnPhoneQr />
-      </div>
     </div>
   );
 
@@ -131,6 +142,8 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
         <PayWithAPostMark linked />
       </p>
       <h1 className="mt-2 font-display text-heading-xl uppercase text-ink">Hi, {order.customer_name}</h1>
+
+      {shareBlock}
 
       {isGiftFirst ? (
         <>
