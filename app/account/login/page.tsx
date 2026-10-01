@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function LoginForm() {
@@ -84,6 +85,13 @@ function LoginForm() {
             />
           </div>
           {error && <p className="text-body-s text-paint-orange">{error}</p>}
+          {error && (
+            <WhatsAppHelp
+              label="something not working? whatsapp us"
+              topic="account sign-in"
+              lines={["page: /account/login", `error: ${error}`]}
+            />
+          )}
           <button
             type="submit"
             disabled={loading}
@@ -110,6 +118,13 @@ function LoginForm() {
             />
           </div>
           {error && <p className="text-body-s text-paint-orange">{error}</p>}
+          {error && (
+            <WhatsAppHelp
+              label="something not working? whatsapp us"
+              topic="account sign-in"
+              lines={["page: /account/login", `error: ${error}`]}
+            />
+          )}
           <button
             type="submit"
             disabled={loading}

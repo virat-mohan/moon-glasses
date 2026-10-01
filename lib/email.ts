@@ -1,4 +1,5 @@
 import { getSetting } from "@/lib/settings";
+import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
 import { buildStockShortAlert } from "@/lib/checkout-rules";
 import { renderInvoiceHtml } from "@/lib/invoice";
 import { getBrandProfile } from "@/lib/brand";
@@ -864,6 +865,7 @@ export async function sendPwapFreePairEmail(toEmail: string, name: string | null
       <p style="font-size:13px;color:#666;line-height:1.6;">One pair, any style, free. Valid for ${freeCodeValidDays} days. Every ${salesPerFreeCode} more sales on your code earns you another.</p>
       <a href="${site}/#shop" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Pick Your Free Pair</a>
       <p style="margin-top:16px;font-size:12px;"><a href="${site}/barter/${barterOrderId}" style="color:#101820;">See your progress</a></p>
+      <p style="margin-top:12px;font-size:12px;color:#666;">Code not working? <a href="${helpLink({ topic: "free pair code", lines: [`code: ${freeCode}`, `order ${shortOrderId(barterOrderId)}`], number: await getSetting("SUPPORT_WHATSAPP") })}" style="color:#666;">WhatsApp us</a></p>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;

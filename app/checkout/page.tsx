@@ -7,6 +7,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
+import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
 import { useDiscountRule } from "@/lib/useDiscountRule";
 import { calculateDiscount } from "@/lib/discounts";
 import { computeTotalWithCoupon, pickBestDiscount } from "@/lib/checkout-rules";
@@ -99,6 +100,7 @@ export default function CheckoutPage() {
   const [couponChecking, setCouponChecking] = useState(false);
   const [paying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [redeemMiles, setRedeemMiles] = useState(false);
   // Prepaid ships free nationwide; COD charges the real Shiprocket rate
@@ -430,6 +432,7 @@ export default function CheckoutPage() {
         setPostBarterEnabled(!!data.postBarterEnabled);
         if (data.pwapRules) setPwapRules(data.pwapRules);
         if (Array.isArray(data.pwapUnavailableSlugs)) setPwapUnavailableSlugs(data.pwapUnavailableSlugs);
+        if (typeof data.supportWhatsapp === "string") setSupportWhatsapp(data.supportWhatsapp);
         // With Razorpay off, "prepaid" has no visible tile to select it —
         // default straight to the real payment method so submitting
         // without touching a tile does something sensible instead of
@@ -709,6 +712,14 @@ export default function CheckoutPage() {
           We can&apos;t currently deliver to that pincode — please double-check it or use a different
           address before continuing.
         </p>
+      )}
+      {shippingBlocking && (
+        <WhatsAppHelp
+          label="something not working? whatsapp us"
+          topic="pincode not deliverable at checkout"
+          lines={["page: /checkout", "error: we can't currently deliver to that pincode"]}
+          number={supportWhatsapp}
+        />
       )}
       {shippingUnavailable && !shippingBlocking && (
         <p className="text-caption text-paint-orange">
@@ -1226,6 +1237,22 @@ export default function CheckoutPage() {
                       </label>
                     )}
                     {barterError && <p className="text-caption text-paint-orange">{barterError}</p>}
+                    <p>
+                      <WhatsAppHelp
+                        label="stuck posting or with your code? whatsapp us"
+                        topic="pay with a post at checkout"
+                        lines={items.map((i) => `${i.name} × ${i.quantity}`)}
+                        number={supportWhatsapp}
+                      />
+                    </p>
+                    {barterError && (
+                      <WhatsAppHelp
+                        label="something not working? whatsapp us"
+                        topic="pay with a post at checkout"
+                        lines={["page: /checkout", `error: ${barterError}`]}
+                        number={supportWhatsapp}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -1256,6 +1283,18 @@ export default function CheckoutPage() {
             ))}
 
                     {payError && <p className="mt-4 text-body-s text-paint-orange">{payError}</p>}
+                    <p className="mt-3">
+                      <WhatsAppHelp
+                        label={payError ? "something not working? whatsapp us" : "payment not going through? whatsapp us"}
+                        topic={payError ? "payment failed at checkout" : "payment at checkout"}
+                        lines={[
+                          ...items.map((i) => `${i.name} × ${i.quantity}`),
+                          `total ₹${total.toLocaleString("en-IN")}`,
+                          ...(payError ? ["page: /checkout", `error: ${payError}`] : []),
+                        ]}
+                        number={supportWhatsapp}
+                      />
+                    </p>
 
                     <div className="mt-4 sticky bottom-0 -mx-5 border-t border-divider bg-[var(--moon-black)] px-5 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 md:static md:mx-0 md:border-0 md:p-0">
               <button
@@ -1355,6 +1394,16 @@ export default function CheckoutPage() {
                   ) : (
                     <span className="text-paint-orange">That code isn&apos;t valid for this order.</span>
                   )}
+                </p>
+              )}
+              {normalizedCouponCode && couponPreview?.checked === normalizedCouponCode && (
+                <p className="mt-2">
+                  <WhatsAppHelp
+                    label={couponPreview.valid ? "need a hand? whatsapp us" : "code not working? whatsapp us"}
+                    topic={couponPreview.valid ? "redeeming my code at checkout" : "code not working at checkout"}
+                    lines={[`code: ${normalizedCouponCode}`, `total ₹${total.toLocaleString("en-IN")}`]}
+                    number={supportWhatsapp}
+                  />
                 </p>
               )}
             </div>

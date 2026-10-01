@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
 
 type Customer = { id: string; phone: string | null; name: string | null; email: string | null; newsletter_subscribed: boolean };
 type Address = {
@@ -29,6 +30,7 @@ export default function AccountPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loyalty, setLoyalty] = useState<Loyalty | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [savedProfile, setSavedProfile] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState(0);
@@ -63,6 +65,7 @@ export default function AccountPage() {
         setReferralCode(data.referralCode ?? null);
         setReferralCount(data.referralCount ?? 0);
       })
+      .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false));
   }
 
@@ -149,7 +152,16 @@ export default function AccountPage() {
   if (loading || !customer) {
     return (
       <main className="mx-auto w-full max-w-[700px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
-        <p className="text-body-s text-secondary-text">Loading...</p>
+        <p className="text-body-s text-secondary-text">{loadFailed ? "We couldn't load your orders just now." : "Loading..."}</p>
+        {loadFailed && (
+          <p className="mt-3">
+            <WhatsAppHelp
+              label="something not working? whatsapp us"
+              topic="order lookup failed"
+              lines={["page: /account", "error: couldn't load my orders"]}
+            />
+          </p>
+        )}
       </main>
     );
   }
@@ -235,6 +247,13 @@ export default function AccountPage() {
             </button>
             {referResult && <p className="w-full text-caption text-ink">{referResult}</p>}
             {referError && <p className="w-full text-caption text-paint-orange">{referError}</p>}
+            {referError && (
+              <WhatsAppHelp
+                label="something not working? whatsapp us"
+                topic="referral invite failed"
+                lines={["page: /account", `error: ${referError}`]}
+              />
+            )}
           </form>
         </section>
       )}

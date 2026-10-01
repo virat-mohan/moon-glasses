@@ -1,12 +1,14 @@
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
+import { getSetting } from "@/lib/settings";
 
 export const metadata = {
   title: "Contact Us",
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
   return (
     <>
       <main className="mx-auto w-full max-w-[720px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
@@ -24,6 +26,9 @@ export default function ContactPage() {
         <div className="mt-10">
           <ContactForm />
         </div>
+        <p className="mt-6">
+          <WhatsAppHelp topic="a question" lines={["page: /contact"]} number={await getSetting("SUPPORT_WHATSAPP")} />
+        </p>
       </main>
 
       <NewsletterBlock />

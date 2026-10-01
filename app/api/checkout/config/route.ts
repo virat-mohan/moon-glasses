@@ -6,6 +6,8 @@ import { isPostBarterEnabled } from "@/lib/post-barter";
 import { getPwapRules } from "@/lib/pwap-rules";
 import { getInventoryMap } from "@/lib/inventory";
 import { isPwapAvailableForStock } from "@/lib/checkout-rules";
+import { getSetting } from "@/lib/settings";
+import { supportNumber } from "@/lib/whatsapp-help";
 
 // Turned off at the request of the business owner (keys are configured and
 // the integration itself works — verified end to end against a real test
@@ -38,5 +40,6 @@ export async function GET() {
     postBarterEnabled,
     pwapRules: { salesToShip, salesPerFreeCode },
     pwapUnavailableSlugs,
+    supportWhatsapp: supportNumber(await getSetting("SUPPORT_WHATSAPP")),
   });
 }

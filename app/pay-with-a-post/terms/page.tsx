@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
+import { getSetting } from "@/lib/settings";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { getBrandProfile } from "@/lib/brand";
 import { getPwapRules } from "@/lib/pwap-rules";
@@ -113,6 +115,14 @@ export default async function PayWithAPostTermsPage() {
             governed by Indian law and the courts of New Delhi.
           </Section>
         </div>
+        <p className="mt-10">
+          <WhatsAppHelp
+            label="stuck posting or with your code? whatsapp us"
+            topic="pay with a post"
+            lines={["page: /pay-with-a-post/terms"]}
+            number={await getSetting("SUPPORT_WHATSAPP")}
+          />
+        </p>
       </main>
       <FooterEditorial />
     </>

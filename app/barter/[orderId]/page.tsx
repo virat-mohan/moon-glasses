@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
+import { getSetting } from "@/lib/settings";
+import { shortOrderId } from "@/lib/whatsapp-help";
 import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
@@ -147,6 +150,14 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           </>
         )}
       </details>
+      <p className="mt-6">
+        <WhatsAppHelp
+          label="code not working? whatsapp us"
+          topic="pay with a post code"
+          lines={[...(order.barter_coupon_code ? [`code: ${order.barter_coupon_code}`] : []), `order ${shortOrderId(order.id)}`]}
+          number={await getSetting("SUPPORT_WHATSAPP")}
+        />
+      </p>
     </main>
   );
 }

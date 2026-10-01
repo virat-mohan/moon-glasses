@@ -10,6 +10,8 @@ import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import QRCode from "qrcode";
 import { trackEvent } from "@/lib/client-tracking";
+import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
+import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
 
 type OrderSummary = {
   id: string;
@@ -228,6 +230,14 @@ function OrderConfirmedContent() {
                 ? "Welcome to being an Explorer — we've emailed your invoice and sent a confirmation on WhatsApp, and your order is on its way to being packed."
                 : "Your order details opened in WhatsApp — send that message through and we'll confirm payment and delivery with you directly, usually within a few hours."}
         </p>
+        {!upiPending || upiPaid ? (
+          <p className="mt-3">
+            <WhatsAppHelp
+              topic="my order"
+              lines={[...(orderId ? [`order ${shortOrderId(orderId)}`] : []), "page: /checkout/confirmed"]}
+            />
+          </p>
+        ) : null}
 
         {upiPending && !upiPaid && (
           <div className="mt-8 flex flex-col items-center gap-3 border border-divider p-6 text-center">
@@ -295,6 +305,13 @@ function OrderConfirmedContent() {
                   <p className="mt-3 animate-pulse text-micro uppercase tracking-[0.1em] text-secondary-text">
                     Checking for your payment…
                   </p>
+                  <p className="mt-3">
+                    <WhatsAppHelp
+                      label="paid but not confirmed? whatsapp us your screenshot"
+                      topic="paid but not confirmed, sharing my screenshot"
+                      lines={[...(orderId ? [`order ${shortOrderId(orderId)}`] : []), `paid ₹${upiPayAmount}`]}
+                    />
+                  </p>
                 </>
               ) : (
                 <>
@@ -308,15 +325,14 @@ function OrderConfirmedContent() {
               )}
               {upiStatus === "slow" && (
               <a
-                href={`https://wa.me/919318311657?text=${encodeURIComponent(
-                  `Hi! I've just paid ₹${upiPayAmount} for my Moonglasses order${
-                    orderId ? ` (Order #${orderId.slice(0, 8).toUpperCase()})` : ""
-                  }.${
-                    items.length > 0
-                      ? ` Items: ${items.map((i) => `${i.chapter_name} x${i.quantity}`).join(", ")}.`
-                      : ""
-                  } Sharing my payment screenshot below.`
-                )}`}
+                href={helpLink({
+                  topic: "paid but not confirmed, sharing my screenshot",
+                  lines: [
+                    ...(orderId ? [`order ${shortOrderId(orderId)}`] : []),
+                    `paid ₹${upiPayAmount}`,
+                    ...items.map((i) => `${i.chapter_name} × ${i.quantity}`),
+                  ],
+                })}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 inline-block border border-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream"

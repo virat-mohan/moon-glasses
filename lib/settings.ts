@@ -82,6 +82,7 @@ export const SETTINGS_KEYS = [
   "UPI_ID",
   "UPI_QR_IMAGE_URL",
   "UPI_PAYEE_NAME",
+  "SUPPORT_WHATSAPP",
 ] as const;
 
 export type SettingKey = (typeof SETTINGS_KEYS)[number];
