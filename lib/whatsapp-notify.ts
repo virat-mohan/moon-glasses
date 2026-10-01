@@ -284,23 +284,47 @@ export async function sendPostBarterConfirmedWhatsApp(
   itemName: string
 ) {
   const variables = [order.customer_name, couponCode, String(requiredOrders), itemName];
-  const shareTemplate = await getSetting("MSG91_PWAP_SHARE_TEMPLATE_ID");
-  if (shareTemplate) {
-    try {
-      const cardUrl = await generateAndUploadPwapShareCard(order.id, couponCode);
-      if (cardUrl) {
-        const sent = await sendTemplateByName(order.customer_phone, "pwap_share_post", shareTemplate, variables, { orderId: order.id }, {
-          type: "image",
-          url: cardUrl,
-        });
-        if (sent) return true;
-      }
-    } catch (err) {
-      console.error("Pay With A Post share card failed — sending text version", order.id, err);
-    }
+  let cardUrl: string | null = null;
+  try {
+    cardUrl = await generateAndUploadPwapShareCard(order.id, couponCode);
+  } catch (err) {
+    console.error("Pay With A Post share card failed", order.id, err);
   }
-  const templateName = await getSetting("MSG91_PWAP_CONFIRMED_TEMPLATE_ID");
-  return sendTemplateByName(order.customer_phone, "pwap_order_confirmed", templateName, variables, { orderId: order.id });
+
+  // Preferred: the UTILITY order-link template (code, posting steps, link to
+  // the order page with the share image). Utility messages always deliver;
+  // pwap_share_post was re-classed MARKETING by Meta and WhatsApp can hold
+  // those back silently, so the image message is a best-effort extra below.
+  const linkTemplate = await getSetting("MSG91_PWAP_ORDER_LINK_TEMPLATE_ID");
+  let confirmed = false;
+  if (linkTemplate) {
+    confirmed = await sendTemplateByName(
+      order.customer_phone,
+      "pwap_order_link",
+      linkTemplate,
+      [order.customer_name, couponCode, String(requiredOrders), order.id],
+      { orderId: order.id }
+    );
+  }
+
+  // Otherwise the approved text confirmation (UTILITY). Then the image as a best-effort extra.
+  if (!confirmed) {
+    confirmed = await sendTemplateByName(
+      order.customer_phone,
+      "pwap_order_confirmed",
+      await getSetting("MSG91_PWAP_CONFIRMED_TEMPLATE_ID"),
+      variables,
+      { orderId: order.id }
+    );
+  }
+  const shareTemplate = await getSetting("MSG91_PWAP_SHARE_TEMPLATE_ID");
+  if (shareTemplate && cardUrl) {
+    await sendTemplateByName(order.customer_phone, "pwap_share_post", shareTemplate, variables, { orderId: order.id }, {
+      type: "image",
+      url: cardUrl,
+    }).catch(() => false);
+  }
+  return confirmed;
 }
 
 /** Sent each time a friend's paid order lands on a Pay With A Post code, before the threshold is reached. */

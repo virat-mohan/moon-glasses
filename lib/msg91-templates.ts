@@ -66,6 +66,13 @@ async function templateDefs(): Promise<TemplateDef[]> {
       example: ["Anun", "ANUN-MOON", "3", "Wayfarer, Black Green"],
     },
     {
+      settingKey: "MSG91_PWAP_ORDER_LINK_TEMPLATE_ID",
+      name: "pwap_order_link",
+      category: "UTILITY",
+      body: `Hi {{1}}, your Pay With A Post order is confirmed.\n\nYour code: {{2}}\n\nYour post image and steps are on your order page: ${domain}/barter/{{4}}\n\nPost it on Instagram, tag ${handle} and add your code in the caption. Your order ships when {{3}} people buy with your code.`,
+      example: ["Anun", "ANUNAFTERGLOW", "3", "b306b861-551e-4b2a-a5e6-10636e46457a"],
+    },
+    {
       settingKey: "MSG91_PWAP_PROGRESS_TEMPLATE_ID",
       name: "pwap_progress",
       category: "UTILITY",
@@ -84,7 +91,7 @@ async function templateDefs(): Promise<TemplateDef[]> {
       settingKey: "MSG91_PWAP_FREE_PAIR_TEMPLATE_ID",
       name: "pwap_free_pair",
       category: "MARKETING",
-      body: `{{1}}, your code just hit another 3 sales, so you've earned another free pair! Use code {{2}} at checkout on ${domain} for any style, free. Valid 90 days.\n\nKeep sharing: every 3 more sales on your Pay With A Post code earns you another pair.`,
+      body: `Great news, {{1}}! Your code just hit another 3 sales, so you've earned another free pair. Use code {{2}} at checkout on ${domain} for any style, free. Valid 90 days.\n\nKeep sharing: every 3 more sales on your Pay With A Post code earns you another pair.`,
       example: ["Anun", "FREEANUN2XQ"],
     },
     {
