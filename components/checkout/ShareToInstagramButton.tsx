@@ -350,7 +350,8 @@ export function ShareToInstagramButton({
         <p className="mt-1 text-caption text-secondary-text">
           Tap Share To Instagram — your phone&apos;s share sheet opens with Instagram as an option. Pick it,
           then choose Post or Story (same image works for both, whichever you&apos;re confident can get you{" "}
-          {requiredOrders} sales). Your caption with your code is already copied: just paste it in Instagram.
+          {requiredOrders} sales). Your caption with your code and our tag is already copied: just paste it in
+          Instagram. For a feed post, also tap Tag people → Invite collaborator → {instagramHandle}.
         </p>
       </div>
 
