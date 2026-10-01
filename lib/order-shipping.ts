@@ -8,6 +8,7 @@ import {
 import { sendWarehouseNotificationEmail } from "@/lib/email";
 import { buildAndUploadDuplicatedLabel } from "@/lib/label-print";
 import { sendShipNotificationWhatsApp } from "@/lib/whatsapp-notify";
+import { warehouseItemNames } from "@/lib/warehouse-names";
 
 /**
  * Creates the Shiprocket shipment for an order — courier assignment, pickup
@@ -37,6 +38,11 @@ export async function shipOrder(orderId: string) {
     .select("chapter_slug, chapter_name, unit_price, quantity")
     .eq("order_id", orderId);
 
+  // Warehouse-facing names (supplier model, colour, code) for everything the
+  // warehouse reads: Shiprocket lines/label, the email and the WhatsApp.
+  const pickNames = await warehouseItemNames(items ?? []);
+  const warehouseItems = (items ?? []).map((item) => ({ ...item, chapter_name: pickNames.get(item.chapter_slug)?.name ?? item.chapter_name }));
+
   const { shiprocketOrderId, shipmentId } = await createShiprocketOrder({
     orderId: order.id,
     createdAt: order.created_at,
@@ -55,9 +61,9 @@ export async function shipOrder(orderId: string) {
     // against what actually shows in Shiprocket's dashboard.
     subtotal: order.payment_type === "cod_advance" ? order.balance_due : order.subtotal,
     total: order.total,
-    items: (items ?? []).map((item) => ({
+    items: warehouseItems.map((item) => ({
       name: item.chapter_name,
-      sku: item.chapter_slug,
+      sku: pickNames.get(item.chapter_slug)?.sku ?? item.chapter_slug,
       quantity: item.quantity,
       price: item.unit_price,
     })),
@@ -112,7 +118,7 @@ export async function shipOrder(orderId: string) {
         const duplicatedLabelUrl = await buildAndUploadDuplicatedLabel(shipmentId, orderId);
         await sendWarehouseNotificationEmail(
           { ...order, shiprocket_awb_code: awbCode, courier_name: courierName },
-          items ?? [],
+          warehouseItems,
           duplicatedLabelUrl ?? labelUrl
         );
 
@@ -121,7 +127,7 @@ export async function shipOrder(orderId: string) {
         // and only fires if there's an actual label to attach (a document-
         // header template needs a real file).
         if (duplicatedLabelUrl ?? labelUrl) {
-          const itemsLine = (items ?? []).map((item) => `${item.quantity}x ${item.chapter_name}`).join(", ");
+          const itemsLine = warehouseItems.map((item) => `${item.quantity}x ${item.chapter_name}`).join(", ");
           await sendShipNotificationWhatsApp(
             orderId,
             order.customer_name,
