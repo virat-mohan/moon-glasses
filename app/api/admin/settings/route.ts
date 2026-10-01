@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getAllSettingsMasked, setSetting, SETTINGS_KEYS, type SettingKey } from "@/lib/settings";
 import { getInstagramConnection } from "@/lib/instagram-connection";
@@ -18,6 +19,8 @@ export async function PATCH(request: Request) {
 
   try {
     await setSetting(body.key as SettingKey, body.value);
+    // Settings like SUPPORT_WHATSAPP show on cached pages; refresh them now.
+    revalidatePath("/", "layout");
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Failed to save setting", err);
