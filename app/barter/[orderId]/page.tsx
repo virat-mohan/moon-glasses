@@ -6,6 +6,7 @@ import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { ShareToInstagramButton } from "@/components/checkout/ShareToInstagramButton";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { pickShareCardForOrder } from "@/lib/share-card-pool";
+import { OpenOnPhoneQr } from "@/components/checkout/OpenOnPhoneQr";
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +120,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
             Share image isn&apos;t ready yet — check back in a moment.
           </p>
         )}
+        <OpenOnPhoneQr />
       </div>
     </div>
   );
