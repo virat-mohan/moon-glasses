@@ -17,7 +17,7 @@ export function parseBankCreditSms(text: string): { amountPaise: number; upiRef:
   if (!amount) return null;
   const amountPaise = Math.round(parseFloat(amount[1].replace(/,/g, "")) * 100);
   if (!Number.isFinite(amountPaise) || amountPaise <= 0) return null;
-  const ref = t.match(/(?:upi\s*ref(?:erence)?\.?\s*(?:no\.?|number)?|ref\.?\s*no\.?|rrn)\s*[:\-]?\s*(\d{9,14})/i);
+  const ref = t.match(/(?:upi(?:\s*ref(?:erence)?\.?\s*(?:no\.?|number)?)?|ref\.?\s*no\.?|rrn)\s*[:\-]?\s*\(?\s*(\d{9,14})/i);
   return { amountPaise, upiRef: ref?.[1] ?? null };
 }
 
@@ -27,7 +27,8 @@ export async function handleBankSms(body: string) {
   const parsed = parseBankCreditSms(body);
   const log = (status: string, extra: Record<string, unknown> = {}) =>
     supabase.from("bank_sms_log").insert({
-      body: body.slice(0, 1000),
+      // Only credit SMS text is kept; anything else (OTPs, debits) is dropped.
+      body: parsed ? body.slice(0, 1000) : "(not stored: not a credit SMS)",
       amount_paise: parsed?.amountPaise ?? null,
       upi_ref: parsed?.upiRef ?? null,
       status,

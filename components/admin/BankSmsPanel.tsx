@@ -51,10 +51,9 @@ export function BankSmsPanel() {
       <details className="mt-3 text-caption text-secondary-text">
         <summary className="cursor-pointer text-ink">How to set it up on your phone</summary>
         <p className="mt-2">
-          <strong>iPhone:</strong> Shortcuts → Automation → New → Message → Sender: your bank (e.g. HDFCBK), Message contains
-          &ldquo;credited&rdquo; → Run Immediately. Action: &ldquo;Get Contents of URL&rdquo; → paste the link → Method POST →
-          Request Body: Text → choose &ldquo;Shortcut Input&rdquo; (the message).
-        </p>
+          <strong>iPhone:</strong> Shortcuts → Automation → + → Message → Message Contains &ldquo;HDFC Bank&rdquo; (leave Sender empty) →
+          Run Immediately, Notify When Run off. Action: &ldquo;Get Contents of URL&rdquo; → paste the link → Method POST → Request
+          Body JSON → add field <code>text</code> = Shortcut Input (Message). Every HDFC SMS gets sent; only credits are kept.</p>
         <p className="mt-2">
           <strong>Android:</strong> install an SMS forwarder (e.g. &ldquo;SMS Forwarder&rdquo;), add a rule for your bank&apos;s
           sender ID that sends the message text by HTTP POST to the link.
