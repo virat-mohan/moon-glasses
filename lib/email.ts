@@ -1,7 +1,7 @@
 import { getSetting } from "@/lib/settings";
 import { renderInvoiceHtml } from "@/lib/invoice";
 import { getBrandProfile } from "@/lib/brand";
-import { stripHtml, voiceGate } from "@/lib/brand-voice";
+import { BRAND_VOICE, stripHtml, voiceGate } from "@/lib/brand-voice";
 
 type InvoiceOrder = Parameters<typeof renderInvoiceHtml>[0];
 type InvoiceItem = Parameters<typeof renderInvoiceHtml>[1][number];
@@ -11,6 +11,12 @@ type InvoiceItem = Parameters<typeof renderInvoiceHtml>[1][number];
  * rendering — without the explicit color-scheme meta tags, Apple/iOS Mail's
  * automatic dark-mode inversion flips black text/logos to white.
  */
+/** BRAND_VOICE.emailSignOff, as the footer of every customer email. */
+const EMAIL_SIGN_OFF_HTML = `
+  <div style="max-width:480px;margin:32px auto 0;font-family:Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#444;">
+    ${BRAND_VOICE.emailSignOff.split("\n").join("<br />")}
+  </div>`;
+
 function wrapEmailHtml(bodyHtml: string) {
   return `<!doctype html>
 <html>
@@ -45,6 +51,8 @@ export async function sendEmail(
   // @moon-glasses.store inboxes (and explicit internal sends like the
   // warehouse sheet, which names supplier models on purpose) is not customer copy.
   const internal = opts.internal || /@moon-glasses\.store$/i.test(to.trim());
+  // Every customer email ends on the brand sign-off (Virat, 2 Oct 2026).
+  if (!internal) bodyHtml = `${bodyHtml}${EMAIL_SIGN_OFF_HTML}`;
   const gate = voiceGate(`${subject}\n${stripHtml(bodyHtml)}`, "email", `email "${subject}" to ${to}`, { internal });
   if (!gate.ok) return false;
 
@@ -261,7 +269,7 @@ export async function sendBuyNow10Email(
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
-  return sendEmail(session.customer_email, `MOON GLASSES | 10% off on what's still in your cart`, html);
+  return sendEmail(session.customer_email, `Moonglasses | 10% off on what's still in your cart`, html);
 }
 
 /** Sent once to each pending "notify me" lead when a sold-out Chapter's stock goes back above zero. */

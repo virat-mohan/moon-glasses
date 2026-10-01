@@ -51,7 +51,8 @@ type Brief = {
   ad_daily_budget_rupees: number;
 };
 
-const CTA_OPTIONS = ["SHOP_NOW", "LEARN_MORE", "SIGN_UP", "GET_OFFER", "CONTACT_US"];
+// LEARN_MORE is the brand default (Virat, 2 Oct 2026); SHOP_NOW warns in the brand book check.
+const CTA_OPTIONS = ["LEARN_MORE", "SIGN_UP", "GET_OFFER", "CONTACT_US", "SHOP_NOW"];
 
 type Asset = { id: string; url: string; label: string | null; tags: string[] };
 

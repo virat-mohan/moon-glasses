@@ -33,8 +33,8 @@ export type BrandProfile = {
 // Moved here from lib/brand.ts so the AI pipeline and customer-facing surfaces
 // share one in-repo source. Values unchanged.
 export const DEFAULT_BRAND_PROFILE: BrandProfile = {
-  brandName: "MOON GLASSES",
-  tagline: "See A Brighter You",
+  brandName: "Moonglasses",
+  tagline: "Light tints, good vibe",
   voice:
     "Fashion-forward, editorial, confident — dark/nightlife imagery paired with restrained, minimal copy. Short lines, no hard sell. Built for a young, style-conscious Indian audience.",
   productNoun: "sunglasses",
@@ -42,7 +42,7 @@ export const DEFAULT_BRAND_PROFILE: BrandProfile = {
   siteUrl: "https://moon-glasses.store",
   instagramHandle: "@moonglassesonline",
   visualLanguage:
-    "Near-black backgrounds, high contrast, warm gold (#e0b84a) as the sole accent colour. Editorial nightlife photography — gigs, sets, city-at-night energy — never daytime/beach/outdoor lifestyle. Minimal, uncluttered composition; confident subjects, genuine expressions, no stock-photo posing. Typography-led when text appears: bold, uppercase, generous letter-spacing.",
+    "Near-black backgrounds, high contrast, warm gold (#E7C77A) as the sole accent colour. Editorial nightlife photography — gigs, sets, city-at-night energy — never daytime/beach/outdoor lifestyle. Minimal, uncluttered composition; confident subjects, genuine expressions, no stock-photo posing. Typography-led when text appears: bold, uppercase, generous letter-spacing.",
 };
 
 export type RetailOsBrand = {
@@ -67,9 +67,9 @@ export type RetailOsBrand = {
 export const moonglassesBrand: RetailOsBrand = {
   key: "moonglasses",
   profile: DEFAULT_BRAND_PROFILE,
-  titleName: "MOON GLASSES™",
+  titleName: "Moonglasses™",
   description:
-    "MOON GLASSES™ — fashion eyewear for after dark. The Collection from ₹1,499, the Limited Series from ₹1,999. Ships across India.",
+    "Moonglasses™ — fashion eyewear for after dark. The Collection from ₹1,499, the Limited Series from ₹1,999. Ships across India.",
   keywords: ["fashion sunglasses India", "MOON GLASSES", "eyewear", "aviator sunglasses"],
   assets: {
     orgLogoPath: "/images/brand/moon-glasses-logo.png",

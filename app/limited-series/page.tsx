@@ -9,7 +9,7 @@ import { LIMITED_SERIES_PRICING } from "@/lib/limited-series";
 export const metadata: Metadata = {
   title: "Limited Series",
   description:
-    "MOON GLASSES Limited Series — small-batch drops in deliberately short supply. Once a run sells out, it's gone for good.",
+    "Moonglasses Limited Series — small-batch drops in deliberately short supply. Once a run sells out, it's gone for good.",
 };
 
 export const revalidate = 3600;

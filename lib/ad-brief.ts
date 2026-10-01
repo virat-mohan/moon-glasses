@@ -113,7 +113,7 @@ Return ONLY a JSON object, no commentary, in this exact shape:
 {
   "headline": "string, under 40 characters, punchy",
   "primaryText": "string, 1-3 sentences, the actual ad body copy",
-  "cta": "one of: LEARN_MORE, SIGN_UP, SHOP_NOW (prefer LEARN_MORE: the brand avoids imperative calls to buy)",
+  "cta": "LEARN_MORE (the brand default; SIGN_UP only when the ad is about signing up). Never SHOP_NOW.",
   "targetAudience": "one line describing who this ad should target (interests/demographics), for setting up Meta ad targeting",
   ${
     isCarousel
@@ -124,7 +124,7 @@ Return ONLY a JSON object, no commentary, in this exact shape:
   "creativeStyle": "one of: ai_photo, real_photo_text_overlay — YOU decide which creative approach actually fits this specific ad, don't default to one. Pick real_photo_text_overlay for announcement-driven angles (a new drop, back in stock) — real product photography with a short on-image label. Never a scarcity or urgency angle. Pick ai_photo for aspirational/editorial/brand-story angles where a clean, text-free lifestyle photo feels more premium and sits more naturally in an Instagram feed.",
   "overlayText": "ONLY meaningful when creativeStyle is real_photo_text_overlay: a short, bold line of on-image text, under 6 words (e.g. 'THE DROP' or 'BACK IN STOCK' or 'LIGHT TINTS. BIG MOOD.'; a label, never a command or urgency) to render directly on top of the photo. Leave as an empty string when creativeStyle is ai_photo."`
   },
-  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, mixing broad reach tags (e.g. streetwear, travel) with niche/branded ones (e.g. the brand name, product name) — ready to prefix with # and post"]
+  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, ALWAYS including MoonGlasses and LightTintsGoodVibe, mixing broad reach tags (e.g. streetwear, travel) with niche/branded ones (e.g. the brand name, product name) — ready to prefix with # and post"]
 }`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -208,9 +208,9 @@ Apply that instruction. Keep everything else about the brief's voice and intent 
 {
   "headline": "string, under 40 characters, punchy",
   "primaryText": "string, 1-3 sentences, the actual ad body copy",
-  "cta": "one of: LEARN_MORE, SIGN_UP, SHOP_NOW (prefer LEARN_MORE: the brand avoids imperative calls to buy)",
+  "cta": "LEARN_MORE (the brand default; SIGN_UP only when the ad is about signing up). Never SHOP_NOW.",
   "targetAudience": "one line describing who this ad should target (interests/demographics), for setting up Meta ad targeting",
-  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol"]
+  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, ALWAYS including MoonGlasses and LightTintsGoodVibe"]
 }`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {

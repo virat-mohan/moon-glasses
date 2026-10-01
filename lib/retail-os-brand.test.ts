@@ -16,25 +16,25 @@ test("active brand is Moon-glasses and config is valid", () => {
 });
 
 test("identity fields preserve the previous hardcoded values", () => {
-  assert.equal(brand.profile.brandName, "MOON GLASSES");
-  assert.equal(brand.profile.tagline, "See A Brighter You");
+  assert.equal(brand.profile.brandName, "Moonglasses");
+  assert.equal(brand.profile.tagline, "Light tints, good vibe");
   assert.equal(brand.profile.siteUrl, "https://moon-glasses.store");
   assert.equal(brand.profile.productNoun, "sunglasses");
   assert.equal(brand.profile.instagramHandle, "@moonglassesonline");
-  assert.equal(titleBrandName(), "MOON GLASSES™");
+  assert.equal(titleBrandName(), "Moonglasses™");
 });
 
 test("metadata surface values are unchanged", () => {
   assert.equal(
     brand.description,
-    "MOON GLASSES™ — fashion eyewear for after dark. The Collection from ₹1,499, the Limited Series from ₹1,999. Ships across India.",
+    "Moonglasses™ — fashion eyewear for after dark. The Collection from ₹1,499, the Limited Series from ₹1,999. Ships across India.",
   );
   assert.deepEqual(brand.keywords, ["fashion sunglasses India", "MOON GLASSES", "eyewear", "aviator sunglasses"]);
-  assert.equal(`${titleBrandName()} — ${brand.profile.tagline}`, "MOON GLASSES™ — See A Brighter You");
-  assert.equal(`%s — ${titleBrandName()}`, "%s — MOON GLASSES™");
+  assert.equal(`${titleBrandName()} — ${brand.profile.tagline}`, "Moonglasses™ — Light tints, good vibe");
+  assert.equal(`%s — ${titleBrandName()}`, "%s — Moonglasses™");
   assert.equal(brand.assets.ogImagePath, "/images/brand/moon-glasses-logo.png");
   assert.equal(`${brand.profile.siteUrl}${brand.assets.orgLogoPath}`, "https://moon-glasses.store/images/brand/moon-glasses-logo.png");
-  assert.equal(brand.profile.brandName, "MOON GLASSES"); // OG siteName + org name (no ™)
+  assert.equal(brand.profile.brandName, "Moonglasses"); // OG siteName + org name (no ™)
 });
 
 test("Organization structured data values are unchanged", () => {
@@ -48,12 +48,12 @@ test("header logo surface is unchanged", () => {
 });
 
 test("footer copyright name is unchanged", () => {
-  assert.equal(titleBrandName(), "MOON GLASSES™");
+  assert.equal(titleBrandName(), "Moonglasses™");
 });
 
 test("DEFAULT_BRAND_PROFILE keeps visualLanguage (Moon AI pipeline needs it)", () => {
   assert.equal(brand.profile, DEFAULT_BRAND_PROFILE);
-  assert.ok(DEFAULT_BRAND_PROFILE.visualLanguage.includes("#e0b84a"));
+  assert.ok(DEFAULT_BRAND_PROFILE.visualLanguage.includes("#E7C77A"));
 });
 
 test("validation catches missing/invalid required fields", () => {

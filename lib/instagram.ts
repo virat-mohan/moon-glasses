@@ -3,8 +3,8 @@ import { getInstagramConnection } from "@/lib/instagram-connection";
 import { voiceGate } from "@/lib/brand-voice";
 
 /** Brand book lock: a "block" in the caption stops the publish (thrown, like every other publish failure here). */
-function assertCaptionOnBrand(caption: string, where: string) {
-  const gate = voiceGate(caption, "social", where);
+function assertCaptionOnBrand(caption: string, where: string, format: "post" | "reel" = "post") {
+  const gate = voiceGate(caption, "social", where, { format });
   if (!gate.ok) throw new Error(gate.reason);
 }
 
@@ -413,7 +413,7 @@ export async function postVideoToInstagramStory(videoUrl: string) {
 
 /** Publishes a Reel from a public video URL (MP4/MOV, 3s–15min). Video processing is slower than images, so this waits longer. */
 export async function postReelToInstagram(videoUrl: string, caption: string, coverUrl?: string) {
-  assertCaptionOnBrand(caption, "Instagram reel");
+  assertCaptionOnBrand(caption, "Instagram reel", "reel");
   const auth = await getPublishAuth();
   const created = await igPost(auth, `${auth.igUserId}/media`, {
     media_type: "REELS",

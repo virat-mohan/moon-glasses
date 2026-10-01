@@ -56,7 +56,7 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
   const PANEL_BG = "#161616";
   const BORDER = "#2a2a2a";
   const MUTED = "#9a9a9a";
-  const GOLD = "#e0b84a";
+  const GOLD = "#E7C77A";
 
   const row = (label: string, value: string, opts: { bold?: boolean; color?: string } = {}) => `
     <tr>

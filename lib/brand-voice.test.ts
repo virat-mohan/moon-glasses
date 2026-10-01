@@ -10,13 +10,15 @@ test("the brand guide's own sample copy passes clean", () => {
   const samples = [
     ...BRAND_VOICE.sampleCopy.heroHeadlines,
     BRAND_VOICE.sampleCopy.heroSubline,
-    BRAND_VOICE.sampleCopy.emptyCart,
     BRAND_VOICE.sampleCopy.footer,
-    BRAND_VOICE.sampleCopy.newsletter,
     "Three of us, one shared habit: we find a pair, wear it to death, then hunt the next. Friends kept asking where ours were from.",
     "Wore them all summer, could not keep them to ourselves. We bought it to wear and then people asked to buy it off us.",
   ];
-  for (const s of samples) for (const kind of ["site", "social", "email", "whatsapp", "ad"] as const) assert.deepEqual(checkVoice(s, kind), [], `${kind}: ${s}`);
+  for (const s of samples) {
+    for (const kind of ["site", "whatsapp", "ad"] as const) assert.deepEqual(checkVoice(s, kind), [], `${kind}: ${s}`);
+    assert.deepEqual(checkVoice(`${s}\n\n#MoonGlasses #LightTintsGoodVibe`, "social"), [], `social: ${s}`);
+    assert.deepEqual(checkVoice(`${s}\n\n${BRAND_VOICE.emailSignOff}`, "email"), [], `email: ${s}`);
+  }
 });
 
 test("anti-keywords warn (never block)", () => {
@@ -58,15 +60,14 @@ test("supplier names that are everyday words or people's names don't block witho
   assert.equal(hasBlock(checkVoice("a monk-quiet morning with blunt edges", "social")), false);
 });
 
-test("the credit line is allowed; Ted Smith on its own warns", () => {
+test("the credit line is allowed; Ted Smith on its own blocks (Virat, 2 Oct 2026)", () => {
   assert.deepEqual(rules("Moonglasses × Ted Smith", "site"), []);
   assert.deepEqual(rules("MOON GLASSES x Ted Smith", "site"), []);
-  assert.ok(rules("Made by Ted Smith", "site").includes("warn:supplier-name"));
-  assert.equal(hasBlock(checkVoice("Made by Ted Smith", "site")), false);
+  assert.ok(rules("Made by Ted Smith", "site").includes("block:supplier-name"));
 });
 
 test("own model names pass", () => {
-  for (const n of BRAND_VOICE.ownModelNames) assert.deepEqual(rules(`The ${n} in pale pink. Few not many.`, "social"), [], n);
+  for (const n of BRAND_VOICE.ownModelNames) assert.deepEqual(rules(`The ${n} in pale pink. Few not many.`, "site"), [], n);
 });
 
 test("stale facts warn: paused ship-first feature and off-tier prices", () => {
@@ -105,7 +106,41 @@ test("brandVoicePrompt is built from the module", () => {
     assert.ok(p.includes(s), s);
 });
 
-test("open questions are listed, and unknown fields stay empty", () => {
+test("only the not-yet items stay open; answered fields are locked", () => {
   assert.ok(OPEN_QUESTIONS.length > 0);
-  assert.equal(BRAND_VOICE.fonts.editorialItalic, undefined);
+  assert.ok(OPEN_QUESTIONS.every((q) => /none yet|not live yet/i.test(q)));
+  assert.equal(BRAND_VOICE.fonts.editorialItalic, "Bodoni Moda");
+});
+
+test("Virat's answers, 2 Oct 2026", () => {
+  // Name: Moonglasses in running copy; #MoonGlasses is fine.
+  assert.ok(rules("Welcome to MOON GLASSES.").includes("warn:brand-name"));
+  assert.ok(rules("Welcome to Moon Glasses.").includes("warn:brand-name"));
+  assert.ok(!rules("Welcome to Moonglasses. #MoonGlasses").includes("warn:brand-name"));
+  // Stale taglines.
+  for (const t of ["See A Brighter You", "Light Tints Big Mood", "Light tints, big vibe"]) assert.ok(rules(t).includes("warn:stale-tagline"), t);
+  assert.ok(!rules(BRAND_VOICE.tagline).includes("warn:stale-tagline"));
+  // Weekly mix: block for ai/social/email, warn elsewhere.
+  for (const kind of ["ai", "social", "email"] as const) assert.ok(hasBlock(checkVoice("A new mix every Friday.", kind)), kind);
+  assert.ok(rules("Weekly mix drops soon", "site").includes("warn:weekly-mix-not-live"));
+  assert.equal(hasBlock(checkVoice("A new mix every Friday.", "site")), false);
+  // Hashtags and caption length.
+  assert.ok(rules("Somewhere the night looks better.", "social").includes("warn:missing-hashtag"));
+  assert.ok(!rules("Somewhere the night looks better. #MoonGlasses", "social").includes("warn:missing-hashtag"));
+  const tags = " #MoonGlasses #LightTintsGoodVibe";
+  assert.ok(rules("a".repeat(301) + tags, "social").includes("warn:caption-length"));
+  assert.ok(!rules("Somewhere the night looks better." + tags, "social").includes("warn:caption-length"));
+  assert.ok(checkVoice("b".repeat(140) + tags, "social", { format: "reel" }).some((f) => f.rule === "caption-length"));
+  assert.ok(!checkVoice("x".repeat(400), "social", { format: "story" }).some((f) => f.rule === "caption-length"));
+  // Email sign-off.
+  assert.ok(rules("Your order is on its way.", "email").includes("warn:missing-sign-off"));
+  assert.ok(!rules(`Your order is on its way.\n\n${BRAND_VOICE.emailSignOff}`, "email").includes("warn:missing-sign-off"));
+  // Ad button, hero CTA, founders, prompt.
+  assert.equal(BRAND_VOICE.adCtaDefault, "LEARN_MORE");
+  assert.deepEqual(rules(BRAND_VOICE.heroCta, "site"), []);
+  assert.ok(rules("Shop the collection", "site").includes("warn:push-imperative"));
+  const p = brandVoicePrompt("social");
+  for (const s of ["Moonglasses", "Light tints, good vibe", "#MoonGlasses", "#LightTintsGoodVibe", "two founders", "Bodoni Moda", "300"]) assert.ok(p.includes(s), s);
+  assert.ok(brandVoicePrompt("email").includes("— Moonglasses"));
+  assert.ok(brandVoicePrompt("ad").includes("LEARN_MORE"));
 });

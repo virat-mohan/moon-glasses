@@ -1350,7 +1350,7 @@ export default function CheckoutPage() {
                           className="mt-0.5 shrink-0"
                         />
                         <span>
-                          I agree to post about MOON GLASSES on Instagram within{" "}
+                          I agree to post about Moonglasses on Instagram within{" "}
                           <strong>12 hours of delivery</strong> (delivery confirmed via our courier). If I
                           don&apos;t, I understand I&apos;ll be sent a payment link and charged the full
                           price of this order. This is a binding condition of shipping on trust ahead of

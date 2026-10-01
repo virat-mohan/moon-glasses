@@ -11,17 +11,17 @@ export default function AboutPage() {
             Two Founders and Only The Pairs We Would Actually Wear
           </p>
           <h1 className="mt-3 font-display text-heading-xl uppercase leading-[0.95] text-ink md:text-display-m">
-            See A Brighter You.
+            Light tints, good vibe.
           </h1>
 
           <div className="mt-8 space-y-6 text-body text-ink">
             <p>
-              We started Moon Glasses because we like light tints, that&rsquo;s our vibe and if
+              We started Moonglasses because we like light tints, that&rsquo;s our vibe and if
               you&rsquo;re here we believe it&rsquo;s yours too.
             </p>
             <p>The idea is simple, fewer choices, the kinds you try and keep reaching for.</p>
             <p>
-              There are two of us behind Moon Glasses, and we keep the edit small for a reason.
+              There are two of us behind Moonglasses, and we keep the edit small for a reason.
             </p>
             <p>No big fashion speech. Just good-looking glasses with an easy mood.</p>
             <p>If it made the cut, it&rsquo;s here. Just like you did.</p>
@@ -36,7 +36,7 @@ export default function AboutPage() {
           <div className="relative aspect-[4/5] w-full overflow-hidden bg-surface-alt">
             <Image
               src="/images/team/anun-dhawan.png"
-              alt="Anun Dhawan, Founder of MOON GLASSES"
+              alt="Anun Dhawan, Founder of Moonglasses"
               fill
               sizes="(min-width: 768px) 50vw, 100vw"
               className="object-cover object-left"
@@ -52,7 +52,7 @@ export default function AboutPage() {
 
             <div className="mt-8 space-y-6 text-body text-ink">
               <p>
-                MOON GLASSES exists because of three things I love — music, people and the
+                Moonglasses exists because of three things I love — music, people and the
                 outdoors.
               </p>
               <p>
@@ -86,7 +86,7 @@ export default function AboutPage() {
           <div className="relative aspect-[4/5] w-full max-w-[420px] overflow-hidden bg-surface-alt">
             <Image
               src="/images/team/virat-mohan.png"
-              alt="Virat Mohan, Co-Founder & AI Enabler of MOON GLASSES"
+              alt="Virat Mohan, Co-Founder & AI Enabler of Moonglasses"
               fill
               sizes="420px"
               className="object-cover"

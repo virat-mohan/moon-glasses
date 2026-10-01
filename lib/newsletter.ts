@@ -96,7 +96,7 @@ function renderDropAnnouncementHtml(
   ctaUrl: string,
   brand: Awaited<ReturnType<typeof getBrandProfile>>
 ) {
-  const GOLD = "#e0b84a";
+  const GOLD = "#E7C77A";
   const BORDER = "#2a2a2a";
   return `
     <div style="max-width:560px;margin:0 auto;background-color:#101010;font-family:Helvetica,Arial,sans-serif;color:#f0eee4;">

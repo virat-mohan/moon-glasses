@@ -30,7 +30,7 @@ export function Hero() {
             href="#shop"
             className="py-4 font-sans text-body-s uppercase tracking-[0.15em] text-white transition-colors duration-200 hover:text-[var(--moon-gold)]"
           >
-            Shop The Collection
+            See the edit
           </a>
         </div>
       </div>
