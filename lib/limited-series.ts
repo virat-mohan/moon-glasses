@@ -12,8 +12,8 @@ import type { Chapter } from "@/types/chapter";
  * exist). The page at /limited-series renders an empty-state until then.
  */
 export const LIMITED_SERIES_PRICING = {
-  Plastic: 1749,
-  Metal: 2149,
+  Plastic: 1999,
+  Metal: 2499,
 } as const;
 
 export const limitedSeries: Chapter[] = [];

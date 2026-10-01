@@ -23,8 +23,8 @@ export default async function LimitedSeriesPage() {
         <p className="text-caption uppercase tracking-[0.15em] text-paint-orange">Once its gone, its gone</p>
         <h1 className="mt-2 font-display text-display-m uppercase text-ink">Limited Series.</h1>
         <p className="mt-3 max-w-lg font-sans text-body-s text-secondary-text">
-          A separate line from the core collection — deliberately short runs, never restocked. ₹1,749
-          acetate, ₹2,149 metal. When a colourway sells out here, it doesn&apos;t come back.
+          A separate line from the core collection — deliberately short runs, never restocked. ₹1,999
+          acetate, ₹2,499 metal. When a colourway sells out here, it doesn&apos;t come back.
         </p>
 
         {limitedSeries.length === 0 ? (

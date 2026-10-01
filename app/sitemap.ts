@@ -4,7 +4,8 @@ import { getBrandProfile } from "@/lib/brand";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const brand = await getBrandProfile();
-  const base = brand.siteUrl.replace(/\/$/, "");
+  // Canonical host is www (the bare domain 301s there).
+  const base = brand.siteUrl.replace(/\/$/, "").replace(/^https:\/\/(?!www\.)/, "https://www.");
   const now = new Date();
 
   const staticPages = [

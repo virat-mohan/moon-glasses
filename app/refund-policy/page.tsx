@@ -1,6 +1,6 @@
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 
-export const metadata = { title: "Refund & Cancellation Policy — Moonglasses" };
+export const metadata = { title: "Refund & Cancellation Policy" };
 
 export default function RefundPolicyPage() {
   return (

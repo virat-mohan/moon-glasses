@@ -13,7 +13,8 @@ export async function GET() {
   }
   // "We ship first" is switched off: no spots badge anywhere.
   if (!(await isGiftFirstEnabled())) {
-    return NextResponse.json({ error: "Not available" }, { status: 403 });
+    // Not an error: the badge just stays hidden (cap 0).
+    return NextResponse.json({ cap: 0, remaining: 0 });
   }
   const [{ giftFirstDailyCap }, usedToday] = await Promise.all([getPostBarterConfig(), giftFirstCountToday()]);
   const remaining = Math.max(0, giftFirstDailyCap - usedToday);

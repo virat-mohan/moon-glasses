@@ -141,7 +141,7 @@ async function templateDefs(): Promise<TemplateDef[]> {
       settingKey: "MSG91_REFERRAL_INVITE_TEMPLATE_ID",
       name: "friend_invite",
       category: "MARKETING",
-      body: `Hi {{1}}, {{2}} thinks you'd love ${name}. Here's their invite link: {{3}} Light tints, good vibes.`,
+      body: `Hi {{1}}, {{2}} thinks you'd love ${name}. Here's their invite link: {{3}} Light tints, good vibe.`,
       example: ["Riya", "Anun", `${site}/?ref=ANUN`],
     },
     {

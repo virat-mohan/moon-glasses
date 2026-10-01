@@ -1,6 +1,6 @@
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 
-export const metadata = { title: "Terms & Conditions — Moonglasses" };
+export const metadata = { title: "Terms & Conditions" };
 
 export default function TermsPage() {
   return (

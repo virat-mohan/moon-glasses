@@ -792,14 +792,14 @@ export default function CheckoutPage() {
         <div className="relative aspect-square w-36 flex-none overflow-hidden bg-[var(--moon-black)] sm:w-44">
           <Image
             src="/images/brand/case-and-pouch.png"
-            alt="MOON Glasses branded case with microfiber cleaning cloth"
+            alt="Moonglasses branded case with microfiber cleaning cloth"
             fill
             sizes="176px"
             className="object-contain p-2"
           />
         </div>
         <p className="flex-1 text-caption text-secondary-text">
-          Every pair ships in a branded MOON Glasses case with a microfiber cleaning cloth — included, no
+          Every pair ships in a branded Moonglasses case with a microfiber cleaning cloth — included, no
           extra charge.
         </p>
       </div>

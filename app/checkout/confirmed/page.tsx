@@ -304,7 +304,7 @@ function OrderConfirmedContent() {
               {upiStatus === "slow" && (
               <a
                 href={`https://wa.me/919318311657?text=${encodeURIComponent(
-                  `Hi! I've just paid ₹${upiPayAmount} for my MOON Glasses order${
+                  `Hi! I've just paid ₹${upiPayAmount} for my Moonglasses order${
                     orderId ? ` (Order #${orderId.slice(0, 8).toUpperCase()})` : ""
                   }.${
                     items.length > 0

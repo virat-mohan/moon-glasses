@@ -8,7 +8,7 @@ const MAX_ANGLES = 3;
 
 const DEFAULT_PRICES: Record<string, { Plastic: number; Metal: number }> = {
   core: { Plastic: 1499, Metal: 1999 },
-  limited: { Plastic: 1749, Metal: 2149 },
+  limited: { Plastic: 1999, Metal: 2499 },
 };
 
 export default function AddChapterPage() {

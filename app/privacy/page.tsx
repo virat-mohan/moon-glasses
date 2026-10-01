@@ -1,6 +1,6 @@
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 
-export const metadata = { title: "Privacy Policy — Moonglasses" };
+export const metadata = { title: "Privacy Policy" };
 
 export default function PrivacyPolicyPage() {
   return (

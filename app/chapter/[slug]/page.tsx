@@ -254,14 +254,14 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
               <div className="relative mt-5 aspect-[8/3] w-full overflow-hidden bg-[var(--moon-black)]">
                 <Image
                   src="/images/brand/case-and-pouch.png"
-                  alt="MOON Glasses branded case with microfiber cleaning cloth, included with every pair"
+                  alt="Moonglasses branded case with microfiber cleaning cloth, included with every pair"
                   fill
                   sizes="(min-width: 768px) 50vw, 100vw"
                   className="object-contain p-2"
                 />
               </div>
               <p className="mt-2 font-sans text-caption text-secondary-text">
-                Every pair ships in a branded MOON Glasses case with a microfiber cleaning cloth.
+                Every pair ships in a branded Moonglasses case with a microfiber cleaning cloth.
               </p>
             </div>
           </div>

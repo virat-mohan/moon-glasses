@@ -3,7 +3,7 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { getBrandProfile } from "@/lib/brand";
 import { getPwapRules } from "@/lib/pwap-rules";
 
-export const metadata = { title: "Pay With A Post™ Terms — Moonglasses" };
+export const metadata = { title: "Pay With A Post™ Terms" };
 // Built from the live rules (Admin › Pay With A Post › Rules), so a rule
 // change shows here at once.
 export const dynamic = "force-dynamic";
