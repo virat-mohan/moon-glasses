@@ -69,6 +69,11 @@ function OrderConfirmedContent() {
     : 0;
   const [upiQr, setUpiQr] = useState<string | null>(null);
   const [upiStatus, setUpiStatus] = useState<"waiting" | "paid" | "slow">("waiting");
+  const [device, setDevice] = useState<"desktop" | "android" | "ios">("desktop");
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    setDevice(/android/i.test(ua) ? "android" : /iphone|ipad|ipod/i.test(ua) ? "ios" : "desktop");
+  }, []);
   const [order, setOrder] = useState<OrderSummary | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [referralCode, setReferralCode] = useState<string | null>(null);
@@ -192,7 +197,9 @@ function OrderConfirmedContent() {
           {upiPaid
             ? "Thank You For Your Order."
             : upiPending
-            ? "Scan To Pay."
+            ? device === "desktop"
+              ? "Scan To Pay."
+              : "Pay In Your UPI App."
             : barter
               ? barter.tier === "gift_first"
                 ? "It's Shipping."
@@ -205,7 +212,9 @@ function OrderConfirmedContent() {
           {upiPaid
             ? "Payment received and your order is confirmed. You'll have an email with your invoice and a WhatsApp confirmation from us, and your pair is now being packed. We'll message you again the moment it ships."
             : upiPending
-            ? "Scan the QR below with any UPI app, or tap the button on your phone. This page confirms automatically the moment your payment lands."
+            ? device === "desktop"
+              ? "Scan the QR below with any UPI app on your phone. This page confirms automatically the moment your payment lands."
+              : "Tap your UPI app below. The amount is filled in for you. Pay, then come back here: this page confirms automatically."
             : barter
               ? barter.tier === "gift_first"
                 ? "Your order is on its way — no need to wait for anything. Once it arrives, wear it, post a photo, and add us as a collaborator."
@@ -217,17 +226,6 @@ function OrderConfirmedContent() {
 
         {upiPending && !upiPaid && (
           <div className="mt-8 flex flex-col items-center gap-3 border border-divider p-6 text-center">
-            {upiQr ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={upiQr} alt="Scan to pay via UPI" width={220} height={220} className="border border-ink/20 bg-white p-2" />
-            ) : (
-              upiPending.qrImageUrl && (
-                <Image src={upiPending.qrImageUrl} alt="Scan to pay via UPI" width={220} height={264} className="border border-ink/20" />
-              )
-            )}
-            {upiPending.upiId && (
-              <p className="text-caption text-secondary-text">UPI ID: {upiPending.upiId}</p>
-            )}
             <p className="font-display text-heading-s text-ink">
               ₹{upiPayAmount.toLocaleString("en-IN", { minimumFractionDigits: upiPayAmount % 1 ? 2 : 0, maximumFractionDigits: 2 })}
             </p>
@@ -236,13 +234,48 @@ function OrderConfirmedContent() {
                 Please pay this exact amount. The paise are how we match your payment to your order instantly.
               </p>
             )}
-            {upiPending.upiLink && (
-              <a
-                href={upiPending.upiLink}
-                className="mt-2 inline-block border border-ink bg-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-cream hover:bg-cream hover:text-ink"
-              >
-                Open In UPI App
-              </a>
+
+            {device !== "desktop" && upiPending.upiLink && (
+              <div className="mt-2 w-full max-w-[360px]">
+                <p className="mb-2 text-caption uppercase tracking-[0.08em] text-secondary-text">Pay with your UPI app</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {upiAppLinks(upiPending.upiLink, device).map((app) => (
+                    <a
+                      key={app.name}
+                      href={app.href}
+                      className={`border px-3 py-3 font-sans text-caption font-bold uppercase tracking-[0.05em] ${
+                        app.primary ? "border-ink bg-ink text-cream" : "border-ink/40 text-ink"
+                      }`}
+                    >
+                      {app.name}
+                    </a>
+                  ))}
+                </div>
+                <p className="mt-2 text-micro text-secondary-text">
+                  Opens your app with the amount filled in. Pay, then come back here.
+                </p>
+              </div>
+            )}
+
+            {device === "desktop" ? (
+              <UpiQrImage upiQr={upiQr} fallback={upiPending.qrImageUrl} />
+            ) : (
+              <details className="w-full max-w-[360px] text-center">
+                <summary className="cursor-pointer text-caption text-secondary-text underline">
+                  Paying from another phone? Show QR code
+                </summary>
+                <div className="mt-3 flex justify-center">
+                  <UpiQrImage upiQr={upiQr} fallback={upiPending.qrImageUrl} />
+                </div>
+              </details>
+            )}
+
+            {upiPending.upiId && (
+              <div className="flex flex-wrap items-center justify-center gap-2 text-caption text-secondary-text">
+                <span>UPI ID: {upiPending.upiId}</span>
+                <CopyButton value={upiPending.upiId} label="Copy UPI ID" />
+                <CopyButton value={upiPayAmount.toFixed(2)} label="Copy amount" />
+              </div>
             )}
 
             <div className="mt-6 w-full border-t border-divider pt-5">
@@ -444,5 +477,51 @@ function OrderConfirmedContent() {
       <NewsletterBlock />
       <FooterEditorial />
     </>
+  );
+}
+
+/**
+ * UPI app buttons for paying on the same phone (a QR can't be scanned from
+ * the device showing it). Same pay link, re-targeted at each app: Android
+ * uses intent URLs (falls back to the UPI chooser), iOS uses each app's
+ * scheme. "Other UPI app" is the generic upi:// link.
+ */
+function upiAppLinks(upiLink: string, device: "android" | "ios" | "desktop") {
+  const query = upiLink.split("?")[1] ?? "";
+  if (device === "android") {
+    const intent = (pkg: string) => `intent://pay?${query}#Intent;scheme=upi;package=${pkg};end`;
+    return [
+      { name: "Google Pay", href: intent("com.google.android.apps.nbu.paisa.user"), primary: true },
+      { name: "PhonePe", href: intent("com.phonepe.app") },
+      { name: "Paytm", href: intent("net.one97.paytm") },
+      { name: "Other UPI app", href: upiLink },
+    ];
+  }
+  return [
+    { name: "Google Pay", href: `gpay://upi/pay?${query}`, primary: true },
+    { name: "PhonePe", href: `phonepe://pay?${query}` },
+    { name: "Paytm", href: `paytmmp://pay?${query}` },
+    { name: "Other UPI app", href: upiLink },
+  ];
+}
+
+function UpiQrImage({ upiQr, fallback }: { upiQr: string | null; fallback: string }) {
+  if (upiQr) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={upiQr} alt="Scan to pay via UPI" width={220} height={220} className="border border-ink/20 bg-white p-2" />;
+  }
+  return fallback ? <Image src={fallback} alt="Scan to pay via UPI" width={220} height={264} className="border border-ink/20" /> : null;
+}
+
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => navigator.clipboard?.writeText(value).then(() => setCopied(true)).catch(() => {})}
+      className="border border-divider px-2 py-0.5 text-micro uppercase tracking-[0.05em] text-ink"
+    >
+      {copied ? "Copied" : label}
+    </button>
   );
 }
