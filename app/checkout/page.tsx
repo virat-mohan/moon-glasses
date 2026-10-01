@@ -641,6 +641,12 @@ export default function CheckoutPage() {
       return;
     }
 
+    // No silent WhatsApp fallback from the popup: a real method must be picked.
+    if (paymentType === "prepaid" && !razorpay.enabled) {
+      setPayError("Choose a payment method above.");
+      return;
+    }
+
     if (paymentType === "post_barter") {
       await handlePostBarterSubmit();
       return;
@@ -1156,7 +1162,7 @@ export default function CheckoutPage() {
               <div className="mt-4 border border-ink/30 p-4">
                 <button
                   type="button"
-                  onClick={() => setPaymentType(paymentType === "upi_qr" ? "prepaid" : "upi_qr")}
+                  onClick={() => setPaymentType("upi_qr")}
                   className={`block w-full border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
                     paymentType === "upi_qr" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
                   }`}
@@ -1181,7 +1187,7 @@ export default function CheckoutPage() {
                 <GiftFirstUrgencyBadge className="mb-2" />
                 <button
                   type="button"
-                  onClick={() => setPaymentType(paymentType === "post_barter" ? "prepaid" : "post_barter")}
+                  onClick={() => setPaymentType("post_barter")}
                   className={`block w-full border px-4 py-2.5 text-left font-sans text-body-s transition-colors duration-200 ${
                     paymentType === "post_barter" ? "border-ink bg-ink text-cream" : "border-ink/30 text-ink"
                   }`}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
@@ -30,31 +31,36 @@ type OrderSummary = {
 type OrderItem = { chapter_name: string; unit_price: number; quantity: number };
 
 export default function OrderConfirmedPage() {
-  const [orderId] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("order")
+  // useSearchParams (not window.location): after a client-side redirect from
+  // checkout, this page can render before the browser URL updates, so
+  // window.location still pointed at /checkout and the UPI QR never showed.
+  return (
+    <Suspense fallback={null}>
+      <OrderConfirmedContent />
+    </Suspense>
   );
-  const [paid] = useState(() =>
-    typeof window === "undefined" ? false : new URLSearchParams(window.location.search).get("paid") === "1"
-  );
-  const [barter] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const params = new URLSearchParams(window.location.search);
+}
+
+function OrderConfirmedContent() {
+  const params = useSearchParams();
+  const orderId = params.get("order");
+  const paid = params.get("paid") === "1";
+  const barter = useMemo(() => {
     const code = params.get("code");
     const required = params.get("required");
     const tier = params.get("tier") === "gift_first" ? "gift_first" : "sell_first";
     return code ? { code, required: required ? Number(required) : 3, tier: tier as "gift_first" | "sell_first" } : null;
-  });
-  const [upiPending] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const params = new URLSearchParams(window.location.search);
+  }, [params]);
+  const upiPending = useMemo(() => {
     if (params.get("upi") !== "1") return null;
+    const qr = params.get("qr");
     return {
       amount: Number(params.get("amount") ?? 0),
       upiId: params.get("upiId") ?? "",
-      qrImageUrl: params.get("qr") ?? "",
+      qrImageUrl: qr && qr !== "null" && qr !== "undefined" ? qr : "",
       upiLink: params.get("link") ?? "",
     };
-  });
+  }, [params]);
   // UPI: the QR is generated from this order's pay link (exact amount, down to
   // the paise tag the bank-SMS matcher relies on), and the page watches the
   // order until the forwarded credit SMS confirms it.
@@ -184,7 +190,7 @@ export default function OrderConfirmedPage() {
         <CheckoutSteps current="confirmed" />
         <h1 className="mt-6 font-display text-heading-xl uppercase text-ink md:text-display-m">
           {upiPaid
-            ? "Thank You For Your Purchase."
+            ? "Thank You For Your Order."
             : upiPending
             ? "Scan To Pay."
             : barter
@@ -197,7 +203,7 @@ export default function OrderConfirmedPage() {
         </h1>
         <p className="mt-4 text-body text-secondary-text">
           {upiPaid
-            ? "Payment received. We've emailed your invoice and sent a confirmation on WhatsApp, and your order is on its way to being packed."
+            ? "Payment received and your order is confirmed. You'll have an email with your invoice and a WhatsApp confirmation from us, and your pair is now being packed. We'll message you again the moment it ships."
             : upiPending
             ? "Scan the QR below with any UPI app, or tap the button on your phone. This page confirms automatically the moment your payment lands."
             : barter
@@ -242,9 +248,9 @@ export default function OrderConfirmedPage() {
             <div className="mt-6 w-full border-t border-divider pt-5">
               {upiStatus === "waiting" ? (
                 <>
-                  <p className="text-body-s font-bold text-ink">Paid? Hang tight.</p>
+                  <p className="text-body-s font-bold text-ink">Paid? Hang tight, this takes up to a minute or two.</p>
                   <p className="mt-1.5 max-w-[380px] text-caption text-secondary-text">
-                    It can take a minute or two for your bank to confirm. Keep this page open — it
+                    We confirm your payment with the bank automatically. Keep this page open — it
                     updates on its own the moment your payment lands, and we&apos;ll send your
                     confirmation on WhatsApp and email.
                   </p>
