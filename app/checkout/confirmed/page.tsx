@@ -241,9 +241,17 @@ export default function OrderConfirmedPage() {
 
             <div className="mt-6 w-full border-t border-divider pt-5">
               {upiStatus === "waiting" ? (
-                <p className="text-caption uppercase tracking-[0.08em] text-secondary-text">
-                  Waiting for your payment · this page updates on its own
-                </p>
+                <>
+                  <p className="text-body-s font-bold text-ink">Paid? Hang tight.</p>
+                  <p className="mt-1.5 max-w-[380px] text-caption text-secondary-text">
+                    It can take a minute or two for your bank to confirm. Keep this page open — it
+                    updates on its own the moment your payment lands, and we&apos;ll send your
+                    confirmation on WhatsApp and email.
+                  </p>
+                  <p className="mt-3 animate-pulse text-micro uppercase tracking-[0.1em] text-secondary-text">
+                    Checking for your payment…
+                  </p>
+                </>
               ) : (
                 <>
                   <p className="text-body-s font-bold text-ink">Paid but still waiting?</p>
