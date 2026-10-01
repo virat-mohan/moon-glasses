@@ -114,6 +114,19 @@ export async function sendInvoiceEmail(order: InvoiceOrder, items: InvoiceItem[]
 }
 
 export const ORDER_NOTIFICATION_RECIPIENTS = ["virat@moon-glasses.store", "anun@moon-glasses.store"];
+/** Customer issues (refunds, failed payments, complaints, delivery problems, returns) also go to Virat (2 Oct 2026). */
+export const CUSTOMER_ISSUE_RECIPIENTS = [...ORDER_NOTIFICATION_RECIPIENTS, "founder@viratmohan.com"];
+
+/** Internal heads-up to the team about a customer issue. */
+export async function sendCustomerIssueAlert(subject: string, lines: string[], orderId?: string) {
+  const html = `
+    <div style="max-width:480px;margin:0 auto;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;">
+      ${lines.map((l, i) => `<p style="font-size:15px;margin:6px 0;">${i === 0 ? `<strong>${l}</strong>` : l}</p>`).join("")}
+      <p style="font-size:13px;"><a href="https://www.moon-glasses.store/admin/orders">Open orders in admin</a>${orderId ? ` · order #${orderId.slice(0, 8).toUpperCase()}` : ""}</p>
+    </div>
+  `;
+  await Promise.all(CUSTOMER_ISSUE_RECIPIENTS.map((to) => sendEmail(to, subject, html, undefined, { internal: true })));
+}
 
 /** Internal heads-up the moment an order is confirmed — same invoice, sent to the team instead of the customer. */
 export async function sendOrderNotificationEmail(order: InvoiceOrder, items: InvoiceItem[]) {
@@ -163,7 +176,7 @@ export async function sendStockShortRefundAlert(order: {
     </div>
   `;
   await Promise.all(
-    ORDER_NOTIFICATION_RECIPIENTS.map((to) => sendEmail(to, subject, html, undefined, { internal: true }))
+    CUSTOMER_ISSUE_RECIPIENTS.map((to) => sendEmail(to, subject, html, undefined, { internal: true }))
   );
 }
 
@@ -195,7 +208,7 @@ export async function sendContactFormEmail(name: string, email: string, message:
     </div>
   `;
   const results = await Promise.all(
-    ORDER_NOTIFICATION_RECIPIENTS.map((to) => sendEmail(to, `Contact form — ${name}`, html))
+    CUSTOMER_ISSUE_RECIPIENTS.map((to) => sendEmail(to, `Contact form — ${name}`, html, undefined, { internal: true }))
   );
   return results.some(Boolean);
 }
@@ -450,6 +463,8 @@ export async function sendWinbackEmail(toEmail: string, name: string | null, mil
 
 /** Sent when a shipment enters an RTO-in-transit status — informational, fires alongside the WhatsApp nudge since it needs no template approval. */
 export async function sendRtoInitiatedEmail(toEmail: string, name: string | null, orderId: string) {
+  void sendCustomerIssueAlert(`Delivery failed: returning to origin (RTO)`, [`Courier could not deliver order #${orderId.slice(0, 8).toUpperCase()}`, `Customer: ${name ?? "unknown"} (${toEmail})`], orderId).catch(() => {});
+
   const brand = await getBrandProfile();
   const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
@@ -472,6 +487,7 @@ export async function sendRtoInitiatedEmail(toEmail: string, name: string | null
 
 /** Sent once an RTO'd item is physically back and the refund has actually gone through. */
 export async function sendRtoRefundedEmail(toEmail: string, name: string | null, orderId: string, refundRupees: number) {
+  void sendCustomerIssueAlert(`Refund issued after failed delivery (RTO)`, [`Refund issued after failed delivery (RTO) for order #${orderId.slice(0, 8).toUpperCase()}`, `Customer: ${name ?? "unknown"} (${toEmail})`], orderId).catch(() => {});
   const brand = await getBrandProfile();
   const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 
@@ -536,6 +552,7 @@ export async function sendReturnDeniedEmail(toEmail: string, name: string | null
 
 /** Sent once a customer-initiated return is physically back and refunded — same trigger point as the RTO-refunded email, different copy. */
 export async function sendReturnRefundedEmail(toEmail: string, name: string | null, orderId: string, refundRupees: number) {
+  void sendCustomerIssueAlert(`Return refunded`, [`Return refunded for order #${orderId.slice(0, 8).toUpperCase()}`, `Customer: ${name ?? "unknown"} (${toEmail})`], orderId).catch(() => {});
   const brand = await getBrandProfile();
   const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
 

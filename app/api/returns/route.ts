@@ -1,3 +1,4 @@
+import { sendCustomerIssueAlert } from "@/lib/email";
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { isValidReturnReason, isWithinReturnWindow } from "@/lib/returns";
@@ -60,6 +61,8 @@ export async function POST(request: Request) {
     });
     if (error) throw error;
 
+    // Customer issue: tell the team (incl. founder@) a return was requested.
+    await sendCustomerIssueAlert("New return request", [`Return requested for order #${String(orderId).slice(0, 8).toUpperCase()}`, `Reason: ${reason}`], String(orderId)).catch(() => {});
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Failed to save return request", orderId, err);
