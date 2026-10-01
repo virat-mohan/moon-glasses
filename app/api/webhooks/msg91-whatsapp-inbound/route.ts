@@ -37,12 +37,20 @@ export async function POST(request: Request) {
   // Cloud-API-style `messages` array alongside a `contacts` array for the
   // sender's name — unwrap that first if present, otherwise treat the body
   // itself as the single message.
+  // MSG91 sends `messages` as a JSON *string*; parse it if so.
+  if (typeof body.messages === "string") {
+    try {
+      body.messages = JSON.parse(body.messages);
+    } catch {
+      // leave as-is
+    }
+  }
   const msg = Array.isArray(body.messages) ? body.messages[0] : body;
   const contact = Array.isArray(body.contacts) ? body.contacts[0] : undefined;
 
-  const phone = msg?.from ?? msg?.sender ?? msg?.mobile ?? body.from ?? body.mobile ?? null;
+  const phone = msg?.from ?? msg?.sender ?? msg?.mobile ?? body.customerNumber ?? body.from ?? body.mobile ?? null;
   const text = msg?.text?.body ?? msg?.body ?? msg?.message ?? body.text ?? null;
-  const name = contact?.profile?.name ?? msg?.name ?? body.name ?? null;
+  const name = contact?.profile?.name ?? msg?.name ?? body.customerName ?? body.name ?? null;
   const mediaUrl = msg?.image?.link ?? msg?.media?.url ?? body.media_url ?? null;
   const providerMessageId = msg?.id ?? msg?.message_id ?? body.message_id ?? null;
 
