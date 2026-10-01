@@ -24,11 +24,11 @@ async function asDataUri(url: string): Promise<string | null> {
  * it can go out as a WhatsApp image the shopper forwards straight to Instagram.
  * Photo is picked per order from the brand's model-photo pool.
  */
-export async function renderPwapShareCardPng(orderId: string, couponCode: string): Promise<ArrayBuffer | null> {
+export async function renderPwapShareCardPng(orderId: string, couponCode: string, variant = 0): Promise<ArrayBuffer | null> {
   const brand = await getBrandProfile();
   const site = brand.siteUrl.replace(/\/$/, "").replace(/^https:\/\/(?!www\.)/, "https://www.");
   const domain = site.replace(/^https?:\/\/(www\.)?/, "").toUpperCase();
-  const pick = await pickShareCardForOrder(orderId);
+  const pick = await pickShareCardForOrder(orderId, variant);
   if (!pick) return null;
 
   const [hero, logo] = await Promise.all([
@@ -118,11 +118,11 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
 }
 
 /** Renders the card and uploads it to public storage, returning its URL. */
-export async function generateAndUploadPwapShareCard(orderId: string, couponCode: string): Promise<string | null> {
-  const png = await renderPwapShareCardPng(orderId, couponCode);
+export async function generateAndUploadPwapShareCard(orderId: string, couponCode: string, variant = 0): Promise<string | null> {
+  const png = await renderPwapShareCardPng(orderId, couponCode, variant);
   if (!png) return null;
   const supabase = getSupabaseServerClient();
-  const path = `pwap-share/${orderId}.png`;
+  const path = variant ? `pwap-share/${orderId}-${variant}.png` : `pwap-share/${orderId}.png`;
   const { error } = await supabase.storage.from("ad-creatives").upload(path, png, { contentType: "image/png", upsert: true });
   if (error) throw error;
   return supabase.storage.from("ad-creatives").getPublicUrl(path).data.publicUrl;

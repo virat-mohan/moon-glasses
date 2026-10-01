@@ -4,21 +4,25 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * Pay With A Post share, fast: the post image is the server-rendered card
- * (made when the order was placed), so it shows instantly. One gold button:
- * caption copied → phone share sheet with the image (Instagram is one tap) →
- * fallback saves the image (and on a phone, opens Instagram).
+ * (made when the order was placed), so it shows instantly. Gold button →
+ * phone share sheet with the image (Instagram is one tap); the caption is on
+ * the clipboard to paste. After every share the next look loads, so the same
+ * customer never posts the same photo twice. WhatsApp gets image + caption.
  */
-export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: string }) {
+export function SharePost({ orderId, cardUrl, caption }: { orderId: string; cardUrl: string; caption: string }) {
   const [state, setState] = useState<"idle" | "busy" | "shared" | "saved">("idle");
   const [copied, setCopied] = useState(false);
-  // The image is fetched as soon as the page opens: iOS only opens the share
+  const [url, setUrl] = useState(cardUrl);
+  const variant = useRef(0);
+  // The image is fetched as soon as it's shown: iOS only opens the share
   // sheet if share() runs straight from the tap, with nothing awaited first.
   const fileRef = useRef<File | null>(null);
   useEffect(() => {
-    toJpegFile(cardUrl)
+    fileRef.current = null;
+    toJpegFile(url)
       .then((f) => (fileRef.current = f))
       .catch(() => {});
-  }, [cardUrl]);
+  }, [url]);
 
   async function copyCaption() {
     try {
@@ -27,14 +31,22 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
     } catch {}
   }
 
-  async function share() {
+  function nextLook() {
+    variant.current += 1;
+    fetch(`/api/barter/${orderId}/card?n=${variant.current}`)
+      .then((r) => r.json())
+      .then((d) => d.url && setUrl(d.url))
+      .catch(() => {});
+  }
+
+  async function share(withText: boolean) {
     // Not awaited: the share sheet must open in the same tap.
     navigator.clipboard?.writeText(caption).then(() => setCopied(true), () => {});
     let file = fileRef.current;
     if (!file) {
       setState("busy");
       try {
-        file = fileRef.current = await toJpegFile(cardUrl);
+        file = fileRef.current = await toJpegFile(url);
       } catch {
         setState("idle");
         return;
@@ -42,10 +54,11 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
     }
     if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
       try {
-        // Instagram ignores shared text for feed posts, so the caption goes
-        // via the clipboard.
-        await navigator.share({ files: [file] });
+        // Instagram ignores shared text for feed posts (caption is pasted);
+        // WhatsApp and others take it with the image.
+        await navigator.share(withText ? { files: [file], text: caption } : { files: [file] });
         setState("shared");
+        nextLook();
         return;
       } catch (e) {
         if ((e as Error)?.name === "AbortError") {
@@ -54,41 +67,36 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
         }
       }
     }
-    const url = URL.createObjectURL(file);
+    const objectUrl = URL.createObjectURL(file);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = objectUrl;
     a.download = "moon-glasses-post.jpg";
     a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     setState("saved");
+    nextLook();
   }
 
   return (
     <div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={cardUrl} alt="Your post" className="aspect-[4/5] w-full border border-ink/20 object-cover" />
+      <img src={url} alt="Your post" className="aspect-[4/5] w-full border border-ink/20 object-cover" />
       <button
         type="button"
-        onClick={share}
+        onClick={() => share(false)}
         disabled={state === "busy"}
         className="mt-4 w-full bg-[var(--moon-gold)] py-4 font-sans text-body-s font-bold uppercase tracking-[0.08em] text-black transition hover:brightness-110 disabled:opacity-60"
       >
-        {state === "busy"
-          ? "Opening…"
-          : state === "idle"
-            ? "Share to Instagram"
-            : "Share again"}
+        {state === "busy" ? "Opening…" : state === "idle" ? "Share to Instagram" : "Share again"}
       </button>
-      {state !== "idle" && state !== "busy" && (
-        <a
-          href={`https://wa.me/?text=${encodeURIComponent(caption)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 block w-full border border-[var(--moon-gold)] py-3 text-center font-sans text-caption font-bold uppercase tracking-[0.08em] text-ink"
-        >
-          Send your code on WhatsApp
-        </a>
-      )}
+      <button
+        type="button"
+        onClick={() => share(true)}
+        disabled={state === "busy"}
+        className="mt-2 block w-full border border-[var(--moon-gold)] py-3 text-center font-sans text-caption font-bold uppercase tracking-[0.08em] text-ink disabled:opacity-60"
+      >
+        Share on WhatsApp & more
+      </button>
       <div className="mt-4 border-2 border-[var(--moon-gold)] p-4">
         <p className="font-sans text-body-s font-bold text-ink">
           In Instagram: tap the caption box → <span className="text-[var(--moon-gold)]">Paste</span>

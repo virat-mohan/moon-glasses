@@ -75,9 +75,9 @@ export function pickShareCardProduct(pool: ShareCardProduct[], seed: string): Sh
  * model photo, in a fixed order that alternates styles, and each new order
  * takes the next one (its position among all Pay With A Post orders). So
  * consecutive customers always post a different look, and the brand's tagged
- * posts build up into a lookbook. Same order always gets the same pick.
+ * posts build up into a lookbook. Same order + variant always gets the same pick.
  */
-export async function pickShareCardForOrder(orderId: string): Promise<ShareCardProduct | null> {
+export async function pickShareCardForOrder(orderId: string, variant = 0): Promise<ShareCardProduct | null> {
   const { getCoreCollectionChapters, getLimitedSeriesChapters } = await import("@/lib/chapters-dynamic");
   const { styleRimLens } = await import("@/lib/chapters");
   const live = [...(await getLimitedSeriesChapters()), ...(await getCoreCollectionChapters())].filter((c) => !!c.modelImage);
@@ -100,6 +100,7 @@ export async function pickShareCardForOrder(orderId: string): Promise<ShareCardP
     .select("id", { count: "exact", head: true })
     .eq("is_post_barter", true)
     .lt("created_at", order?.created_at ?? new Date().toISOString());
-  const pick = ordered[(count ?? 0) % ordered.length];
+  // Each extra share of the same order ("variant") moves to the next look.
+  const pick = ordered[((count ?? 0) + variant) % ordered.length];
   return { imageUrl: pick.modelImage!, productName: pick.name };
 }

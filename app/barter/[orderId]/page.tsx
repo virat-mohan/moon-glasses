@@ -70,7 +70,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
 
       {cardUrl && order.barter_coupon_code ? (
         <div className="mt-5">
-          <SharePost cardUrl={cardUrl} caption={caption} />
+          <SharePost orderId={order.id} cardUrl={cardUrl} caption={caption} />
           <OpenOnPhoneQr />
         </div>
       ) : (
