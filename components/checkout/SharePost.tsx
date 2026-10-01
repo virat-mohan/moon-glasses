@@ -10,18 +10,26 @@ import { useState } from "react";
  */
 export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: string }) {
   const [state, setState] = useState<"idle" | "busy" | "shared" | "saved">("idle");
+  const [copied, setCopied] = useState(false);
+
+  async function copyCaption() {
+    try {
+      await navigator.clipboard.writeText(caption);
+      setCopied(true);
+    } catch {}
+  }
 
   async function share() {
     setState("busy");
-    try {
-      await navigator.clipboard.writeText(caption);
-    } catch {}
+    await copyCaption();
     try {
       const blob = await (await fetch(cardUrl)).blob();
       const file = new File([blob], "moon-glasses-post.png", { type: "image/png" });
       if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
         try {
-          await navigator.share({ files: [file] });
+          // Instagram ignores shared text for feed posts, so the caption goes
+          // via the clipboard; text is still passed for apps that use it.
+          await navigator.share({ files: [file], text: caption });
           setState("shared");
           return;
         } catch {}
@@ -59,7 +67,19 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
               ? "Image saved · caption copied"
               : "Share to Instagram"}
       </button>
-      <p className="mt-2 text-center text-caption text-secondary-text">Caption copied: just paste it in Instagram.</p>
+      <div className="mt-4 border-2 border-[var(--moon-gold)] p-4">
+        <p className="font-sans text-body-s font-bold text-ink">
+          In Instagram: tap the caption box → <span className="text-[var(--moon-gold)]">Paste</span>
+        </p>
+        <p className="mt-2 whitespace-pre-line text-caption text-secondary-text">{caption}</p>
+        <button
+          type="button"
+          onClick={copyCaption}
+          className="mt-3 w-full border border-[var(--moon-gold)] py-2.5 font-sans text-caption font-bold uppercase tracking-[0.08em] text-ink"
+        >
+          {copied ? "Caption copied ✓" : "Copy caption"}
+        </button>
+      </div>
     </div>
   );
 }
