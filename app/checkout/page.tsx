@@ -978,12 +978,12 @@ export default function CheckoutPage() {
             {orderSummary}
 
             {account?.loyalty && account.loyalty.maxRedeemableRupees > 0 && (
-              <label className="mt-4 flex items-center gap-3">
+              <label className="mt-4 flex min-h-[44px] cursor-pointer items-center gap-3 py-2">
                 <input
                   type="checkbox"
                   checked={redeemMiles}
                   onChange={(e) => setRedeemMiles(e.target.checked)}
-                  className="h-4 w-4 accent-ink"
+                  className="h-5 w-5 flex-none cursor-pointer accent-[var(--moon-gold)]"
                 />
                 <span className="font-sans text-body-s text-ink">
                   Redeem Moonglasses Good Vibes for ₹{account.loyalty.maxRedeemableRupees.toLocaleString("en-IN")} off
@@ -1091,12 +1091,12 @@ export default function CheckoutPage() {
               </div>
 
               <div className="border-t border-divider pt-6">
-                <label className="flex items-center gap-3">
+                <label className="flex min-h-[44px] cursor-pointer items-center gap-3 py-2">
                   <input
                     type="checkbox"
                     checked={isGift}
                     onChange={(e) => setIsGift(e.target.checked)}
-                    className="h-4 w-4 accent-ink"
+                    className="h-5 w-5 flex-none cursor-pointer accent-[var(--moon-gold)]"
                   />
                   <span className="font-sans text-body-s uppercase tracking-[0.05em] text-ink">
                     This is a gift
@@ -1113,12 +1113,12 @@ export default function CheckoutPage() {
                   />
                 )}
 
-                <label className="mt-4 flex items-center gap-3">
+                <label className="mt-4 flex min-h-[44px] cursor-pointer items-center gap-3 py-2">
                   <input
                     type="checkbox"
                     checked={newsletterOptIn}
                     onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                    className="h-4 w-4 accent-ink"
+                    className="h-5 w-5 flex-none cursor-pointer accent-[var(--moon-gold)]"
                   />
                   <span className="font-sans text-body-s text-ink">
                     Send me new drops, restocks and offers
