@@ -145,3 +145,45 @@ export function pixelTrackArgs(
   }
   return custom ? ["track", eventName, custom] : ["track", eventName];
 }
+
+/**
+ * Pay With A Post free-pair codes ("another pair on us") are minted as
+ * FREE<NAME><n><xx> in lib/post-barter.ts. Before the ₹1 floor, such a code
+ * covering the whole order made it ₹0 and it confirmed instantly; that still
+ * holds, and only for these codes.
+ */
+export function isFreePairCouponCode(code: string | null | undefined) {
+  return typeof code === "string" && /^FREE[A-Z]*\d+[A-Z0-9]{0,2}$/.test(code.trim().toUpperCase());
+}
+
+/** Total after the one chosen discount. Floors at ₹1 unless a genuine free-pair coupon covers the whole order. */
+export function computeTotalWithCoupon(
+  subtotal: number,
+  bulkDiscount: number,
+  best: { applied: DiscountSource | null; amount: number },
+  couponCode: string | null | undefined
+) {
+  const remaining = subtotal - bulkDiscount;
+  if (best.applied === "coupon" && isFreePairCouponCode(couponCode) && best.amount >= remaining) return 0;
+  return computeOrderTotal(subtotal, bulkDiscount, best.amount);
+}
+
+/** The admin alert when a paid UPI order is refused for short stock. */
+export function buildStockShortAlert(order: {
+  id: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  customer_email: string | null;
+  total: number;
+}) {
+  const ref = order.id.slice(0, 8).toUpperCase();
+  const subject = `Refund needed: order #${ref} paid but out of stock`;
+  const lines = [
+    "Refund needed.",
+    `Order: ${order.id} (#${ref})`,
+    `Customer: ${order.customer_name ?? "-"}, ${order.customer_phone ?? "-"}, ${order.customer_email ?? "-"}`,
+    `Amount paid: ₹${Number(order.total).toLocaleString("en-IN")}`,
+    "The UPI payment landed but stock was short, so the sale was refused (status stock_short). Refund the customer.",
+  ];
+  return { subject, text: lines.join("\n") };
+}

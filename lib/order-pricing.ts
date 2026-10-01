@@ -7,7 +7,7 @@ import { getShippingRate } from "@/lib/shiprocket";
 import { getSetting } from "@/lib/settings";
 import {
   assertValidOrderQuantities,
-  computeOrderTotal,
+  computeTotalWithCoupon,
   pickBestDiscount,
   priceItemsFromCatalog,
   shippingChargeFor,
@@ -105,7 +105,8 @@ export async function computeTrustedOrderTotal(
   const referral = best.applied === "referral" ? resolvedReferral : null;
   const coupon = best.applied === "coupon" ? resolvedCoupon : null;
 
-  const total = computeOrderTotal(subtotal, discountAmount, best.amount) + shippingCharge;
+  // ₹1 floor, except a genuine Pay With A Post free-pair code covering the whole order (₹0).
+  const total = computeTotalWithCoupon(subtotal, discountAmount, best, coupon?.code) + shippingCharge;
 
   return {
     items: pricedItems,

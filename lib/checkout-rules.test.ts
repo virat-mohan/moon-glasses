@@ -9,7 +9,10 @@ import {
   assertStorefrontPaymentAllowed,
   assertValidOrderQuantities,
   clampLineQuantity,
+  buildStockShortAlert,
   computeOrderTotal,
+  computeTotalWithCoupon,
+  isFreePairCouponCode,
   hasStockFor,
   isPwapAvailableForStock,
   pickBestDiscount,
@@ -100,4 +103,31 @@ test("one Purchase event_id, equal to the order id, on pixel and server", () => 
   assert.deepEqual(args, ["track", "Purchase", { value: 1999, currency: "INR" }, { eventID: orderId }]);
   assert.throws(() => pixelTrackArgs("Purchase", { value: 1999 }), /order id/);
   assert.deepEqual(pixelTrackArgs("AddToCart", { value: 10 }), ["track", "AddToCart", { value: 10, currency: "INR" }]);
+});
+
+test("a Pay With A Post free-pair coupon makes the order ₹0; a normal coupon floors at ₹1", () => {
+  assert.equal(isFreePairCouponCode("FREEPRIYA1K3"), true);
+  assert.equal(isFreePairCouponCode("BUYNOW10"), false);
+  const covering = { applied: "coupon" as const, amount: 1999 };
+  assert.equal(computeTotalWithCoupon(1999, 0, covering, "FREEPRIYA1K3"), 0);
+  assert.equal(computeTotalWithCoupon(1999, 0, covering, "BIGSALE"), 1);
+  // A free-pair code that doesn't cover the whole order is an ordinary discount.
+  assert.equal(computeTotalWithCoupon(4498, 0, covering, "FREEPRIYA1K3"), 2499);
+  // Miles or referral never get the ₹0 exemption.
+  assert.equal(computeTotalWithCoupon(1999, 0, { applied: "miles", amount: 1999 }, "FREEPRIYA1K3"), 1);
+});
+
+test("stock-short alert names the order, customer, amount paid and says refund needed", () => {
+  const { subject, text } = buildStockShortAlert({
+    id: "2f0c6c1e-6a52-4c39-9f2e-6a8f0b7c1d11",
+    customer_name: "Asha",
+    customer_phone: "919000000000",
+    customer_email: "asha@example.com",
+    total: 1999,
+  });
+  assert.match(subject, /Refund needed/);
+  assert.match(text, /Refund needed/);
+  assert.match(text, /2f0c6c1e-6a52-4c39-9f2e-6a8f0b7c1d11/);
+  assert.match(text, /Asha, 919000000000, asha@example.com/);
+  assert.match(text, /Amount paid: ₹1,999/);
 });

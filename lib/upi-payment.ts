@@ -13,7 +13,7 @@ import { decrementStockForOrder, getInventoryMap } from "@/lib/inventory";
 import { hasStockFor } from "@/lib/checkout-rules";
 import { shipOrder } from "@/lib/order-shipping";
 import { markCartSessionConverted, sendPurchaseConversion } from "@/lib/cart-session-convert";
-import { sendInvoiceEmail, sendOrderNotificationEmail } from "@/lib/email";
+import { sendInvoiceEmail, sendOrderNotificationEmail, sendStockShortRefundAlert } from "@/lib/email";
 import { sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
 import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
 
@@ -114,9 +114,9 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
     }
   }
   if (!config) throw new Error("UPI payment isn't set up yet — add UPI_ID in /admin/settings");
-  // computeTrustedOrderTotal never returns less than ₹1, so every UPI order
-  // is paid through the QR.
-  if (pricing.total <= 0) throw new Error("Order total must be greater than zero");
+  // Only a Pay With A Post free-pair code can bring the total to ₹0 (see
+  // computeTotalWithCoupon); that order confirms immediately below, no QR.
+  if (pricing.total <= 0 && !pricing.coupon) throw new Error("Order total must be greater than zero");
 
   const wasGuest = !customer;
   const guestCustomer = wasGuest
@@ -196,6 +196,11 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   ]);
   if (itemsError) throw itemsError;
 
+  if (pricing.total <= 0) {
+    await confirmUpiOrderPayment(savedOrder.id);
+    return { orderId: savedOrder.id as string, total: 0, free: true as const };
+  }
+
   const payAmount = (upiAmountPaise / 100).toFixed(2);
   const upiLink =
     `upi://pay?pa=${encodeURIComponent(config.upiId)}&pn=${encodeURIComponent(config.payeeName)}` +
@@ -246,6 +251,13 @@ export async function confirmUpiOrderPayment(orderId: string) {
       .from("orders")
       .update({ payment_status: order.payment_status, status: "stock_short" })
       .eq("id", orderId);
+    // The money has landed, so the admin must refund. Best-effort: the alert
+    // must never hide the original stock error.
+    if (Number(order.total) > 0) {
+      await sendStockShortRefundAlert(order).catch((alertErr) =>
+        console.error("Stock-short refund alert failed", orderId, alertErr)
+      );
+    }
     throw err;
   }
 

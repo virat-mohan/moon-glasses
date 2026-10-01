@@ -1,4 +1,5 @@
 import { getSetting } from "@/lib/settings";
+import { buildStockShortAlert } from "@/lib/checkout-rules";
 import { renderInvoiceHtml } from "@/lib/invoice";
 import { getBrandProfile } from "@/lib/brand";
 import { BRAND_VOICE, stripHtml, voiceGate } from "@/lib/brand-voice";
@@ -140,6 +141,29 @@ export async function sendLowStockAlertEmail(chapterName: string, stockRemaining
   `;
   await Promise.all(
     ORDER_NOTIFICATION_RECIPIENTS.map((to) => sendEmail(to, `Low stock — ${chapterName} (${stockRemaining} left)`, html))
+  );
+}
+
+/** A paid UPI order refused for short stock (see confirmUpiOrderPayment): tell the admin at once, a refund is needed. */
+export async function sendStockShortRefundAlert(order: {
+  id: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  customer_email: string | null;
+  total: number;
+}) {
+  const { subject, text } = buildStockShortAlert(order);
+  const html = `
+    <div style="max-width:480px;margin:0 auto;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;">
+      ${text
+        .split("\n")
+        .map((line, i) => `<p style="font-size:15px;margin:6px 0;">${i === 0 ? `<strong>${line}</strong>` : line}</p>`)
+        .join("")}
+      <p style="font-size:13px;"><a href="https://moon-glasses.store/admin/orders">Open orders in admin</a></p>
+    </div>
+  `;
+  await Promise.all(
+    ORDER_NOTIFICATION_RECIPIENTS.map((to) => sendEmail(to, subject, html, undefined, { internal: true }))
   );
 }
 

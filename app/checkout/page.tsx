@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { useDiscountRule } from "@/lib/useDiscountRule";
 import { calculateDiscount } from "@/lib/discounts";
-import { computeOrderTotal, pickBestDiscount } from "@/lib/checkout-rules";
+import { computeTotalWithCoupon, pickBestDiscount } from "@/lib/checkout-rules";
 import { trackEvent, getSessionKey, getReferralCode, getCapturedCoupon } from "@/lib/client-tracking";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
@@ -287,7 +287,7 @@ export default function CheckoutPage() {
   // and coupon applies — the same rule computeTrustedOrderTotal enforces.
   const displayShippingCharge = 0;
   const bestDiscount = pickBestDiscount({ miles: loyaltyDiscount, referral: referralDiscount, coupon: couponDiscount });
-  const total = computeOrderTotal(subtotal, discount, bestDiscount.amount) + displayShippingCharge;
+  const total = computeTotalWithCoupon(subtotal, discount, bestDiscount, normalizedCouponCode) + displayShippingCharge;
   const pwapAllowedForCart = items.every((i) => !pwapUnavailableSlugs.includes(i.slug));
   const unitCount = items.reduce((sum, item) => sum + item.quantity, 0);
   // Pay With A Post only covers a single item — the tile itself only
