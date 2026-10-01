@@ -15,21 +15,87 @@ const LABEL: Record<string, string> = {
 
 /** Set-up + log for UPI auto-confirm via forwarded bank credit SMS (see app/api/webhooks/bank-sms). */
 export function BankSmsPanel() {
-  const [data, setData] = useState<{ url: string; recent: Row[] } | null>(null);
+  type Mail = { address: string | null; hasPassword: boolean; lastCheck: { at: string; ok: boolean; error?: string; processed?: number } | null };
+  const [data, setData] = useState<{ url: string; recent: Row[]; mail: Mail } | null>(null);
+  const [address, setAddress] = useState("");
+  const [appPassword, setAppPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function load() {
+    fetch("/api/admin/bank-sms")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.url) return; // team logins don't see this panel
+        setData(d);
+        setAddress((a) => a || d.mail?.address || "");
+      })
+      .catch(() => {});
+  }
+
+  async function saveMail(action?: "check") {
+    setBusy(true);
+    try {
+      await fetch("/api/admin/bank-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(action ? { action } : { address, appPassword }),
+      });
+      setAppPassword("");
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/admin/bank-sms")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => {});
-  }, []);
+  useEffect(load, []);
 
   if (!data) return null;
   return (
     <section className="mt-10 border border-divider p-5">
-      <h2 className="font-display text-heading-s uppercase text-ink">UPI auto-confirm from bank SMS</h2>
+      <h2 className="font-display text-heading-s uppercase text-ink">UPI auto-confirm from bank alerts</h2>
+
+      <div className="mt-3 border border-divider p-4">
+        <p className="text-body-s font-bold text-ink">Bank alert email (Yahoo)</p>
+        <p className="mt-1 max-w-2xl text-caption text-secondary-text">
+          Checked every minute for new HDFC &ldquo;credited&rdquo; emails. Use a Yahoo <strong>app password</strong>
+          (Yahoo Account → Account Security → Generate app password), not your normal password. Your inbox
+          isn&apos;t changed: nothing is marked read or moved. The password can&apos;t be viewed again here.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="you@yahoo.co.in"
+            className="w-60 border border-ink/30 bg-surface px-2 py-1 text-caption text-ink"
+          />
+          <input
+            type="password"
+            value={appPassword}
+            onChange={(e) => setAppPassword(e.target.value)}
+            placeholder={data.mail?.hasPassword ? "App password saved (enter to replace)" : "Yahoo app password"}
+            autoComplete="off"
+            className="w-64 border border-ink/30 bg-surface px-2 py-1 text-caption text-ink"
+          />
+          <button type="button" disabled={busy} onClick={() => saveMail()} className="border border-ink px-3 py-1 text-caption uppercase text-ink disabled:opacity-50">
+            {busy ? "Connecting…" : "Save & connect"}
+          </button>
+          {data.mail?.hasPassword && (
+            <button type="button" disabled={busy} onClick={() => saveMail("check")} className="border border-divider px-3 py-1 text-caption uppercase text-ink disabled:opacity-50">
+              Check now
+            </button>
+          )}
+        </div>
+        {data.mail?.lastCheck && (
+          <p className={`mt-2 text-caption ${data.mail.lastCheck.ok ? "text-secondary-text" : "text-paint-orange"}`}>
+            Last check {new Date(data.mail.lastCheck.at).toLocaleString("en-IN")}:{" "}
+            {data.mail.lastCheck.ok ? `connected, ${data.mail.lastCheck.processed ?? 0} new alert(s)` : `failed (${data.mail.lastCheck.error})`}
+          </p>
+        )}
+      </div>
+
+      <p className="mt-5 text-body-s font-bold text-ink">Or: forward bank SMS from your phone</p>
       <p className="mt-2 max-w-2xl text-body-s text-secondary-text">
         Forward every bank credit SMS to the private link below. A UPI order whose exact amount
         (rupees and paise) matches is confirmed automatically: stock, invoice, WhatsApp and Shiprocket,
