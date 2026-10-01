@@ -13,7 +13,14 @@ export async function POST(request: Request) {
   const url = new URL(request.url);
   const provided = url.searchParams.get("token") ?? request.headers.get("x-sms-token");
   const { data } = await getSupabaseServerClient().from("app_settings").select("value").eq("key", BANK_SMS_TOKEN_KEY).maybeSingle();
-  if (!data?.value || provided !== data.value) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!data?.value || provided !== data.value) {
+    // Logged (without the token or message) so a mis-pasted link on the
+    // owner's phone is visible in Admin › Orders instead of failing silently.
+    await getSupabaseServerClient()
+      .from("bank_sms_log")
+      .insert({ body: "(rejected: wrong or missing token)", status: provided ? "bad_token" : "no_token" });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const raw = await request.text();
   let text = raw;

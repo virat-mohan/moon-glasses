@@ -9,6 +9,8 @@ const LABEL: Record<string, string> = {
   no_match: "No matching order",
   ambiguous: "More than one match (confirm by hand)",
   not_a_credit: "Not a credit SMS",
+  bad_token: "Rejected: wrong link token (re-copy the link)",
+  no_token: "Rejected: link is missing its token",
 };
 
 /** Set-up + log for UPI auto-confirm via forwarded bank credit SMS (see app/api/webhooks/bank-sms). */
