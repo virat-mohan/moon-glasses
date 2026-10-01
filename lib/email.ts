@@ -667,6 +667,8 @@ export async function sendPostBarterOrderConfirmationEmail(
   const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
   const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
   const trackingUrl = `${brand.siteUrl.replace(/\/$/, "")}/barter/${orderId}`;
+  // Their own post (made when the order was placed): name-based code on it.
+  const cardUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/ad-creatives/pwap-share/${orderId}.png`;
 
   const steps =
     tier === "gift_first"
@@ -694,7 +696,8 @@ export async function sendPostBarterOrderConfirmationEmail(
       <p style="font-size:14px;color:#444;line-height:1.6;">${intro}</p>
       <ol style="font-size:14px;color:#444;line-height:1.8;padding-left:20px;">${steps}</ol>
       <p style="margin:16px 0;padding:12px 20px;background:#f0eee4;border:1px dashed #101820;display:inline-block;font-size:18px;font-weight:bold;letter-spacing:0.08em;">${couponCode}</p>
-      <a href="${trackingUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">${tier === "gift_first" ? "View Details" : "Track Your Progress"}</a>
+      ${tier === "sell_first" ? `<a href="${trackingUrl}"><img src="${cardUrl}" alt="Your post" width="432" style="display:block;width:100%;max-width:432px;height:auto;margin:8px 0;" /></a>` : ""}
+      <a href="${trackingUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">${tier === "gift_first" ? "View Details" : "Get your post &amp; share"}</a>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;

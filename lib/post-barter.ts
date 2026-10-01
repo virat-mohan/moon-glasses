@@ -421,6 +421,12 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     await decrementInventoryAndShip(savedOrder.id);
   }
 
+  // Make their post image first so the confirmation email can show it.
+  if (!isGiftFirst) {
+    const { generateAndUploadPwapShareCard } = await import("@/lib/pwap-share-card");
+    await generateAndUploadPwapShareCard(savedOrder.id, couponCode).catch(() => null);
+  }
+
   await Promise.allSettled([
     sendPostBarterOrderConfirmationEmail(savedOrder.customer_email, savedOrder.customer_name, savedOrder.id, couponCode, requiredOrders, tier),
     sendOrderNotificationEmail(savedOrder, orderItems),
