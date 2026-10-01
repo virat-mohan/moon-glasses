@@ -1,4 +1,7 @@
-const WHATSAPP_NUMBER = "919318311657";
+import { SUPPORT_WHATSAPP_DEFAULT } from "@/lib/whatsapp-help";
+
+// Points at SUPPORT_WHATSAPP (Virat's mobile); kept until he decides if the bubble stays.
+const WHATSAPP_NUMBER = SUPPORT_WHATSAPP_DEFAULT;
 
 export function WhatsAppFloatButton() {
   return (

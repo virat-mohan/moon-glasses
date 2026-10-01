@@ -144,3 +144,8 @@ test("Virat's answers, 2 Oct 2026", () => {
   assert.ok(brandVoicePrompt("email").includes("— Moonglasses"));
   assert.ok(brandVoicePrompt("ad").includes("LEARN_MORE"));
 });
+
+test("retired WhatsApp number is blocked; support number is fine", () => {
+  assert.ok(checkVoice("whatsapp us on +91 93183 11657", "site").some((f) => f.level === "block" && f.rule === "stale-whatsapp"));
+  assert.ok(!checkVoice("need a hand? wa.me/919999277240", "site").some((f) => f.rule === "stale-whatsapp"));
+});

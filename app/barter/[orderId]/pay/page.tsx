@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import { getSetting } from "@/lib/settings";
+import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,7 @@ export const dynamic = "force-dynamic";
  * admin confirms it landed (see /admin/post-barter's "Mark Charged").
  */
 export default async function BarterChargePage({ params }: { params: Promise<{ orderId: string }> }) {
+  const supportWa = await getSetting("SUPPORT_WHATSAPP");
   const { orderId } = await params;
   const supabase = getSupabaseServerClient();
   const { data: order } = await supabase
@@ -70,9 +73,11 @@ export default async function BarterChargePage({ params }: { params: Promise<{ o
                   Send us a quick WhatsApp with your order details so we can confirm it and close this out.
                 </p>
                 <a
-                  href={`https://wa.me/919318311657?text=${encodeURIComponent(
-                    `Hi! I've just paid ₹${order.total.toLocaleString("en-IN")} for my Pay With A Post order (Order #${order.id.slice(0, 8).toUpperCase()}) since I missed the 12-hour posting window. Please confirm — thanks!`
-                  )}`}
+                  href={helpLink({
+                    topic: "already paid for my pay with a post order",
+                    lines: [`order ${shortOrderId(order.id)}`, `paid ₹${order.total.toLocaleString("en-IN")}`],
+                    number: supportWa,
+                  })}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-block border border-ink px-6 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream"

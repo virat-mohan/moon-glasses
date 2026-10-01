@@ -162,9 +162,11 @@ export const BRAND_VOICE = {
     /** lib/email.ts sendEmail "from". */
     /** Confirmed, no separate reply-to (Virat, 2 Oct 2026). */
     sender: "orders@moon-glasses.store",
-    /** components/contact/WhatsAppFloatButton.tsx */
-    whatsapp: "+91 93183 11657",
-    whatsappDigits: "919318311657",
+    /** Support WhatsApp = Virat's mobile, SUPPORT_WHATSAPP setting (Virat, 2 Oct 2026). */
+    whatsapp: "+91 99992 77240",
+    whatsappDigits: "919999277240",
+    /** Retired WhatsApp numbers: flagged if they reappear in copy. */
+    staleWhatsapp: ["919318311657", "+91 93183 11657", "93183 11657", "9318311657"],
     offers: ["Pay With A Post™ (rules and numbers from lib/pwap-rules.ts, never hardcoded)"],
     /** Paused / retired claims. */
     stale: ["Gift First", "5,000 followers", "5000 followers", "we ship first"],
@@ -300,6 +302,10 @@ export function checkVoice(text: string, kind: VoiceKind, opts: VoiceOptions = {
   if (moods.length > BRAND_VOICE.maxMoodWordsPerPiece)
     add("warn", "mood-word-stack", moods.join(", "), "Two mood words per piece at most. Stacking reads like a moodboard, not a voice.");
 
+  // BLOCK: a retired WhatsApp number.
+  for (const n of BRAND_VOICE.facts.staleWhatsapp) {
+    if (t.includes(n)) { add("block", "stale-whatsapp", n, `Use the support WhatsApp ${BRAND_VOICE.facts.whatsapp}.`); break; }
+  }
   // WARN: stale facts.
   for (const s of BRAND_VOICE.facts.stale) {
     const m = t.match(wordRe(s));
