@@ -59,7 +59,17 @@ async function checkAccount(account: Account): Promise<Account> {
     const lock = await client.getMailboxLock("INBOX");
     try {
       const since = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-      const uids = ((await client.search({ since, from: "hdfcbank" }, { uid: true })) || []).filter((u) => u > lastUid);
+      // Yahoo's IMAP search doesn't do partial sender matches ("hdfcbank" won't
+      // find alerts@hdfcbank.bank.in), so list recent mail and check the sender here.
+      const recent = ((await client.search({ since }, { uid: true })) || []).filter((u) => u > lastUid);
+      const uids: number[] = [];
+      if (recent.length) {
+        for await (const m of client.fetch(recent, { envelope: true }, { uid: true })) {
+          const from = m.envelope?.from?.[0]?.address ?? "";
+          if (/hdfcbank/i.test(from) && /alert/i.test(from)) uids.push(m.uid);
+          else lastUid = Math.max(lastUid, m.uid);
+        }
+      }
       for (const uid of uids.sort((a, b) => a - b)) {
         const msg = await client.fetchOne(String(uid), { source: true }, { uid: true });
         if (msg && msg.source) {
