@@ -15,8 +15,9 @@ const LABEL: Record<string, string> = {
 
 /** Set-up + log for UPI auto-confirm via forwarded bank credit SMS (see app/api/webhooks/bank-sms). */
 export function BankSmsPanel() {
-  type Mail = { address: string | null; hasPassword: boolean; lastCheck: { at: string; ok: boolean; error?: string; processed?: number } | null };
-  const [data, setData] = useState<{ url: string; recent: Row[]; mail: Mail } | null>(null);
+  type Mailbox = { address: string; lastCheck: { at: string; ok: boolean; error?: string; processed?: number } | null };
+  const [data, setData] = useState<{ url: string; recent: Row[]; mailboxes: Mailbox[] } | null>(null);
+  const [mailError, setMailError] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [appPassword, setAppPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,20 +28,25 @@ export function BankSmsPanel() {
       .then((d) => {
         if (!d.url) return; // team logins don't see this panel
         setData(d);
-        setAddress((a) => a || d.mail?.address || "");
       })
       .catch(() => {});
   }
 
-  async function saveMail(action?: "check") {
+  async function saveMail(payload: Record<string, string>) {
     setBusy(true);
+    setMailError(null);
     try {
-      await fetch("/api/admin/bank-sms", {
+      const res = await fetch("/api/admin/bank-sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(action ? { action } : { address, appPassword }),
+        body: JSON.stringify(payload),
       });
-      setAppPassword("");
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) setMailError(out.error ?? "Could not save");
+      else if (!payload.action) {
+        setAddress("");
+        setAppPassword("");
+      }
       load();
     } finally {
       setBusy(false);
@@ -57,42 +63,55 @@ export function BankSmsPanel() {
       <h2 className="font-display text-heading-s uppercase text-ink">UPI auto-confirm from bank alerts</h2>
 
       <div className="mt-3 border border-divider p-4">
-        <p className="text-body-s font-bold text-ink">Bank alert email (Yahoo)</p>
+        <p className="text-body-s font-bold text-ink">Bank alert emails (Gmail / Yahoo)</p>
         <p className="mt-1 max-w-2xl text-caption text-secondary-text">
-          Checked every minute for new HDFC &ldquo;credited&rdquo; emails. Use a Yahoo <strong>app password</strong>
-          (Yahoo Account → Account Security → Generate app password), not your normal password. Your inbox
-          isn&apos;t changed: nothing is marked read or moved. The password can&apos;t be viewed again here.
+          Each inbox is checked every minute for new HDFC &ldquo;credited&rdquo; emails. Use an <strong>app password</strong>,
+          not your normal password (Yahoo: Account Security → Generate app password; Gmail: myaccount.google.com →
+          Security → 2-Step Verification → App passwords). Nothing in the inbox is marked read or moved, and saved
+          passwords can&apos;t be viewed again.
         </p>
+        {data.mailboxes.length > 0 && (
+          <ul className="mt-3 space-y-1 text-caption text-ink">
+            {data.mailboxes.map((m) => (
+              <li key={m.address} className="flex flex-wrap items-center gap-2">
+                <span className="font-bold">{m.address}</span>
+                <span className={m.lastCheck && !m.lastCheck.ok ? "text-paint-orange" : "text-secondary-text"}>
+                  {m.lastCheck
+                    ? `${m.lastCheck.ok ? "connected" : `failed: ${m.lastCheck.error}`} · checked ${new Date(m.lastCheck.at).toLocaleString("en-IN")}`
+                    : "not checked yet"}
+                </span>
+                <button type="button" onClick={() => saveMail({ action: "remove", address: m.address })} className="underline text-secondary-text">
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="you@yahoo.co.in"
+            placeholder="inbox that gets bank alerts"
             className="w-60 border border-ink/30 bg-surface px-2 py-1 text-caption text-ink"
           />
           <input
             type="password"
             value={appPassword}
             onChange={(e) => setAppPassword(e.target.value)}
-            placeholder={data.mail?.hasPassword ? "App password saved (enter to replace)" : "Yahoo app password"}
+            placeholder="App password"
             autoComplete="off"
-            className="w-64 border border-ink/30 bg-surface px-2 py-1 text-caption text-ink"
+            className="w-48 border border-ink/30 bg-surface px-2 py-1 text-caption text-ink"
           />
-          <button type="button" disabled={busy} onClick={() => saveMail()} className="border border-ink px-3 py-1 text-caption uppercase text-ink disabled:opacity-50">
-            {busy ? "Connecting…" : "Save & connect"}
+          <button type="button" disabled={busy} onClick={() => saveMail({ address, appPassword })} className="border border-ink px-3 py-1 text-caption uppercase text-ink disabled:opacity-50">
+            {busy ? "Connecting…" : "Add inbox"}
           </button>
-          {data.mail?.hasPassword && (
-            <button type="button" disabled={busy} onClick={() => saveMail("check")} className="border border-divider px-3 py-1 text-caption uppercase text-ink disabled:opacity-50">
+          {data.mailboxes.length > 0 && (
+            <button type="button" disabled={busy} onClick={() => saveMail({ action: "check" })} className="border border-divider px-3 py-1 text-caption uppercase text-ink disabled:opacity-50">
               Check now
             </button>
           )}
         </div>
-        {data.mail?.lastCheck && (
-          <p className={`mt-2 text-caption ${data.mail.lastCheck.ok ? "text-secondary-text" : "text-paint-orange"}`}>
-            Last check {new Date(data.mail.lastCheck.at).toLocaleString("en-IN")}:{" "}
-            {data.mail.lastCheck.ok ? `connected, ${data.mail.lastCheck.processed ?? 0} new alert(s)` : `failed (${data.mail.lastCheck.error})`}
-          </p>
-        )}
+        {mailError && <p className="mt-2 text-caption text-paint-orange">{mailError}</p>}
       </div>
 
       <p className="mt-5 text-body-s font-bold text-ink">Or: forward bank SMS from your phone</p>

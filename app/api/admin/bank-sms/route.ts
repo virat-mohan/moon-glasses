@@ -5,7 +5,7 @@ import { ADMIN_COOKIE, getAdminSessionRole } from "@/lib/admin-auth";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
 import { BANK_SMS_TOKEN_KEY } from "@/lib/bank-sms";
-import { BANK_MAIL_KEYS, checkBankMail } from "@/lib/bank-mail";
+import { checkBankMail, imapHostFor, readBankMailAccounts, writeBankMailAccounts } from "@/lib/bank-mail";
 
 /** The owner's private SMS-forwarding URL (token created on first visit) plus the latest forwarded SMS and what each matched. */
 // Owner only: this exposes the private alert link and takes the mailbox password.
@@ -29,19 +29,11 @@ export async function GET() {
     .select("created_at, amount_paise, upi_ref, payer_name, status, matched_order_id")
     .order("created_at", { ascending: false })
     .limit(15);
-  const { data: mailRows } = await supabase
-    .from("app_settings")
-    .select("key, value")
-    .in("key", [BANK_MAIL_KEYS.address, BANK_MAIL_KEYS.appPassword, BANK_MAIL_KEYS.lastCheck]);
-  const m = Object.fromEntries((mailRows ?? []).map((r) => [r.key, r.value as string]));
+  const accounts = await readBankMailAccounts();
   return NextResponse.json({
     url: `${base}/api/webhooks/bank-sms?token=${row.value}`,
     recent: recent ?? [],
-    mail: {
-      address: m[BANK_MAIL_KEYS.address] ?? null,
-      hasPassword: !!m[BANK_MAIL_KEYS.appPassword],
-      lastCheck: m[BANK_MAIL_KEYS.lastCheck] ? JSON.parse(m[BANK_MAIL_KEYS.lastCheck]) : null,
-    },
+    mailboxes: accounts.map((a) => ({ address: a.address, lastCheck: a.lastCheck ?? null })),
   });
 }
 
@@ -49,12 +41,17 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!(await isOwner())) return NextResponse.json({ error: "Owner only" }, { status: 403 });
   const body = await request.json().catch(() => ({}));
-  const supabase = getSupabaseServerClient();
   if (body.action === "check") return NextResponse.json(await checkBankMail());
-  const rows: { key: string; value: string }[] = [];
-  if (typeof body.address === "string" && body.address.trim()) rows.push({ key: BANK_MAIL_KEYS.address, value: body.address.trim() });
-  if (typeof body.appPassword === "string" && body.appPassword.trim())
-    rows.push({ key: BANK_MAIL_KEYS.appPassword, value: body.appPassword.replace(/\s+/g, "") });
-  if (rows.length) await supabase.from("app_settings").upsert(rows, { onConflict: "key" });
+  const accounts = await readBankMailAccounts();
+  if (body.action === "remove" && typeof body.address === "string") {
+    await writeBankMailAccounts(accounts.filter((a) => a.address !== body.address));
+    return NextResponse.json({ ok: true });
+  }
+  const address = typeof body.address === "string" ? body.address.trim().toLowerCase() : "";
+  const appPassword = typeof body.appPassword === "string" ? body.appPassword.replace(/\s+/g, "") : "";
+  if (!address || !appPassword) return NextResponse.json({ error: "Email and app password are both needed" }, { status: 400 });
+  if (!imapHostFor(address)) return NextResponse.json({ error: "Only Gmail and Yahoo inboxes are supported" }, { status: 400 });
+  // Same inbox again replaces its password; start from "now" so old mail isn't replayed.
+  await writeBankMailAccounts([...accounts.filter((a) => a.address !== address), { address, appPassword }]);
   return NextResponse.json(await checkBankMail());
 }
