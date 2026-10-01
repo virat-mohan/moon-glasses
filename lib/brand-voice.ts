@@ -162,11 +162,9 @@ export const BRAND_VOICE = {
     /** lib/email.ts sendEmail "from". */
     /** Confirmed, no separate reply-to (Virat, 2 Oct 2026). */
     sender: "orders@moon-glasses.store",
-    /** Support WhatsApp = Virat's mobile, SUPPORT_WHATSAPP setting (Virat, 2 Oct 2026). */
-    whatsapp: "+91 99992 77240",
-    whatsappDigits: "919999277240",
-    /** Retired WhatsApp numbers: flagged if they reappear in copy. */
-    staleWhatsapp: ["919318311657", "+91 93183 11657", "93183 11657", "9318311657"],
+    /** Support WhatsApp is the SUPPORT_WHATSAPP setting, read at runtime (lib/whatsapp-help.ts).
+     *  Never hardcode a number in copy; it changes (Virat's mobile until 3 Oct 2026 4pm, then the store number). */
+    whatsapp: "SUPPORT_WHATSAPP setting",
     offers: ["Pay With A Post™ (rules and numbers from lib/pwap-rules.ts, never hardcoded)"],
     /** Paused / retired claims. */
     stale: ["Gift First", "5,000 followers", "5000 followers", "we ship first"],
@@ -302,10 +300,6 @@ export function checkVoice(text: string, kind: VoiceKind, opts: VoiceOptions = {
   if (moods.length > BRAND_VOICE.maxMoodWordsPerPiece)
     add("warn", "mood-word-stack", moods.join(", "), "Two mood words per piece at most. Stacking reads like a moodboard, not a voice.");
 
-  // BLOCK: a retired WhatsApp number.
-  for (const n of BRAND_VOICE.facts.staleWhatsapp) {
-    if (t.includes(n)) { add("block", "stale-whatsapp", n, `Use the support WhatsApp ${BRAND_VOICE.facts.whatsapp}.`); break; }
-  }
   // WARN: stale facts.
   for (const s of BRAND_VOICE.facts.stale) {
     const m = t.match(wordRe(s));
@@ -402,7 +396,7 @@ export function brandVoicePrompt(kind?: VoiceKind): string {
     `Core words: ${v.keywords.core.join(", ")}. Mood words (max ${v.maxMoodWordsPerPiece} per piece): ${v.keywords.mood.join(", ")}. Sound/ritual words: ${v.keywords.sound.join(", ")}. Belonging words (gentle, invite only): ${v.keywords.belonging.join(", ")}.`,
     `Label replacements: ${Object.entries(v.labels).map(([k, alts]) => `instead of "${k}" say ${alts.map((a) => `"${a}"`).join(" or ")}`).join("; ")}.`,
     `Examples: ${v.sampleCopy.heroHeadlines.map((h) => `"${h}"`).join(" ")} "${v.sampleCopy.heroSubline}" "${v.sampleCopy.footer}"`,
-    `Facts (only these): prices GST-inclusive, the Collection ₹${p.collectionPlastic.toLocaleString("en-IN")} plastic / ₹${p.collectionMetal.toLocaleString("en-IN")} metal, the Limited Series ₹${p.limitedPlastic.toLocaleString("en-IN")} plastic / ₹${p.limitedMetal.toLocaleString("en-IN")} metal. ${v.facts.shipping} WhatsApp ${v.facts.whatsapp}. Offer: Pay With A Post™ (do not state its numbers unless given). Never mention Gift First, follower thresholds or "we ship first".`,
+    `Facts (only these): prices GST-inclusive, the Collection ₹${p.collectionPlastic.toLocaleString("en-IN")} plastic / ₹${p.collectionMetal.toLocaleString("en-IN")} metal, the Limited Series ₹${p.limitedPlastic.toLocaleString("en-IN")} plastic / ₹${p.limitedMetal.toLocaleString("en-IN")} metal. ${v.facts.shipping} Never write out a WhatsApp number (support links come from the site). Offer: Pay With A Post™ (do not state its numbers unless given). Never mention Gift First, follower thresholds or "we ship first".`,
     `Frame names: only our own model names (${v.ownModelNames.join(", ")}). Never write supplier model names (${v.supplierModelNames.join(", ")}) or the supplier's name.`,
     `Visuals: ${v.photoStyle} Colours ${v.colours.black} black, ${v.colours.gold} gold accent, lens tints ${v.colours.lensBlue} / ${v.colours.lensPink} / ${v.colours.lensGreen} / ${v.colours.lensPeach}. Type: ${v.fonts.primary} and ${v.fonts.secondary}, editorial italic ${v.fonts.editorialItalic}.`,
     `Name: write "${v.brand}" in running copy (the logo is ${v.logoName}). Tagline: "${v.tagline}". We are two founders. Hero/button labels: "${v.heroCta}", never "Shop".`,

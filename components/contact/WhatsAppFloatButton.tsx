@@ -1,9 +1,8 @@
-import { SUPPORT_WHATSAPP_DEFAULT } from "@/lib/whatsapp-help";
+import { supportNumber } from "@/lib/whatsapp-help";
 
-// Points at SUPPORT_WHATSAPP (Virat's mobile); kept until he decides if the bubble stays.
-const WHATSAPP_NUMBER = SUPPORT_WHATSAPP_DEFAULT;
-
-export function WhatsAppFloatButton() {
+/** Floating chat bubble; number from the SUPPORT_WHATSAPP setting (passed by the root layout). */
+export function WhatsAppFloatButton({ number }: { number?: string | null }) {
+  const WHATSAPP_NUMBER = supportNumber(number);
   return (
     <div className="group fixed bottom-6 right-6 z-40">
       <span className="pointer-events-none absolute bottom-full right-0 mb-2 whitespace-nowrap rounded bg-ink px-3 py-1.5 font-sans text-micro uppercase tracking-[0.05em] text-cream opacity-0 transition-opacity duration-200 group-hover:opacity-100">

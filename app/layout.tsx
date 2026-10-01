@@ -4,6 +4,8 @@ import { Navbar } from "@/components/navigation/Navbar";
 import { ScrollToTop } from "@/components/navigation/ScrollToTop";
 import { MetaPixelTracker } from "@/components/tracking/MetaPixel";
 import { WhatsAppFloatButton } from "@/components/contact/WhatsAppFloatButton";
+import { SupportNumberProvider } from "@/components/help/SupportNumberProvider";
+import { setRuntimeSupportNumber } from "@/lib/whatsapp-help";
 import { AmbientTechno } from "@/components/audio/AmbientTechno";
 import { CartProvider } from "@/lib/cart";
 import { getSetting } from "@/lib/settings";
@@ -83,7 +85,12 @@ const organizationJsonLd = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [pixelId, launchSoon] = await Promise.all([getSetting("META_PIXEL_ID"), isLaunchSoon()]);
+  const [pixelId, launchSoon, supportWhatsapp] = await Promise.all([
+    getSetting("META_PIXEL_ID"),
+    isLaunchSoon(),
+    getSetting("SUPPORT_WHATSAPP"),
+  ]);
+  setRuntimeSupportNumber(supportWhatsapp);
 
   return (
     <html
@@ -96,6 +103,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <MetaPixelTracker pixelId={pixelId} />
+        <SupportNumberProvider number={supportWhatsapp}>
         <LaunchSoonProvider soon={launchSoon}>
           <CartProvider>
             <ScrollToTop />
@@ -104,10 +112,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <Navbar />
             </div>
             {children}
-            <WhatsAppFloatButton />
+            <WhatsAppFloatButton number={supportWhatsapp} />
             <AmbientTechno />
           </CartProvider>
         </LaunchSoonProvider>
+        </SupportNumberProvider>
         <Analytics />
       </body>
     </html>

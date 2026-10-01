@@ -12,8 +12,16 @@ export type HelpContext = {
   number?: string | null;
 };
 
+// The live SUPPORT_WHATSAPP value, set once per render by the root layout
+// (SupportNumberProvider), so client pages pick it up without a fetch and a
+// change to the setting moves every link at once.
+let runtimeNumber: string | null = null;
+export function setRuntimeSupportNumber(n: string | null | undefined) {
+  if (n) runtimeNumber = n;
+}
+
 export function supportNumber(n?: string | null): string {
-  const d = (n ?? "").replace(/\D/g, "");
+  const d = (n || runtimeNumber || "").replace(/\D/g, "");
   return d.length >= 10 ? d : SUPPORT_WHATSAPP_DEFAULT;
 }
 
