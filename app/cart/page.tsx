@@ -86,14 +86,14 @@ export default function CartPage() {
                 <div key={item.slug} className="flex flex-wrap items-center gap-4 py-6 sm:flex-nowrap sm:gap-5">
                   <Link
                     href={`/chapter/${item.slug}`}
-                    className="relative h-28 w-28 shrink-0 overflow-hidden bg-white sm:h-36 sm:w-36"
+                    className="relative h-28 w-28 shrink-0 overflow-hidden bg-[#F3EBDA] sm:h-36 sm:w-36"
                   >
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
                       sizes="144px"
-                      className="object-contain p-1 contrast-[1.08] saturate-[1.1] md:p-2"
+                      className="object-contain p-1 contrast-[1.08] saturate-[1.1] mix-blend-multiply md:p-2"
                     />
                   </Link>
 

@@ -199,6 +199,7 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not create your order");
+      setLeaving(true);
       clear();
       router.push(
         `/checkout/confirmed?order=${data.orderId}&code=${data.couponCode}&required=${data.requiredOrders}&tier=${data.tier}`
@@ -231,6 +232,7 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not start your order");
+      setLeaving(true);
       clear();
       router.push(
         `/checkout/confirmed?order=${data.orderId}&upi=1&amount=${data.total}&upiId=${encodeURIComponent(data.upiId)}&qr=${encodeURIComponent(data.qrImageUrl)}&link=${encodeURIComponent(data.upiLink)}`
@@ -607,7 +609,8 @@ export default function CheckoutPage() {
             const verifyData = await verifyRes.json();
             if (!verifyRes.ok) throw new Error(verifyData.error ?? "Payment verification failed");
             trackEvent("Purchase", { value: createData.total });
-            clear();
+            setLeaving(true);
+      clear();
             router.push(`/checkout/confirmed?order=${verifyData.orderId}&paid=1`);
           } catch (err) {
             setPayError(err instanceof Error ? err.message : "Payment verification failed");
@@ -627,6 +630,10 @@ export default function CheckoutPage() {
   }
 
   const [payOpen, setPayOpen] = useState(false);
+  // Set right before the cart is cleared on a successful order, so the
+  // checkout shows "Taking you to payment…" instead of flashing "cart empty"
+  // while the redirect to the next screen happens.
+  const [leaving, setLeaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -719,6 +726,16 @@ export default function CheckoutPage() {
     router.push(createdOrderId ? `/checkout/confirmed?order=${createdOrderId}` : "/checkout/confirmed");
   }
 
+  if (leaving) {
+    return (
+      <main className="mx-auto flex min-h-[60vh] w-full max-w-[700px] flex-col items-center justify-center px-6 pt-32 pb-24 text-center">
+        <p className="animate-pulse font-sans text-caption uppercase tracking-[0.15em] text-secondary-text">
+          Taking you to payment…
+        </p>
+      </main>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <main className="mx-auto w-full max-w-[700px] px-6 pt-32 pb-24 text-center md:px-12 md:pt-40">
@@ -739,9 +756,9 @@ export default function CheckoutPage() {
         <div key={item.slug} className="flex items-center gap-4">
           <Link
             href={`/chapter/${item.slug}`}
-            className="relative aspect-square w-36 flex-none overflow-hidden bg-white sm:w-44"
+            className="relative aspect-square w-36 flex-none overflow-hidden bg-[#F3EBDA] sm:w-44"
           >
-            <Image src={item.image} alt={item.name} fill sizes="176px" className="object-contain p-2" />
+            <Image src={item.image} alt={item.name} fill sizes="176px" className="object-contain p-2 mix-blend-multiply" />
           </Link>
           <Link href={`/chapter/${item.slug}`} className="flex-1 text-body-s text-ink hover:underline">
             {item.quantity} × {item.name}

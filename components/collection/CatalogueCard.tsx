@@ -11,8 +11,11 @@ import type { StockLabel } from "@/lib/inventory";
 
 export type CatalogueItem = { chapter: Chapter; stockLabel: StockLabel };
 
-export const PRODUCT_BG = "#fff";
-export const PRODUCT_SHOT_CLASS = "object-contain p-[5%] contrast-[1.08] saturate-[1.1]";
+// Soft champagne-gold so pale/silver frames don't vanish into white. Some
+// product photos have a baked-in white background, so the shot is multiplied
+// onto this colour: white turns gold, the frame's own colours are untouched.
+export const PRODUCT_BG = "#F3EBDA";
+export const PRODUCT_SHOT_CLASS = "object-contain p-[5%] contrast-[1.08] saturate-[1.1] mix-blend-multiply";
 
 /**
  * One photo per pair, model first. Touch: each tap switches model/product.
