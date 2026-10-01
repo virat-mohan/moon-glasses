@@ -15,11 +15,8 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
   // sheet if share() runs straight from the tap, with nothing awaited first.
   const fileRef = useRef<File | null>(null);
   useEffect(() => {
-    fetch(cardUrl)
-      .then((r) => r.blob())
-      .then((blob) => {
-        fileRef.current = new File([blob], "moon-glasses-post.png", { type: "image/png" });
-      })
+    toJpegFile(cardUrl)
+      .then((f) => (fileRef.current = f))
       .catch(() => {});
   }, [cardUrl]);
 
@@ -37,8 +34,7 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
     if (!file) {
       setState("busy");
       try {
-        const blob = await (await fetch(cardUrl)).blob();
-        file = fileRef.current = new File([blob], "moon-glasses-post.png", { type: "image/png" });
+        file = fileRef.current = await toJpegFile(cardUrl);
       } catch {
         setState("idle");
         return;
@@ -61,7 +57,7 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
     const url = URL.createObjectURL(file);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "moon-glasses-post.png";
+    a.download = "moon-glasses-post.jpg";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setState("saved");
@@ -108,4 +104,24 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
       </div>
     </div>
   );
+}
+
+/**
+ * The share image as a JPEG: Android's Instagram only offers "Feed" (post)
+ * in the share sheet for JPEGs; with a PNG it shows Chats only.
+ */
+async function toJpegFile(url: string): Promise<File> {
+  const blob = await (await fetch(url)).blob();
+  const bmp = await createImageBitmap(blob);
+  const canvas = document.createElement("canvas");
+  canvas.width = bmp.width;
+  canvas.height = bmp.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no canvas");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bmp, 0, 0);
+  const jpeg = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.92));
+  if (!jpeg) throw new Error("jpeg failed");
+  return new File([jpeg], "moon-glasses-post.jpg", { type: "image/jpeg" });
 }
