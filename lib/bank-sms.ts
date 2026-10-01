@@ -5,7 +5,7 @@ export const BANK_SMS_TOKEN_KEY = "BANK_SMS_WEBHOOK_TOKEN";
 
 /**
  * Pulls the credited amount (in paise) and UPI reference out of a bank credit
- * SMS. Written loosely so HDFC/ICICI/SBI/Axis phrasings all parse
+ * SMS or alert email (same webhook; the Gmail Apps Script posts the email body). Written loosely so HDFC/ICICI/SBI/Axis phrasings all parse
  * ("Rs.1499.37 credited…", "INR 1,499.37 received…", "₹1499.37 deposited…").
  * Anything that reads as a debit returns null so it can never confirm an order.
  */
@@ -17,7 +17,9 @@ export function parseBankCreditSms(text: string): { amountPaise: number; upiRef:
   if (!amount) return null;
   const amountPaise = Math.round(parseFloat(amount[1].replace(/,/g, "")) * 100);
   if (!Number.isFinite(amountPaise) || amountPaise <= 0) return null;
-  const ref = t.match(/(?:upi(?:\s*ref(?:erence)?\.?\s*(?:no\.?|number)?)?|ref\.?\s*no\.?|rrn)\s*[:\-]?\s*\(?\s*(\d{9,14})/i);
+  const ref =
+    t.match(/reference\s*(?:no\.?|number)?\s*(?:is)?\s*[:\-]?\s*(\d{9,14})/i) ??
+    t.match(/(?:upi(?:\s*ref(?:erence)?\.?\s*(?:no\.?|number)?)?|ref\.?\s*no\.?|rrn)\s*[:\-]?\s*\(?\s*(\d{9,14})/i);
   return { amountPaise, upiRef: ref?.[1] ?? null };
 }
 
