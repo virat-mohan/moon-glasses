@@ -3,6 +3,7 @@ import { getRazorpayCredentials } from "@/lib/razorpay";
 import { getCodAdvanceRupees, COD_DISABLED } from "@/lib/order-pricing";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
 import { isPostBarterEnabled } from "@/lib/post-barter";
+import { getPwapRules } from "@/lib/pwap-rules";
 
 // Turned off at the request of the business owner (keys are configured and
 // the integration itself works — verified end to end against a real test
@@ -19,6 +20,7 @@ export async function GET() {
   const codAdvanceRupees = await getCodAdvanceRupees();
   const upi = await getUpiPaymentConfig();
   const postBarterEnabled = await isPostBarterEnabled();
+  const { salesToShip, salesPerFreeCode } = await getPwapRules();
   return NextResponse.json({
     razorpayEnabled: !RAZORPAY_DISABLED && !!creds,
     razorpayKeyId: creds?.keyId ?? null,
@@ -28,5 +30,6 @@ export async function GET() {
     upiId: upi?.upiId ?? null,
     upiQrImageUrl: upi?.qrImageUrl ?? null,
     postBarterEnabled,
+    pwapRules: { salesToShip, salesPerFreeCode },
   });
 }

@@ -485,7 +485,10 @@ export async function maybeQualifyBarterOrderForCoupon(
       .from("orders")
       .select("id")
       .in("id", redemptionOrderIds)
-      .eq("payment_status", "paid");
+      .eq("payment_status", "paid")
+      // Cancelled or refunded orders don't count (see /pay-with-a-post/terms).
+      .neq("status", "cancelled")
+      .or("refunded_amount.is.null,refunded_amount.eq.0");
     paidOrderIds = new Set((paidOrders ?? []).map((o) => o.id as string));
   }
 

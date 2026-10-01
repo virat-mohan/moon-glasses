@@ -136,6 +136,9 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           <li>Friends buy with your code at full price. Your own orders don&apos;t count.</li>
           <li>Add #gifted where required by Instagram&apos;s disclosure rules.</li>
         </ol>
+        <Link href="/pay-with-a-post/terms" className="mt-3 inline-block underline underline-offset-4">
+          Full terms
+        </Link>
         {/* Sell-first pays out on sales, so the post link is only needed when we ship first. */}
         {isGiftFirst && (
           <>

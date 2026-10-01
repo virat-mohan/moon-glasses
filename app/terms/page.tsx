@@ -44,6 +44,17 @@ export default function TermsPage() {
           </section>
 
           <section>
+            <h2 className="font-display text-heading-s uppercase text-ink">Pay With A Post™</h2>
+            <p className="mt-3">
+              Orders paid for with an Instagram post follow the{" "}
+              <a href="/pay-with-a-post/terms" className="underline underline-offset-4">
+                Pay With A Post Terms
+              </a>
+              .
+            </p>
+          </section>
+
+          <section>
             <h2 className="font-display text-heading-s uppercase text-ink">Shipping, Returns &amp; Cancellations</h2>
             <p className="mt-3">
               Covered in full in our{" "}

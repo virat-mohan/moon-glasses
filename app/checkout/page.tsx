@@ -425,6 +425,7 @@ export default function CheckoutPage() {
         });
         setUpi({ enabled: !!data.upiEnabled, id: data.upiId ?? null, qrImageUrl: data.upiQrImageUrl ?? null });
         setPostBarterEnabled(!!data.postBarterEnabled);
+        if (data.pwapRules) setPwapRules(data.pwapRules);
         // With Razorpay off, "prepaid" has no visible tile to select it —
         // default straight to the real payment method so submitting
         // without touching a tile does something sensible instead of
@@ -634,6 +635,8 @@ export default function CheckoutPage() {
     }
   }
 
+  // Pay With A Post numbers, from Admin › Pay With A Post › Rules.
+  const [pwapRules, setPwapRules] = useState({ salesToShip: 3, salesPerFreeCode: 3 });
   const [payOpen, setPayOpen] = useState(false);
   // While the payment sheet is open the page behind it must not scroll
   // (iOS scrolls the body under a fixed overlay otherwise).
@@ -1296,10 +1299,14 @@ export default function CheckoutPage() {
                         ) : (
                           <>
                             <p className="font-sans text-body font-bold uppercase text-ink">
-                              Post First, Ship After 3 Sales
+                              Post First, Ship After {pwapRules.salesToShip} Sales
                             </p>
                             <p className="mt-1 text-body-s text-secondary-text">
-                              Post, share your code. 3 sales = your pair ships free. Every 3 more = another pair.
+                              Post, share your code. {pwapRules.salesToShip} sales = your pair ships free. Every{" "}
+                              {pwapRules.salesPerFreeCode} more = another pair.{" "}
+                              <a href="/pay-with-a-post/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                                Terms
+                              </a>
                             </p>
                           </>
                         )}

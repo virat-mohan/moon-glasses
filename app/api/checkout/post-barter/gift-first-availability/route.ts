@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPostBarterConfig, giftFirstCountToday, isPostBarterEnabled } from "@/lib/post-barter";
+import { getPostBarterConfig, giftFirstCountToday, isGiftFirstEnabled, isPostBarterEnabled } from "@/lib/post-barter";
 
 /**
  * Public, no-auth read of today's Gift First availability — powers the
@@ -10,6 +10,10 @@ import { getPostBarterConfig, giftFirstCountToday, isPostBarterEnabled } from "@
 export async function GET() {
   if (!(await isPostBarterEnabled())) {
     return NextResponse.json({ error: "Pay With A Post isn't available right now." }, { status: 403 });
+  }
+  // "We ship first" is switched off: no spots badge anywhere.
+  if (!(await isGiftFirstEnabled())) {
+    return NextResponse.json({ error: "Not available" }, { status: 403 });
   }
   const [{ giftFirstDailyCap }, usedToday] = await Promise.all([getPostBarterConfig(), giftFirstCountToday()]);
   const remaining = Math.max(0, giftFirstDailyCap - usedToday);

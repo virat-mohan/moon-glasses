@@ -30,6 +30,8 @@ export type PwapRules = {
   shipFirstMinMedianLikes: number;
   /** …and at least this % of followers. */
   shipFirstMinLikesPct: number;
+  /** When the rules were last saved (ISO); shown as the terms' "last updated". */
+  updatedAt?: string;
 };
 
 export const DEFAULT_PWAP_RULES: PwapRules = {
@@ -67,6 +69,7 @@ export async function savePwapRules(input: Record<string, unknown>): Promise<Pwa
   for (const key of Object.keys(DEFAULT_PWAP_RULES) as (keyof PwapRules)[]) {
     if (!(key in input)) continue;
     const v = input[key];
+    if (key === "updatedAt") continue;
     if (typeof DEFAULT_PWAP_RULES[key] === "boolean") {
       if (typeof v === "boolean") (next as Record<string, unknown>)[key] = v;
     } else {
@@ -76,6 +79,7 @@ export async function savePwapRules(input: Record<string, unknown>): Promise<Pwa
   }
   next.salesToShip = Math.max(1, Math.round(next.salesToShip));
   next.salesPerFreeCode = Math.max(1, Math.round(next.salesPerFreeCode));
+  next.updatedAt = new Date().toISOString();
   const { error } = await getSupabaseServerClient()
     .from("app_settings")
     .upsert({ key: "PWAP_RULES", value: JSON.stringify(next) }, { onConflict: "key" });

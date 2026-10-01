@@ -27,6 +27,7 @@ const columns = [
     links: [
       { label: "Privacy", href: "/privacy" },
       { label: "Terms", href: "/terms" },
+      { label: "Pay With A Post Terms", href: "/pay-with-a-post/terms" },
     ],
   },
 ];

@@ -45,6 +45,11 @@ export async function PayWithAPostBanner({ launchSoon = false }: { launchSoon?: 
         <p className="mt-5 text-center font-sans text-body-s text-ink">
           And it keeps going: <strong>every {salesPerFreeCode} more sales on your code = another pair, free.</strong>
         </p>
+        <p className="mt-2 text-center text-caption text-secondary-text">
+          <Link href="/pay-with-a-post/terms" className="underline underline-offset-4 hover:text-ink">
+            Terms apply
+          </Link>
+        </p>
 
         {!launchSoon && <GiftFirstUrgencyBadge className="mt-6" />}
 
