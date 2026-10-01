@@ -38,6 +38,41 @@ function formatShipmentStatus(raw: string) {
     .join(" ");
 }
 
+type Tone = "gold" | "cobalt" | "orange" | "muted" | "green";
+const TONE_CLASS: Record<Tone, string> = {
+  gold: "bg-tan-gold/20 text-tan-gold",
+  cobalt: "bg-[#2f4a7a]/30 text-[#9fb6e0]",
+  orange: "bg-paint-orange/15 text-paint-orange",
+  muted: "bg-ink/10 text-secondary-text",
+  green: "bg-[#1f6b3a]/30 text-[#8fd6a8]",
+};
+
+/** One plain-English status per order, derived from payment + Shiprocket's live shipping status. */
+function orderView(o: {
+  status: string;
+  payment_type: string | null;
+  payment_status: string | null;
+  shipment_status: string | null;
+  is_post_barter: boolean | null;
+  barter_qualified_at: string | null;
+  barter_tier: string | null;
+}): { label: string; tone: Tone; sub?: string } {
+  const ship = (o.shipment_status ?? "not_shipped").toLowerCase();
+  if (o.status === "cancelled" || /cancel/.test(ship)) return { label: "Cancelled", tone: "muted" };
+  if (o.payment_type === "upi_qr" && o.payment_status !== "paid") return { label: "Awaiting payment", tone: "orange" };
+  if (o.is_post_barter && o.barter_tier === "sell_first" && !o.barter_qualified_at)
+    return { label: "Waiting for posts", tone: "orange" };
+  if (/rto/.test(ship)) return { label: "Returning (RTO)", tone: "orange", sub: formatShipmentStatus(o.shipment_status ?? "") };
+  if (/undeliver|ndr|failed/.test(ship)) return { label: "Delivery issue", tone: "orange", sub: formatShipmentStatus(o.shipment_status ?? "") };
+  if (/delivered/.test(ship)) return { label: "Delivered", tone: "green" };
+  if (/out for delivery/.test(ship)) return { label: "Out for delivery", tone: "cobalt" };
+  if (/transit|picked|shipped|dispatch/.test(ship)) return { label: "In transit", tone: "cobalt", sub: formatShipmentStatus(o.shipment_status ?? "") };
+  if (["processing", "ready_to_ship", "pickup_pending", "pickup scheduled", "manifested"].some((k) => ship.includes(k)))
+    return { label: "Awaiting pickup", tone: "gold" };
+  if (ship === "not_shipped") return { label: "Paid · to ship", tone: "gold" };
+  return { label: formatShipmentStatus(o.shipment_status ?? ""), tone: "cobalt" };
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
@@ -124,143 +159,155 @@ export default async function AdminOrdersPage() {
       </div>
 
       <form action="/api/admin/orders/print-labels" method="GET" target="_blank" className="mt-6">
-        <button
-          type="submit"
-          className="mb-3 border border-ink px-4 py-2 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream"
-        >
-          Print Selected Labels (2 Per A4)
-        </button>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-caption text-secondary-text">
+            Shipping status updates itself from Shiprocket (instantly, plus a check every 30 min).
+          </p>
+          <button
+            type="submit"
+            className="border border-ink px-4 py-2 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream"
+          >
+            Print Selected Labels (2 Per A4)
+          </button>
+        </div>
         <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left">
-          <thead>
-            <tr className="border-b border-divider text-caption uppercase tracking-[0.05em] text-secondary-text">
-              <th className="py-2 pr-2"></th>
-              <th className="py-2 pr-4">When</th>
-              <th className="py-2 pr-4">Customer</th>
-              <th className="py-2 pr-4">Phone</th>
-              <th className="py-2 pr-4">Subtotal</th>
-              <th className="py-2 pr-4">Discount</th>
-              <th className="py-2 pr-4">Total</th>
-              <th className="py-2 pr-4">Payment</th>
-              <th className="py-2 pr-4">Status</th>
-              <th className="py-2 pr-4">Shipping Status</th>
-              <th className="py-2 pr-4">Shipping</th>
-              <th className="py-2 pr-4">Refund</th>
-              <th className="py-2 pr-4">Actions</th>
-              <th className="py-2 pr-4">Invoice</th>
-              <th className="py-2 pr-4">Gift</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(orders ?? []).map((o) => (
-              <tr key={o.id} className="border-b border-divider">
-                <td className="py-3 pr-2">
-                  {(o.shiprocket_label_url || o.shiprocket_shipment_id) && (
-                    <input type="checkbox" name="ids" value={o.id} className="h-4 w-4 accent-ink" />
-                  )}
-                </td>
-                <td className="py-3 text-caption text-secondary-text">
-                  {formatDate(o.created_at)}
-                </td>
-                <td className="py-3 font-sans text-body-s text-ink">{o.customer_name}</td>
-                <td className="py-3 text-caption text-secondary-text">{o.customer_phone}</td>
-                <td className="py-3 text-caption text-secondary-text">
-                  ₹{o.subtotal?.toLocaleString("en-IN")}
-                </td>
-                <td className="py-3 text-caption text-tan-gold">
-                  {o.discount_amount ? `−₹${o.discount_amount.toLocaleString("en-IN")}` : "—"}
-                </td>
-                <td className="py-3 font-sans text-body-s text-ink">
-                  ₹{o.total?.toLocaleString("en-IN")}
-                </td>
-                <td className="py-3 text-caption">
-                  {o.payment_type === "upi_qr" ? (
-                    o.payment_status === "paid" ? (
-                      <span className="text-tan-gold">UPI QR · Paid</span>
-                    ) : (
-                      <div className="flex flex-col items-start gap-1">
-                        <span className="font-bold text-paint-orange">UPI QR · Unpaid</span>
-                        <MarkUpiPaidButton orderId={o.id} />
-                      </div>
-                    )
-                  ) : o.payment_type === "cod_advance" ? (
-                    <span className="font-bold text-paint-orange">
-                      COD · ₹{o.balance_due?.toLocaleString("en-IN")} due
-                    </span>
-                  ) : o.is_post_barter ? (
-                    <div className="flex flex-col items-start gap-0.5">
-                      <span className={o.barter_qualified_at ? "text-tan-gold" : "font-bold text-paint-orange"}>
-                        Pay With A Post · {o.barter_tier === "gift_first" ? "Gift First" : "Sell First"}
-                        {o.barter_qualified_at ? " · Shipped" : " · Pending"}
-                      </span>
-                      {o.barter_coupon_code && (
-                        <span className="text-micro text-secondary-text">
-                          Code {o.barter_coupon_code}
-                          {o.barter_tier === "sell_first" && !o.barter_qualified_at
-                            ? ` (needs ${o.barter_required_orders} orders)`
-                            : ""}
-                        </span>
+          <table className="w-full min-w-[860px] text-left">
+            <thead>
+              <tr className="border-b border-divider text-micro uppercase tracking-[0.08em] text-secondary-text">
+                <th className="w-8 py-2"></th>
+                <th className="py-2 pr-4">Order</th>
+                <th className="py-2 pr-4">Amount</th>
+                <th className="py-2 pr-4">Payment</th>
+                <th className="py-2 pr-4">Status</th>
+                <th className="py-2 pr-4">Shipping</th>
+                <th className="py-2 text-right">More</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(orders ?? []).map((o) => {
+                const view = orderView(o);
+                return (
+                  <tr key={o.id} className="border-b border-divider align-top">
+                    <td className="py-3">
+                      {(o.shiprocket_label_url || o.shiprocket_shipment_id) && o.status !== "cancelled" && (
+                        <input type="checkbox" name="ids" value={o.id} className="mt-1 h-4 w-4 accent-ink" />
                       )}
-                      <Link href={`/barter/${o.id}`} className="text-micro underline text-secondary-text">
-                        View customer page
-                      </Link>
-                    </div>
-                  ) : (
-                    <span className="text-secondary-text">Prepaid</span>
-                  )}
-                </td>
-                <td className="py-3">
-                  <OrderStatusCell orderId={o.id} field="status" value={o.status} />
-                </td>
-                <td className="py-3 text-caption text-secondary-text">
-                  <ShipmentStatusCell orderId={o.id} currentLabel={formatShipmentStatus(o.shipment_status ?? "not_shipped")} />
-                </td>
-                <td className="py-3">
-                  <ShipmentCell
-                    orderId={o.id}
-                    shiprocketOrderId={o.shiprocket_order_id}
-                    shipmentId={o.shiprocket_shipment_id}
-                    awbCode={o.shiprocket_awb_code}
-                    courierName={o.courier_name}
-                  />
-                </td>
-                <td className="py-3 text-caption text-secondary-text">
-                  {(o.refund_status ?? "none").replace(/_/g, " ")}
-                </td>
-                <td className="py-3">
-                  <RefundActions
-                    orderId={o.id}
-                    total={o.total}
-                    refundedAmount={o.refunded_amount ?? 0}
-                    hasRazorpayPayment={!!o.razorpay_payment_id}
-                    returnShipmentId={o.return_shipment_id}
-                    status={o.status}
-                    shipmentStatus={o.shipment_status ?? "not_shipped"}
-                  />
-                </td>
-                <td className="py-3">
-                  <Link
-                    href={`/invoice/${o.id}`}
-                    target="_blank"
-                    className="text-micro text-secondary-text underline"
-                  >
-                    View
-                  </Link>
-                </td>
-                <td className="py-3 text-caption text-secondary-text">
-                  {o.is_gift ? o.gift_note || "Yes" : "—"}
-                </td>
-              </tr>
-            ))}
-            {(!orders || orders.length === 0) && (
-              <tr>
-                <td colSpan={15} className="py-8 text-center text-body-s text-secondary-text">
-                  No orders yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="font-sans text-body-s text-ink">{o.customer_name}</p>
+                      <p className="text-micro text-secondary-text">
+                        #{o.id.slice(0, 8).toUpperCase()} · {formatDate(o.created_at)}
+                      </p>
+                      <p className="text-micro text-secondary-text">{o.customer_phone}</p>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <p className="font-sans text-body-s text-ink">₹{o.total?.toLocaleString("en-IN")}</p>
+                      {o.discount_amount ? (
+                        <p className="text-micro text-tan-gold">−₹{o.discount_amount.toLocaleString("en-IN")} off</p>
+                      ) : null}
+                      {o.is_gift && <p className="text-micro text-secondary-text">Gift</p>}
+                    </td>
+                    <td className="py-3 pr-4 text-caption">
+                      {o.payment_type === "upi_qr" ? (
+                        o.payment_status === "paid" ? (
+                          <span className="text-tan-gold">UPI · Paid</span>
+                        ) : o.status === "cancelled" ? (
+                          <span className="text-secondary-text">UPI · Unpaid</span>
+                        ) : (
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="font-bold text-paint-orange">UPI · Unpaid</span>
+                            <MarkUpiPaidButton orderId={o.id} />
+                          </div>
+                        )
+                      ) : o.payment_type === "cod_advance" ? (
+                        <span className="font-bold text-paint-orange">COD · ₹{o.balance_due?.toLocaleString("en-IN")} due</span>
+                      ) : o.is_post_barter ? (
+                        <div className="flex flex-col items-start gap-0.5">
+                          <span className={o.barter_qualified_at ? "text-tan-gold" : "font-bold text-paint-orange"}>
+                            Pay With A Post · {o.barter_tier === "gift_first" ? "Gift First" : "Sell First"}
+                          </span>
+                          {o.barter_coupon_code && (
+                            <span className="text-micro text-secondary-text">
+                              Code {o.barter_coupon_code}
+                              {o.barter_tier === "sell_first" && !o.barter_qualified_at ? ` · needs ${o.barter_required_orders}` : ""}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-secondary-text">Prepaid</span>
+                      )}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className={`inline-block px-2 py-0.5 text-micro font-bold uppercase tracking-[0.05em] ${TONE_CLASS[view.tone]}`}>
+                        {view.label}
+                      </span>
+                      {view.sub && <p className="mt-1 text-micro text-secondary-text">{view.sub}</p>}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {o.status === "cancelled" && !o.shiprocket_shipment_id ? (
+                        <span className="text-micro text-secondary-text">—</span>
+                      ) : (
+                        <ShipmentCell
+                          orderId={o.id}
+                          shiprocketOrderId={o.shiprocket_order_id}
+                          shipmentId={o.shiprocket_shipment_id}
+                          awbCode={o.shiprocket_awb_code}
+                          courierName={o.courier_name}
+                        />
+                      )}
+                    </td>
+                    <td className="py-3 text-right">
+                      <details className="relative inline-block text-left">
+                        <summary className="cursor-pointer list-none border border-divider px-2 py-1 text-micro uppercase tracking-[0.05em] text-ink hover:border-ink">
+                          More
+                        </summary>
+                        <div className="absolute right-0 z-20 mt-1 w-64 space-y-3 border border-divider bg-[var(--moon-black)] p-3 shadow-lg">
+                          <Link href={`/invoice/${o.id}`} target="_blank" className="block text-caption text-ink underline">
+                            View invoice
+                          </Link>
+                          {o.is_post_barter && (
+                            <Link href={`/barter/${o.id}`} className="block text-caption text-ink underline">
+                              Customer&apos;s Pay With A Post page
+                            </Link>
+                          )}
+                          {o.is_gift && <p className="text-caption text-secondary-text">Gift note: {o.gift_note || "—"}</p>}
+                          <div>
+                            <p className="mb-1 text-micro uppercase text-secondary-text">Order status (manual)</p>
+                            <OrderStatusCell orderId={o.id} field="status" value={o.status} />
+                          </div>
+                          <div>
+                            <p className="mb-1 text-micro uppercase text-secondary-text">Shipping status (manual)</p>
+                            <ShipmentStatusCell orderId={o.id} currentLabel={formatShipmentStatus(o.shipment_status ?? "not_shipped")} />
+                          </div>
+                          <div>
+                            <p className="mb-1 text-micro uppercase text-secondary-text">
+                              Refund: {(o.refund_status ?? "none").replace(/_/g, " ")}
+                            </p>
+                            <RefundActions
+                              orderId={o.id}
+                              total={o.total}
+                              refundedAmount={o.refunded_amount ?? 0}
+                              hasRazorpayPayment={!!o.razorpay_payment_id}
+                              returnShipmentId={o.return_shipment_id}
+                              status={o.status}
+                              shipmentStatus={o.shipment_status ?? "not_shipped"}
+                            />
+                          </div>
+                        </div>
+                      </details>
+                    </td>
+                  </tr>
+                );
+              })}
+              {(!orders || orders.length === 0) && (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-body-s text-secondary-text">
+                    No orders yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </form>
       <BankSmsPanel />

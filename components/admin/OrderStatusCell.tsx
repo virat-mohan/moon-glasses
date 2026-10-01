@@ -7,11 +7,13 @@ const TONES: Record<string, string> = {
   pending_whatsapp_confirmation: "gold",
   pending_upi_payment: "bronze",
   confirmed: "cobalt",
+  shipped: "cobalt",
+  delivered: "gold",
   cancelled: "terracotta",
 };
 
 const OPTIONS: Record<string, string[]> = {
-  status: ["pending_whatsapp_confirmation", "pending_upi_payment", "confirmed", "cancelled"],
+  status: ["pending_whatsapp_confirmation", "pending_upi_payment", "confirmed", "shipped", "delivered", "cancelled"],
 };
 
 export function OrderStatusCell({

@@ -73,6 +73,11 @@ export async function applyShipmentStatusUpdate(input: {
   const isDelivered = !isRto && !isNdr && DELIVERED_KEYWORDS.test(newStatus);
 
   const patch: Record<string, string> = { shipment_status: newStatus };
+  // The order's own status follows Shiprocket, so a shipment cancelled or
+  // delivered there never leaves the order showing "confirmed" here.
+  if (/cancel/i.test(newStatus) && !isRto) patch.status = "cancelled";
+  else if (isDelivered) patch.status = "delivered";
+  else if (!isRto && /transit|picked|shipped|out for delivery/i.test(newStatus)) patch.status = "shipped";
   if (awbCode) patch.shiprocket_awb_code = awbCode;
   if (courierName) patch.courier_name = courierName;
   await supabase.from("orders").update(patch).eq("id", existing.id);

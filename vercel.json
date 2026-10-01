@@ -26,7 +26,7 @@
     },
     {
       "path": "/api/cron/track-sweep",
-      "schedule": "0 15 * * *"
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/barter-charge-sweep",
