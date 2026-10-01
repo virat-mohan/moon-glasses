@@ -9,7 +9,10 @@ import type { StockLabel } from "@/lib/inventory";
 
 type Item = { chapter: Chapter; stockLabel: StockLabel };
 
-const MIN_PAIRS_PER_STYLE_CHIP = 4;
+// Show a shape's filter chip as soon as it has any in-stock pair. The brand's
+// canonical shapes (Wayfarer, Aviator, …) should always be filterable when
+// they're live, even if the drop only has a couple right now.
+const MIN_PAIRS_PER_STYLE_CHIP = 1;
 
 /**
  * "The Collection" grid plus a shape → rim colour → lens colour filter.
