@@ -332,7 +332,7 @@ function OrderConfirmedContent() {
             <p className="mt-4 text-caption text-secondary-text">
               {barter.tier === "gift_first"
                 ? "We've emailed you the full step-by-step for your post — no need to wait, your order is already on its way."
-                : "We've emailed you the full step-by-step, along with a link to check your progress and drop your post link once it's live."}
+                : "We've emailed you the full step-by-step, with a link to track sales on your code."}
             </p>
             {orderId && (
               <Link
