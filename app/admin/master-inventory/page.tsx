@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { OWNER_PREVIEW_KEY } from "@/components/launch/LaunchContext";
 
 type Row = {
   slug: string;
@@ -45,6 +46,20 @@ export default function MasterInventoryPage() {
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [launchSoon, setLaunchSoon] = useState<boolean | null>(null);
+  const [ownerPreview, setOwnerPreview] = useState(false);
+  useEffect(() => {
+    try {
+      setOwnerPreview(localStorage.getItem(OWNER_PREVIEW_KEY) === "1");
+    } catch {}
+  }, []);
+  function toggleOwnerPreview() {
+    const next = !ownerPreview;
+    try {
+      if (next) localStorage.setItem(OWNER_PREVIEW_KEY, "1");
+      else localStorage.removeItem(OWNER_PREVIEW_KEY);
+    } catch {}
+    setOwnerPreview(next);
+  }
 
   useEffect(() => {
     fetch("/api/admin/launch-status")
@@ -231,6 +246,16 @@ export default function MasterInventoryPage() {
           >
             {launchSoon ? "Go live" : "Switch to launching soon"}
           </button>
+          {launchSoon && (
+            <button
+              type="button"
+              onClick={toggleOwnerPreview}
+              className="border border-divider px-4 py-1.5 font-sans text-caption uppercase tracking-[0.05em] text-ink hover:border-ink"
+              title="Shows the buy buttons on this device only, so you can place a real test order while logged in as owner"
+            >
+              {ownerPreview ? "Stop test ordering on this device" : "Let me test-order on this device"}
+            </button>
+          )}
         </div>
       )}
 

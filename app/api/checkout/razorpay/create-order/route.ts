@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { isLaunchSoon } from "@/lib/launch";
+import { isOrderingBlocked } from "@/lib/launch";
 import { createRazorpayOrder } from "@/lib/razorpay";
 import { computeTrustedOrderTotal, getCodAdvanceRupees, COD_DISABLED } from "@/lib/order-pricing";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 export async function POST(request: Request) {
-  if (await isLaunchSoon()) {
+  if (await isOrderingBlocked()) {
     return NextResponse.json({ error: "We're launching soon and not taking orders just yet." }, { status: 403 });
   }
   const body = await request.json().catch(() => null);

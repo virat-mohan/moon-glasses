@@ -20,3 +20,19 @@ export async function isLaunchSoon(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Orders are refused while launching soon, except for a logged-in owner, so
+ * the owner can place a real end-to-end test order before go-live. The
+ * storefront hides the buy buttons for everyone else regardless.
+ */
+export async function isOrderingBlocked(): Promise<boolean> {
+  if (!(await isLaunchSoon())) return false;
+  try {
+    const { cookies } = await import("next/headers");
+    const { ADMIN_COOKIE, getAdminSessionRole } = await import("@/lib/admin-auth");
+    return (await getAdminSessionRole((await cookies()).get(ADMIN_COOKIE)?.value)) !== "owner";
+  } catch {
+    return true;
+  }
+}
