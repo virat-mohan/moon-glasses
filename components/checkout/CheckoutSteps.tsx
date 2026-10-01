@@ -16,7 +16,7 @@ export function CheckoutSteps({ current }: { current: StepKey }) {
   const currentIndex = STEPS.findIndex((s) => s.key === current);
 
   return (
-    <nav aria-label="Checkout progress" className="mt-6 flex items-center gap-2">
+    <nav aria-label="Checkout progress" className="mt-6 flex max-w-full items-center gap-1.5 sm:gap-2">
       {STEPS.map((step, i) => {
         const isDone = i < currentIndex;
         const isCurrent = i === currentIndex;
@@ -35,14 +35,14 @@ export function CheckoutSteps({ current }: { current: StepKey }) {
                 {isDone ? "✓" : i + 1}
               </span>
               <span
-                className={`text-caption uppercase tracking-[0.08em] ${
+                className={`text-micro uppercase tracking-[0.06em] sm:text-caption sm:tracking-[0.08em] ${
                   isCurrent ? "text-ink" : isDone ? "text-ink" : "text-secondary-text"
                 }`}
               >
                 {step.label}
               </span>
             </div>
-            {i < STEPS.length - 1 && <span className="mx-1 h-px w-6 bg-divider" />}
+            {i < STEPS.length - 1 && <span className="h-px w-3 shrink bg-divider sm:mx-1 sm:w-6" />}
           </div>
         );
       })}

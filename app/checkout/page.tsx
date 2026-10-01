@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
@@ -625,10 +626,20 @@ export default function CheckoutPage() {
     }
   }
 
+  const [payOpen, setPayOpen] = useState(false);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!configLoaded) return; // guarded — see the disabled submit button below
+
+    // Step 1: the form (address etc.) is valid — open the payment popup.
+    // Step 2: the popup's Pay button submits the same form again to pay.
+    if (!payOpen) {
+      if (paymentType === "prepaid" && !razorpay.enabled && upi.enabled) setPaymentType("upi_qr");
+      setPayOpen(true);
+      return;
+    }
 
     if (paymentType === "post_barter") {
       await handlePostBarterSubmit();
@@ -934,6 +945,176 @@ export default function CheckoutPage() {
               )}
             </div>
 
+
+            {orderSummary}
+
+            {account?.loyalty && account.loyalty.maxRedeemableRupees > 0 && (
+              <label className="mt-4 flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={redeemMiles}
+                  onChange={(e) => setRedeemMiles(e.target.checked)}
+                  className="h-4 w-4 accent-ink"
+                />
+                <span className="font-sans text-body-s text-ink">
+                  Redeem Moonglasses Good Vibes for ₹{account.loyalty.maxRedeemableRupees.toLocaleString("en-IN")} off
+                </span>
+              </label>
+            )}
+
+            <form id="checkout-form" onSubmit={handleSubmit} className="mt-8 space-y-3">
+              <div>
+                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                  Full Name
+                </label>
+                <input
+                  required
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={update("name")}
+                  className="mt-1 w-full border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink"
+                />
+              </div>
+
+              <div>
+                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                  Phone
+                </label>
+                <input
+                  required
+                  type="tel"
+                  autoComplete="tel"
+                  value={form.phone}
+                  onChange={update("phone")}
+                  className="mt-1 w-full border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink"
+                />
+              </div>
+
+              <div>
+                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                  Email (Optional)
+                </label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={update("email")}
+                  className="mt-1 w-full border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink"
+                />
+              </div>
+
+              <div>
+                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                  Pincode
+                </label>
+                <input
+                  required
+                  inputMode="numeric"
+                  autoComplete="postal-code"
+                  maxLength={6}
+                  value={form.pincode}
+                  onChange={update("pincode")}
+                  className="mt-1 w-full max-w-[180px] border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink"
+                />
+                <p className="mt-1 text-micro text-secondary-text">We&apos;ll fill in your city and state automatically.</p>
+              </div>
+
+              <div>
+                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                  Delivery Address
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  autoComplete="address-line1"
+                  placeholder="House/flat, street, area"
+                  value={form.address}
+                  onChange={update("address")}
+                  className="mt-1 w-full border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                    City
+                  </label>
+                  <input
+                    required
+                    autoComplete="address-level2"
+                    value={form.city}
+                    onChange={update("city")}
+                    className="mt-1 w-full border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink"
+                  />
+                </div>
+                <div>
+                  <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                    State
+                  </label>
+                  <input
+                    required
+                    autoComplete="address-level1"
+                    value={form.state}
+                    onChange={update("state")}
+                    className="mt-1 w-full border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-divider pt-6">
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isGift}
+                    onChange={(e) => setIsGift(e.target.checked)}
+                    className="h-4 w-4 accent-ink"
+                  />
+                  <span className="font-sans text-body-s uppercase tracking-[0.05em] text-ink">
+                    This is a gift
+                  </span>
+                </label>
+
+                {isGift && (
+                  <textarea
+                    rows={3}
+                    placeholder="Add a personal note to include with the order..."
+                    value={giftNote}
+                    onChange={(e) => setGiftNote(e.target.value)}
+                    className="mt-4 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
+                  />
+                )}
+
+                <label className="mt-4 flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={newsletterOptIn}
+                    onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                    className="h-4 w-4 accent-ink"
+                  />
+                  <span className="font-sans text-body-s text-ink">
+                    Send me new drops, restocks and offers
+                  </span>
+                </label>
+
+              </div>
+
+              <button
+                type="submit"
+                disabled={!configLoaded || shippingBlocking}
+                className="w-full border border-ink bg-ink py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-cream transition-colors duration-200 hover:bg-cream hover:text-ink disabled:opacity-60"
+              >
+                {!configLoaded ? "Loading..." : shippingBlocking ? "Undeliverable Pincode" : "Continue to payment"}
+              </button>
+
+              {payOpen && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 md:items-center" role="dialog" aria-modal="true">
+                  <div className="max-h-[92vh] w-full max-w-[560px] overflow-y-auto border border-divider bg-[var(--moon-black)] p-5 md:p-7">
+                    <div className="flex items-center justify-between">
+                      <p className="font-display text-heading-s uppercase text-ink">Choose how to pay</p>
+                      <button type="button" onClick={() => setPayOpen(false)} className="text-caption uppercase text-secondary-text underline">
+                        Back
+                      </button>
+                    </div>
             {razorpay.enabled && (
               <div className="mt-6 border-2 border-ink bg-tan-gold/20 p-4">
                 <p className="font-sans text-body-m font-bold uppercase tracking-[0.03em] text-ink">
@@ -987,23 +1168,10 @@ export default function CheckoutPage() {
                 </button>
 
                 {paymentType === "upi_qr" && (
-                  <div className="mt-4 flex flex-col items-center gap-3 text-center">
-                    {upi.qrImageUrl && (
-                      <Image
-                        src={upi.qrImageUrl}
-                        alt="Scan to pay via UPI"
-                        width={220}
-                        height={264}
-                        className="border border-ink/20"
-                      />
-                    )}
-                    {upi.id && <p className="text-caption text-secondary-text">UPI ID: {upi.id}</p>}
-                    <p className="max-w-[320px] text-caption text-secondary-text">
-                      Scan and pay <strong className="text-ink">₹{total.toLocaleString("en-IN")}</strong>, then
-                      submit below — we&apos;ll confirm receipt and email you once it&apos;s shipped.
-                    </p>
-                    {payError && <p className="text-caption text-paint-orange">{payError}</p>}
-                  </div>
+                  <p className="mx-auto mt-3 max-w-[340px] text-center text-caption text-secondary-text">
+                    Tap Pay and we&apos;ll show your QR with the exact amount. It confirms automatically once
+                    paid, usually within a minute or two.
+                  </p>
                 )}
               </div>
             )}
@@ -1146,161 +1314,11 @@ export default function CheckoutPage() {
               </div>
             ))}
 
-            {orderSummary}
+                    {payError && <p className="mt-4 text-body-s text-paint-orange">{payError}</p>}
 
-            {account?.loyalty && account.loyalty.maxRedeemableRupees > 0 && (
-              <label className="mt-4 flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={redeemMiles}
-                  onChange={(e) => setRedeemMiles(e.target.checked)}
-                  className="h-4 w-4 accent-ink"
-                />
-                <span className="font-sans text-body-s text-ink">
-                  Redeem Moonglasses Good Vibes for ₹{account.loyalty.maxRedeemableRupees.toLocaleString("en-IN")} off
-                </span>
-              </label>
-            )}
-
-            <form onSubmit={handleSubmit} className="mt-10 space-y-4">
-              <div>
-                <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                  Full Name
-                </label>
-                <input
-                  required
-                  autoComplete="name"
-                  value={form.name}
-                  onChange={update("name")}
-                  className="mt-1.5 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none focus:border-ink"
-                />
-              </div>
-
-              <div>
-                <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                  Phone
-                </label>
-                <input
-                  required
-                  type="tel"
-                  autoComplete="tel"
-                  value={form.phone}
-                  onChange={update("phone")}
-                  className="mt-1.5 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none focus:border-ink"
-                />
-              </div>
-
-              <div>
-                <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                  Email (Optional)
-                </label>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={form.email}
-                  onChange={update("email")}
-                  className="mt-1.5 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none focus:border-ink"
-                />
-              </div>
-
-              <div>
-                <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                  Pincode
-                </label>
-                <input
-                  required
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  maxLength={6}
-                  value={form.pincode}
-                  onChange={update("pincode")}
-                  className="mt-1.5 w-full max-w-[200px] border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none focus:border-ink"
-                />
-                <p className="mt-1.5 text-caption text-secondary-text">We&apos;ll fill in your city and state automatically.</p>
-              </div>
-
-              <div>
-                <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                  Delivery Address
-                </label>
-                <textarea
-                  required
-                  rows={3}
-                  autoComplete="address-line1"
-                  placeholder="House/flat, street, area"
-                  value={form.address}
-                  onChange={update("address")}
-                  className="mt-1.5 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                    City
-                  </label>
-                  <input
-                    required
-                    autoComplete="address-level2"
-                    value={form.city}
-                    onChange={update("city")}
-                    className="mt-1.5 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none focus:border-ink"
-                  />
-                </div>
-                <div>
-                  <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
-                    State
-                  </label>
-                  <input
-                    required
-                    autoComplete="address-level1"
-                    value={form.state}
-                    onChange={update("state")}
-                    className="mt-1.5 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none focus:border-ink"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t border-divider pt-6">
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={isGift}
-                    onChange={(e) => setIsGift(e.target.checked)}
-                    className="h-4 w-4 accent-ink"
-                  />
-                  <span className="font-sans text-body-s uppercase tracking-[0.05em] text-ink">
-                    This is a gift
-                  </span>
-                </label>
-
-                {isGift && (
-                  <textarea
-                    rows={3}
-                    placeholder="Add a personal note to include with the order..."
-                    value={giftNote}
-                    onChange={(e) => setGiftNote(e.target.value)}
-                    className="mt-4 w-full border border-ink/30 bg-surface px-4 py-2 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
-                  />
-                )}
-
-                <label className="mt-4 flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={newsletterOptIn}
-                    onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                    className="h-4 w-4 accent-ink"
-                  />
-                  <span className="font-sans text-body-s text-ink">
-                    Send me new drops, restocks and offers
-                  </span>
-                </label>
-
-              </div>
-
-              {payError && <p className="text-body-s text-paint-orange">{payError}</p>}
-
+                    <div className="mt-4 sticky bottom-0 -mx-5 border-t border-divider bg-[var(--moon-black)] px-5 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 md:static md:mx-0 md:border-0 md:p-0">
               <button
+                form="checkout-form"
                 type="submit"
                 disabled={
                   paying ||
@@ -1326,7 +1344,7 @@ export default function CheckoutPage() {
                       : paymentType === "upi_qr"
                         ? upiSubmitting
                           ? "Confirming..."
-                          : `I've Paid ₹${total.toLocaleString("en-IN")} — Confirm Order`
+                          : `Pay ₹${total.toLocaleString("en-IN")}`
                         : razorpay.enabled
                           ? paying
                             ? "Processing..."
@@ -1335,6 +1353,11 @@ export default function CheckoutPage() {
                               : `Pay ₹${total.toLocaleString("en-IN")}`
                           : "Place Order via WhatsApp"}
               </button>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )}
             </form>
 
             <div className="mt-8 border-t border-divider pt-6">
