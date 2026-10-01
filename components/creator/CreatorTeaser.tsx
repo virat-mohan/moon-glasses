@@ -17,7 +17,7 @@ export function CreatorTeaser({ className = "" }: { className?: string }) {
         Want the pair for free? Drop your Instagram before you post — we&rsquo;ll tell you how.
       </p>
       <p className="mt-1 text-caption text-secondary-text">
-        5,000+ followers can pick a pair, sign a quick agreement, and we&rsquo;ll ship it to you —
+        10,000+ followers can pick a pair, sign a quick agreement, and we&rsquo;ll ship it to you —
         no payment.
       </p>
       <Link

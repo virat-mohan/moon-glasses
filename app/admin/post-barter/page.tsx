@@ -150,7 +150,7 @@ export default function AdminPostBarterPage() {
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Used This Range" value={stats.totalBarterers.toLocaleString("en-IN")} />
           <StatCard
-            label="Under 5,000 / 5,000+"
+            label="Under 10,000 / 10,000+"
             value={`${stats.tierCounts.sell_first} / ${stats.tierCounts.gift_first}`}
           />
           <StatCard label="Paid Orders Via Codes" value={stats.redeemedOrderCount.toLocaleString("en-IN")} />

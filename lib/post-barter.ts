@@ -25,7 +25,7 @@ import {
   sendPwapFreePairWhatsApp,
 } from "@/lib/whatsapp-notify";
 
-const DEFAULT_MIN_FOLLOWERS = 5000;
+const DEFAULT_MIN_FOLLOWERS = 10000;
 const DEFAULT_REQUIRED_ORDERS = 3;
 // Pay With A Post codes are attribution-only, not a discount — friends
 // checking out with one still pay full price. Kept as a real, admin-editable
