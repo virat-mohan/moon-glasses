@@ -94,7 +94,7 @@ export async function sendInvoiceEmail(order: InvoiceOrder, items: InvoiceItem[]
   );
 }
 
-export const ORDER_NOTIFICATION_RECIPIENTS = ["founder@viratmohan.com", "hello@moon-glasses.store"];
+export const ORDER_NOTIFICATION_RECIPIENTS = ["virat@moon-glasses.store", "anun@moon-glasses.store"];
 
 /** Internal heads-up the moment an order is confirmed — same invoice, sent to the team instead of the customer. */
 export async function sendOrderNotificationEmail(order: InvoiceOrder, items: InvoiceItem[]) {
