@@ -61,12 +61,20 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
       >
         {state === "busy"
           ? "Opening…"
-          : state === "shared"
-            ? "Shared ✓"
-            : state === "saved"
-              ? "Image saved · caption copied"
-              : "Share to Instagram"}
+          : state === "idle"
+            ? "Share to Instagram"
+            : "Share again"}
       </button>
+      {state !== "idle" && state !== "busy" && (
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(caption)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 block w-full border border-[var(--moon-gold)] py-3 text-center font-sans text-caption font-bold uppercase tracking-[0.08em] text-ink"
+        >
+          Send your code on WhatsApp
+        </a>
+      )}
       <div className="mt-4 border-2 border-[var(--moon-gold)] p-4">
         <p className="font-sans text-body-s font-bold text-ink">
           In Instagram: tap the caption box → <span className="text-[var(--moon-gold)]">Paste</span>
