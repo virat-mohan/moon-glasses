@@ -25,22 +25,18 @@ export function PayWithAPostBanner({ launchSoon = false }: { launchSoon?: boolea
             : "Choose it right at checkout, no separate sign-up."}
         </p>
 
-        <div className="mt-10 grid gap-4 text-left sm:grid-cols-2">
+        <div className="mt-10 grid gap-4 text-left sm:grid-cols-3">
           <div className="border border-divider bg-surface-alt p-5">
-            <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">
-              Under 5,000 Followers
-            </p>
-            <p className="mt-1.5 text-caption leading-relaxed text-secondary-text">
-              Post first. We ship after 3 sales on your code.
-            </p>
+            <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">1. Post</p>
+            <p className="mt-1.5 text-caption leading-relaxed text-secondary-text">Share your Moonglasses post with your code.</p>
           </div>
           <div className="border border-divider bg-surface-alt p-5">
-            <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">
-              5,000+ Followers
-            </p>
-            <p className="mt-1.5 text-caption leading-relaxed text-secondary-text">
-              We ship first. You post after.
-            </p>
+            <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">2. 3 sales</p>
+            <p className="mt-1.5 text-caption leading-relaxed text-secondary-text">Three people buy with your code.</p>
+          </div>
+          <div className="border border-divider bg-surface-alt p-5">
+            <p className="font-sans text-body-s font-bold uppercase tracking-[0.02em] text-ink">3. Free pair</p>
+            <p className="mt-1.5 text-caption leading-relaxed text-secondary-text">We ship your pair. Every 3 more = another.</p>
           </div>
         </div>
 

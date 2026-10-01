@@ -97,8 +97,25 @@ export type TierResult = { tier: BarterTier; followerCount: number | null; minFo
  *   share their code, and only once it's driven the required number of real
  *   PAID orders does their own order ship.
  */
+/**
+ * "Ship first" (gift_first) is paused until Virat launches it: off unless
+ * app_settings POST_BARTER_GIFT_FIRST_ENABLED = "true". Everyone else goes
+ * through "post first, ship after sales".
+ */
+export async function isGiftFirstEnabled(): Promise<boolean> {
+  const { data } = await getSupabaseServerClient()
+    .from("app_settings")
+    .select("value")
+    .eq("key", "POST_BARTER_GIFT_FIRST_ENABLED")
+    .maybeSingle();
+  return data?.value === "true";
+}
+
 export async function classifyPostBarterApplicant(instagramHandle: string): Promise<TierResult> {
   const { minFollowers, giftFirstDailyCap } = await getPostBarterConfig();
+  if (!(await isGiftFirstEnabled())) {
+    return { tier: "sell_first", followerCount: null, minFollowers, capReached: false };
+  }
   const engagement = await getAccountEngagement(instagramHandle);
   const followerCount = engagement?.followersCount ?? null;
   const meetsFollowerBar = followerCount != null && followerCount >= minFollowers;
