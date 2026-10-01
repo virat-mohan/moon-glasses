@@ -1,5 +1,6 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
+import { getPwapRules } from "@/lib/pwap-rules";
 import { generateAndUploadPwapShareCard } from "@/lib/pwap-share-card";
 import { sendWhatsAppSessionImage } from "@/lib/msg91";
 
@@ -45,7 +46,7 @@ export async function replyWithPwapPost(phone: string, text: string) {
     `Hi ${first}! Here's your Pay With A Post image.\n\n` +
     `1. Save this image and post it on Instagram (feed or story).\n` +
     `2. Tag ${handle} and add your code ${order.barter_coupon_code} in the caption.\n` +
-    `3. ${target} Every 3 more sales after that earns you another free pair.\n\n` +
+    `3. ${target} Every ${(await getPwapRules()).salesPerFreeCode} more sales after that earns you another free pair.\n\n` +
     `Track your progress: ${site}/barter/${order.id}`;
   const result = await sendWhatsAppSessionImage(phone, cardUrl, caption);
   return result.sent;

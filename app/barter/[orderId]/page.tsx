@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
+import { getPwapRules } from "@/lib/pwap-rules";
 import { SharePost } from "@/components/checkout/SharePost";
 import { generateAndUploadPwapShareCard } from "@/lib/pwap-share-card";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
@@ -32,8 +33,11 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   const required = Math.max(1, order.barter_required_orders ?? 3);
   const sales = order.barter_sales_count ?? 0;
   const firstPairDone = isGiftFirst || !!order.barter_qualified_at;
-  // After the first pair, every further block of `required` sales = another free pair.
-  const towardNext = firstPairDone ? sales % required : sales;
+  // After the first pair, every `salesPerFreeCode` more sales = a free code.
+  const { salesPerFreeCode } = await getPwapRules();
+  const shipAt = isGiftFirst ? 0 : required;
+  const towardNext = firstPairDone ? (sales - shipAt) % salesPerFreeCode : sales;
+  const barTarget = firstPairDone ? salesPerFreeCode : required;
   const { data: rewardRows } = await supabase
     .from("pwap_rewards")
     .select("coupon_code, created_at")
@@ -80,12 +84,12 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
       <div className="mt-6 border border-divider p-4">
         <div className="flex items-baseline justify-between">
           <p className="text-body-s font-bold text-ink">
-            {shipped ? `${towardNext} / ${required} to your next free pair` : `${sales} / ${required} sales`}
+            {shipped ? `${towardNext} / ${barTarget} to your next free pair` : `${sales} / ${required} sales`}
           </p>
           <code className="text-caption tracking-[0.1em] text-tan-gold">{order.barter_coupon_code}</code>
         </div>
         <div className="mt-2 h-2 w-full bg-surface-alt">
-          <div className="h-2 bg-[var(--moon-gold)]" style={{ width: `${Math.min(100, (towardNext / required) * 100)}%` }} />
+          <div className="h-2 bg-[var(--moon-gold)]" style={{ width: `${Math.min(100, (towardNext / barTarget) * 100)}%` }} />
         </div>
         <p className="mt-2 text-caption text-secondary-text">
           {isGiftFirst
@@ -93,7 +97,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
             : order.barter_qualified_at
               ? "Your pair has shipped, free."
               : `${required} sales on your code = your pair ships free.`}{" "}
-          Every {required} more = another free pair.
+          Every {salesPerFreeCode} more = another free pair.
         </p>
       </div>
 

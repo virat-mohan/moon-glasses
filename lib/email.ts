@@ -792,16 +792,17 @@ export async function sendCreatorAgreementSignedEmail(toEmail: string, name: str
 /** A further free pair earned on a Pay With A Post code — every extra block of 3 paid sales. */
 export async function sendPwapFreePairEmail(toEmail: string, name: string | null, freeCode: string, barterOrderId: string) {
   const brand = await getBrandProfile();
+  const { salesPerFreeCode, freeCodeValidDays } = await (await import("@/lib/pwap-rules")).getPwapRules();
   const site = brand.siteUrl.replace(/\/$/, "");
   const html = `
     <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
       <p style="text-align:center;text-transform:uppercase;letter-spacing:0.15em;font-size:12px;color:#666;">${brand.brandName}</p>
       <h1 style="font-size:22px;margin:24px 0 8px;">Another Free Pair, ${name ?? "Friend"}.</h1>
       <p style="font-size:14px;color:#444;line-height:1.6;">
-        Your Pay With A Post code just hit another 3 sales. Pick any style and use this code at checkout:
+        Your Pay With A Post code just hit another ${salesPerFreeCode} sales. Pick any style and use this code at checkout:
       </p>
       <p style="font-size:24px;font-weight:700;letter-spacing:0.08em;margin:16px 0;">${freeCode}</p>
-      <p style="font-size:13px;color:#666;line-height:1.6;">One pair, any style, free. Valid for 90 days. Every 3 more sales on your code earns you another.</p>
+      <p style="font-size:13px;color:#666;line-height:1.6;">One pair, any style, free. Valid for ${freeCodeValidDays} days. Every ${salesPerFreeCode} more sales on your code earns you another.</p>
       <a href="${site}/#shop" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Pick Your Free Pair</a>
       <p style="margin-top:16px;font-size:12px;"><a href="${site}/barter/${barterOrderId}" style="color:#101820;">See your progress</a></p>
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>

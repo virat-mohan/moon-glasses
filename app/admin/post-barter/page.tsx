@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PwapRulesPanel } from "@/components/admin/PwapRulesPanel";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { PostBarterToggle } from "@/components/admin/PostBarterToggle";
 
@@ -112,6 +113,13 @@ export default function AdminPostBarterPage() {
       </p>
 
       <PostBarterToggle />
+
+      <div className="mt-6 border border-divider p-5">
+        <h2 className="font-display text-heading-s uppercase text-ink">Rules</h2>
+        <div className="mt-3">
+          <PwapRulesPanel />
+        </div>
+      </div>
 
       <div className="mt-6 flex flex-wrap items-end gap-3 border border-divider bg-surface-alt p-4">
         <label className="flex flex-col gap-1 text-caption text-secondary-text">

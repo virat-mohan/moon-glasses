@@ -2,6 +2,7 @@ import { createHmac } from "crypto";
 import { logTrackingEvent } from "@/lib/tracking";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
+import { getPwapRules } from "@/lib/pwap-rules";
 import { getAccountEngagement, getBusinessDiscoveryProfile, parseInstagramHandle } from "@/lib/instagram";
 import { computeTrustedOrderTotal } from "@/lib/order-pricing";
 import { findOrCreateCustomerForGuest } from "@/lib/auth";
@@ -25,14 +26,10 @@ import {
   sendPwapFreePairWhatsApp,
 } from "@/lib/whatsapp-notify";
 
-const DEFAULT_MIN_FOLLOWERS = 10000;
-const DEFAULT_REQUIRED_ORDERS = 3;
 // Pay With A Post codes are attribution-only, not a discount — friends
 // checking out with one still pay full price. Kept as a real, admin-editable
 // setting (POST_BARTER_FRIEND_DISCOUNT_RUPEES) rather than removing the
 // column, in case that changes later.
-const DEFAULT_FRIEND_DISCOUNT_RUPEES = 0;
-const DEFAULT_GIFT_FIRST_DAILY_CAP = 10;
 
 export type BarterTier = "gift_first" | "sell_first";
 
@@ -47,17 +44,13 @@ export async function isPostBarterEnabled(): Promise<boolean> {
 }
 
 export async function getPostBarterConfig() {
-  const [minFollowersSetting, requiredOrdersSetting, friendDiscountSetting, dailyCapSetting] = await Promise.all([
-    getSetting("POST_BARTER_MIN_FOLLOWERS"),
-    getSetting("POST_BARTER_REQUIRED_ORDERS"),
-    getSetting("POST_BARTER_FRIEND_DISCOUNT_RUPEES"),
-    getSetting("POST_BARTER_GIFT_FIRST_DAILY_CAP"),
-  ]);
+  const rules = await getPwapRules();
   return {
-    minFollowers: minFollowersSetting ? Number(minFollowersSetting) : DEFAULT_MIN_FOLLOWERS,
-    requiredOrders: requiredOrdersSetting ? Number(requiredOrdersSetting) : DEFAULT_REQUIRED_ORDERS,
-    friendDiscountRupees: friendDiscountSetting ? Number(friendDiscountSetting) : DEFAULT_FRIEND_DISCOUNT_RUPEES,
-    giftFirstDailyCap: dailyCapSetting ? Number(dailyCapSetting) : DEFAULT_GIFT_FIRST_DAILY_CAP,
+    minFollowers: rules.shipFirstMinFollowers,
+    requiredOrders: rules.salesToShip,
+    friendDiscountRupees: rules.friendDiscountRupees,
+    giftFirstDailyCap: rules.shipFirstDailyCap,
+    rules,
   };
 }
 
@@ -103,17 +96,12 @@ export type TierResult = { tier: BarterTier; followerCount: number | null; minFo
  * through "post first, ship after sales".
  */
 export async function isGiftFirstEnabled(): Promise<boolean> {
-  const { data } = await getSupabaseServerClient()
-    .from("app_settings")
-    .select("value")
-    .eq("key", "POST_BARTER_GIFT_FIRST_ENABLED")
-    .maybeSingle();
-  return data?.value === "true";
+  return (await getPwapRules()).shipFirstEnabled;
 }
 
 export async function classifyPostBarterApplicant(instagramHandle: string): Promise<TierResult> {
-  const { minFollowers, giftFirstDailyCap } = await getPostBarterConfig();
-  if (!(await isGiftFirstEnabled())) {
+  const { minFollowers, giftFirstDailyCap, rules } = await getPostBarterConfig();
+  if (!rules.shipFirstEnabled) {
     return { tier: "sell_first", followerCount: null, minFollowers, capReached: false };
   }
   const engagement = await getAccountEngagement(instagramHandle);
@@ -128,14 +116,16 @@ export async function classifyPostBarterApplicant(instagramHandle: string): Prom
   // (median of the latest 12 posts ≥ 0.5% of followers, at least 20).
   // Bought-follower accounts fall back to "post first, ship after sales".
   const realAudience =
-    !!engagement && engagement.mediaCount >= 9 && engagement.medianLikes >= Math.max(20, followerCount! * 0.005);
+    !!engagement &&
+    engagement.mediaCount >= rules.shipFirstMinPosts &&
+    engagement.medianLikes >= Math.max(rules.shipFirstMinMedianLikes, followerCount! * (rules.shipFirstMinLikesPct / 100));
   if (!realAudience) {
     return { tier: "sell_first", followerCount, minFollowers, capReached: false };
   }
 
   // Ship-first at most once per Instagram account every 90 days.
   const handle = parseInstagramHandle(instagramHandle);
-  const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const since = new Date(Date.now() - rules.shipFirstCooldownDays * 24 * 60 * 60 * 1000).toISOString();
   const { count: recentGiftFirst } = await getSupabaseServerClient()
     .from("orders")
     .select("id", { count: "exact", head: true })
@@ -566,15 +556,18 @@ async function issueRepeatRewards(
   salesCount: number
 ) {
   const supabase = getSupabaseServerClient();
-  const required = Math.max(1, order.barter_required_orders);
-  const blocks = Math.floor(salesCount / required);
-  const earned = Math.max(0, blocks - (order.barter_tier === "gift_first" ? 0 : 1));
+  const rules = await getPwapRules();
+  // Post first: the first `barter_required_orders` sales ship their own pair;
+  // ship first already has it. Then every `salesPerFreeCode` = a free code.
+  const shipAt = order.barter_tier === "gift_first" ? 0 : Math.max(1, order.barter_required_orders);
+  const required = rules.salesPerFreeCode;
+  const earned = salesCount <= shipAt ? 0 : Math.floor((salesCount - shipAt) / required);
   let issued = order.barter_rewards_issued ?? 0;
 
   if (earned <= issued) {
     // Between rewards: tell them how close the next free pair is.
-    const towardNext = salesCount % required;
-    if (order.barter_tier === "gift_first" || salesCount > required) {
+    const towardNext = (salesCount - shipAt) % required;
+    if (salesCount > shipAt) {
       await sendPwapNextPairProgressEmail(order.customer_email, towardNext, required).catch((err) =>
         console.error("Next-pair progress email failed", order.id, err)
       );
@@ -589,9 +582,9 @@ async function issueRepeatRewards(
     const { error } = await supabase.from("coupon_codes").insert({
       code,
       discount_type: "flat",
-      discount_value: 2499,
+      discount_value: rules.freeCodeValueRupees,
       usage_limit: 1,
-      expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + rules.freeCodeValidDays * 24 * 60 * 60 * 1000).toISOString(),
       active: true,
     });
     if (error) {
