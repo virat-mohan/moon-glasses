@@ -6,6 +6,7 @@ import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { ShareToInstagramButton } from "@/components/checkout/ShareToInstagramButton";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { pickShareCardForOrder } from "@/lib/share-card-pool";
+import { GetPostOnWhatsApp } from "@/components/checkout/GetPostOnWhatsApp";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,12 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           )}
         </div>
       )}
+      <div className="mt-5">
+        <GetPostOnWhatsApp code={order.barter_coupon_code} className="mb-2 w-full sm:w-auto" />
+        <p className="mb-4 text-micro text-secondary-text">
+          Send the pre-filled message and we&apos;ll reply with your post image and steps.
+        </p>
+      </div>
       <div className="mt-5">
         {shareProduct ? (
           <ShareToInstagramButton

@@ -254,3 +254,34 @@ export async function sendOtpViaMsg91(phone: string, code: string) {
   const result = await sendMsg91Flow(flowSlug, phone, [code]);
   return result.sent;
 }
+
+/**
+ * Free-form image reply inside the 24-hour window the customer opened by
+ * messaging us first (so no template and no marketing limits apply). Falls
+ * back to a text message with the image link if the image send is refused.
+ */
+export async function sendWhatsAppSessionImage(phone: string, imageUrl: string, caption: string) {
+  const authKey = await getSetting("MSG91_AUTH_KEY");
+  const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
+  if (!authKey || !integratedNumber) return { sent: false as const };
+  try {
+    const res = await fetch("https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/", {
+      method: "POST",
+      headers: { authkey: authKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        integrated_number: integratedNumber,
+        content_type: "image",
+        recipient_number: toMobile(phone),
+        attachment_url: imageUrl,
+        caption,
+        content: { type: "image", image: { link: imageUrl, caption } },
+      }),
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok && !data?.hasError) return { sent: true as const };
+    console.error("MSG91 session image failed, sending link instead", res.status, data);
+  } catch (err) {
+    console.error("MSG91 session image failed", err);
+  }
+  return sendWhatsAppSessionMessage(phone, `${caption}\n\nYour post image: ${imageUrl}`);
+}

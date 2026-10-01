@@ -3,6 +3,7 @@ import { getSetting } from "@/lib/settings";
 import { logInboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
 import { logWebhookRequest } from "@/lib/webhook-log";
+import { replyWithPwapPost, wantsPwapPost } from "@/lib/pwap-whatsapp-reply";
 
 /**
  * MSG91's inbound-WhatsApp webhook — configure this URL under MSG91
@@ -65,6 +66,13 @@ export async function POST(request: Request) {
     // seconds on the webhook response is the safer trade. Errors are
     // caught and logged inside processInboundPaymentScreenshot itself,
     // never thrown here.
+    // "Get my post on WhatsApp": reply with their Pay With A Post image.
+    if (wantsPwapPost(text)) {
+      await replyWithPwapPost(String(phone), String(text)).catch((err) =>
+        console.error("Pay With A Post WhatsApp reply failed", err)
+      );
+    }
+
     if (mediaUrl) {
       await processInboundPaymentScreenshot({ phone: String(phone), mediaUrl: String(mediaUrl), conversationMessageId: messageId }).catch(
         (err) => console.error("payment-auto-confirm: unhandled error", err)
