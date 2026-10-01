@@ -120,7 +120,8 @@ export async function postToInstagramFeed(imageUrl: string, caption: string, tag
 export async function postToInstagramCarouselFeed(
   imageUrls: string[],
   caption: string,
-  taggedUsernames?: string[]
+  taggedUsernames?: string[],
+  opts: { collaborators?: string[]; tagFirstSlideOnly?: boolean } = {}
 ) {
   assertCaptionOnBrand(caption, "Instagram carousel post");
   const auth = await getPublishAuth();
@@ -128,11 +129,11 @@ export async function postToInstagramCarouselFeed(
   if (imageUrls.length < 2) throw new Error("A carousel post needs at least 2 images");
 
   const childIds: string[] = [];
-  for (const imageUrl of imageUrls) {
+  for (const [i, imageUrl] of imageUrls.entries()) {
     const item = await igPost(auth, `${igUserId}/media`, {
       image_url: imageUrl,
       is_carousel_item: true,
-      user_tags: buildUserTags(taggedUsernames),
+      user_tags: opts.tagFirstSlideOnly && i > 0 ? undefined : buildUserTags(taggedUsernames),
     });
     await waitForMediaReady(auth, item.id);
     childIds.push(item.id);
@@ -142,6 +143,9 @@ export async function postToInstagramCarouselFeed(
     media_type: "CAROUSEL",
     children: childIds,
     caption,
+    // Milestone posts only (founder social rules): invites e.g. @vmviews as
+    // collaborator; they accept the invite in the app.
+    ...(opts.collaborators?.length ? { collaborators: opts.collaborators.map((u) => u.replace(/^@/, "")) } : {}),
   });
   await waitForMediaReady(auth, container.id);
   const published = await igPost(auth, `${igUserId}/media_publish`, { creation_id: container.id });
