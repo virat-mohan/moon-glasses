@@ -635,6 +635,19 @@ export default function CheckoutPage() {
   }
 
   const [payOpen, setPayOpen] = useState(false);
+  // While the payment sheet is open the page behind it must not scroll
+  // (iOS scrolls the body under a fixed overlay otherwise).
+  useEffect(() => {
+    if (!payOpen) return;
+    const y = window.scrollY;
+    const b = document.body.style;
+    const prev = { position: b.position, top: b.top, width: b.width, overflow: b.overflow };
+    Object.assign(b, { position: "fixed", top: `-${y}px`, width: "100%", overflow: "hidden" });
+    return () => {
+      Object.assign(b, prev);
+      window.scrollTo(0, y);
+    };
+  }, [payOpen]);
   // Set right before the cart is cleared on a successful order, so the
   // checkout shows "Taking you to payment…" instead of flashing "cart empty"
   // while the redirect to the next screen happens.
@@ -992,11 +1005,13 @@ export default function CheckoutPage() {
 
             <form id="checkout-form" onSubmit={handleSubmit} className="mt-8 space-y-3">
               <div>
-                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                <label htmlFor="checkout-name" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
                   Full Name
                 </label>
                 <input
                   required
+                  id="checkout-name"
+                  name="name"
                   autoComplete="name"
                   value={form.name}
                   onChange={update("name")}
@@ -1005,12 +1020,14 @@ export default function CheckoutPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                <label htmlFor="checkout-phone" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
                   Phone
                 </label>
                 <input
                   required
                   type="tel"
+                  id="checkout-phone"
+                  name="tel"
                   autoComplete="tel"
                   value={form.phone}
                   onChange={update("phone")}
@@ -1019,11 +1036,13 @@ export default function CheckoutPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                <label htmlFor="checkout-email" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
                   Email (Optional)
                 </label>
                 <input
                   type="email"
+                  id="checkout-email"
+                  name="email"
                   autoComplete="email"
                   value={form.email}
                   onChange={update("email")}
@@ -1032,12 +1051,14 @@ export default function CheckoutPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                <label htmlFor="checkout-pincode" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
                   Pincode
                 </label>
                 <input
                   required
                   inputMode="numeric"
+                  id="checkout-pincode"
+                  name="postal-code"
                   autoComplete="postal-code"
                   maxLength={6}
                   value={form.pincode}
@@ -1048,13 +1069,14 @@ export default function CheckoutPage() {
               </div>
 
               <div>
-                <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                <label htmlFor="checkout-address" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
                   Delivery Address
                 </label>
-                <textarea
+                <input
                   required
-                  rows={3}
-                  autoComplete="address-line1"
+                  id="checkout-address"
+                  name="street-address"
+                  autoComplete="street-address"
                   placeholder="House/flat, street, area"
                   value={form.address}
                   onChange={update("address")}
@@ -1064,11 +1086,13 @@ export default function CheckoutPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                  <label htmlFor="checkout-city" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
                     City
                   </label>
                   <input
                     required
+                    id="checkout-city"
+                    name="address-level2"
                     autoComplete="address-level2"
                     value={form.city}
                     onChange={update("city")}
@@ -1076,11 +1100,13 @@ export default function CheckoutPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
+                  <label htmlFor="checkout-state" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
                     State
                   </label>
                   <input
                     required
+                    id="checkout-state"
+                    name="address-level1"
                     autoComplete="address-level1"
                     value={form.state}
                     onChange={update("state")}
@@ -1136,7 +1162,7 @@ export default function CheckoutPage() {
 
               {payOpen && typeof document !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/75 md:items-center" role="dialog" aria-modal="true">
-                  <div className="max-h-[92vh] w-full max-w-[560px] overflow-y-auto border border-divider bg-[var(--moon-black)] p-5 md:p-7">
+                  <div className="max-h-[92dvh] w-full max-w-[560px] overflow-y-auto overscroll-contain border border-divider bg-[var(--moon-black)] p-5 md:p-7">
                     <div className="flex items-center justify-between">
                       <p className="font-display text-heading-s uppercase text-ink">Choose how to pay</p>
                       <button type="button" onClick={() => setPayOpen(false)} className="text-caption uppercase text-secondary-text underline">

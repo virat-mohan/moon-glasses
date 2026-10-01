@@ -134,7 +134,23 @@
    screen is clipped (clip, not hidden, so sticky elements keep working). */
 html,
 body {
-  overflow-x: clip;
+  overflow-x: hidden; /* older iOS without clip support */
+}
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+/* iPhone zooms into any field under 16px when tapped, and the zoomed page
+   then slides sideways. 16px on phones stops the zoom site-wide. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 body {

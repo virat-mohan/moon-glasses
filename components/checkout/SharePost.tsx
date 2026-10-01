@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Pay With A Post share, fast: the post image is the server-rendered card
@@ -11,6 +11,17 @@ import { useState } from "react";
 export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: string }) {
   const [state, setState] = useState<"idle" | "busy" | "shared" | "saved">("idle");
   const [copied, setCopied] = useState(false);
+  // The image is fetched as soon as the page opens: iOS only opens the share
+  // sheet if share() runs straight from the tap, with nothing awaited first.
+  const fileRef = useRef<File | null>(null);
+  useEffect(() => {
+    fetch(cardUrl)
+      .then((r) => r.blob())
+      .then((blob) => {
+        fileRef.current = new File([blob], "moon-glasses-post.png", { type: "image/png" });
+      })
+      .catch(() => {});
+  }, [cardUrl]);
 
   async function copyCaption() {
     try {
@@ -20,33 +31,40 @@ export function SharePost({ cardUrl, caption }: { cardUrl: string; caption: stri
   }
 
   async function share() {
-    setState("busy");
-    await copyCaption();
-    try {
-      const blob = await (await fetch(cardUrl)).blob();
-      const file = new File([blob], "moon-glasses-post.png", { type: "image/png" });
-      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        try {
-          // Instagram ignores shared text for feed posts, so the caption goes
-          // via the clipboard; text is still passed for apps that use it.
-          await navigator.share({ files: [file], text: caption });
+    // Not awaited: the share sheet must open in the same tap.
+    navigator.clipboard?.writeText(caption).then(() => setCopied(true), () => {});
+    let file = fileRef.current;
+    if (!file) {
+      setState("busy");
+      try {
+        const blob = await (await fetch(cardUrl)).blob();
+        file = fileRef.current = new File([blob], "moon-glasses-post.png", { type: "image/png" });
+      } catch {
+        setState("idle");
+        return;
+      }
+    }
+    if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+      try {
+        // Instagram ignores shared text for feed posts, so the caption goes
+        // via the clipboard.
+        await navigator.share({ files: [file] });
+        setState("shared");
+        return;
+      } catch (e) {
+        if ((e as Error)?.name === "AbortError") {
           setState("shared");
           return;
-        } catch {}
+        }
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "moon-glasses-post.png";
-      a.click();
-      URL.revokeObjectURL(url);
-      setState("saved");
-      if (/android|iphone|ipad|ipod/i.test(navigator.userAgent)) {
-        setTimeout(() => (window.location.href = "instagram://library"), 800);
-      }
-    } catch {
-      setState("idle");
     }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "moon-glasses-post.png";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setState("saved");
   }
 
   return (
