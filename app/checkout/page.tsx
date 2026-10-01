@@ -1336,7 +1336,7 @@ export default function CheckoutPage() {
                           )}
                         </div>
                         <p className="mt-2 text-caption text-secondary-text">
-                          Skip it and your pair ships after 3 sales instead.
+                          Skip it and your pair ships after {pwapRules.salesToShip} sales instead.
                         </p>
                       </div>
                     )}
