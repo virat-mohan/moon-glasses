@@ -30,6 +30,8 @@ export type PwapRules = {
   shipFirstMinMedianLikes: number;
   /** …and at least this % of followers. */
   shipFirstMinLikesPct: number;
+  /** Our cost to ship one pair (courier + packaging), for the money view. */
+  shipCostRupees: number;
   /** When the rules were last saved (ISO); shown as the terms' "last updated". */
   updatedAt?: string;
 };
@@ -47,6 +49,7 @@ export const DEFAULT_PWAP_RULES: PwapRules = {
   shipFirstMinPosts: 9,
   shipFirstMinMedianLikes: 20,
   shipFirstMinLikesPct: 0.5,
+  shipCostRupees: 90,
 };
 
 export async function getPwapRules(): Promise<PwapRules> {

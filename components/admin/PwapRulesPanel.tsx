@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { PwapRules } from "@/lib/pwap-rules";
+import type { PwapEconomicsInputs } from "@/lib/pwap-economics";
 
 type Field = { key: keyof PwapRules; label: string; hint: string; suffix?: string };
 
@@ -11,6 +12,7 @@ const MAIN: Field[] = [
   { key: "freeCodeValueRupees", label: "Free code value", hint: "Flat discount on the free code. Keep it at or above the dearest pair.", suffix: "₹" },
   { key: "freeCodeValidDays", label: "Free code valid for", hint: "Days before an unused free code expires.", suffix: "days" },
   { key: "friendDiscountRupees", label: "Friend discount", hint: "Off for a friend who buys with the code. 0 = full price.", suffix: "₹" },
+  { key: "shipCostRupees", label: "Our cost to ship a pair", hint: "Courier + packaging, for the money view below. Use the Shiprocket rate card.", suffix: "₹" },
 ];
 
 const SHIP_FIRST: Field[] = [
@@ -26,6 +28,7 @@ const SHIP_FIRST: Field[] = [
 export function PwapRulesPanel() {
   const [rules, setRules] = useState<PwapRules | null>(null);
   const [saved, setSaved] = useState<PwapRules | null>(null);
+  const [economics, setEconomics] = useState<PwapEconomicsInputs | null>(null);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
@@ -34,6 +37,7 @@ export function PwapRulesPanel() {
       .then((d) => {
         setRules(d.rules);
         setSaved(d.rules);
+        setEconomics(d.economics ?? null);
       })
       .catch(() => setStatus("error"));
   }, []);
@@ -89,6 +93,8 @@ export function PwapRulesPanel() {
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{MAIN.map(input)}</div>
 
+      {economics && <MoneyView rules={rules} e={economics} />}
+
       <label className="mt-6 flex items-center gap-3">
         <input
           type="checkbox"
@@ -114,6 +120,118 @@ export function PwapRulesPanel() {
         {status === "saved" && !dirty && <span className="text-caption text-secondary-text">Saved. New orders use these rules.</span>}
         {status === "error" && <span className="text-caption text-red-500">Could not save. Try again.</span>}
       </div>
+    </div>
+  );
+}
+
+const inr = (n: number) => `${n < 0 ? "−" : ""}₹${Math.round(Math.abs(n)).toLocaleString("en-IN")}`;
+
+/**
+ * What one Pay With A Post cycle does to the money, at the average pair
+ * (real sales mix once there is one). Recomputes as the rules are edited.
+ * Per cycle: the customer gets one pair free (our product + shipping cost);
+ * friends buy `sales` pairs at full price minus any friend discount; we keep
+ * the price ex-GST minus product + shipping cost on each of those.
+ */
+function cycle(sales: number, r: PwapRules, e: PwapEconomicsInputs) {
+  const netPrice = (e.avgPrice - r.friendDiscountRupees) / (1 + e.gstRate);
+  const marginPerSale = netPrice - e.avgCost - r.shipCostRupees;
+  const promoCost = e.avgCost + r.shipCostRupees;
+  const revenue = sales * netPrice;
+  const profit = sales * marginPerSale - promoCost;
+  return {
+    sales,
+    revenue,
+    promoCost,
+    promoPct: revenue > 0 ? (promoCost / revenue) * 100 : 0,
+    costPerBuyer: promoCost / sales,
+    profit,
+    marginPerSale,
+  };
+}
+
+function MoneyView({ rules: r, e }: { rules: PwapRules; e: PwapEconomicsInputs }) {
+  const now = cycle(r.salesToShip, r, e);
+  const free = cycle(r.salesPerFreeCode, r, e);
+  const options = [1, 2, 3, 4, 5].map((n) => cycle(n, r, e));
+  const breakEven = Math.ceil((e.avgCost + r.shipCostRupees) / Math.max(1, now.marginPerSale));
+
+  return (
+    <div className="mt-6 border border-[var(--moon-gold)] p-4">
+      <p className="text-body-s font-bold uppercase tracking-[0.05em] text-ink">Money view</p>
+      <p className="mt-1 text-micro text-secondary-text">
+        Average pair {inr(e.avgPrice)} (incl. GST), costs us {inr(e.avgCost)} + {inr(r.shipCostRupees)} shipping.{" "}
+        {e.source === "sales"
+          ? `From the real mix of ${e.basis} pairs sold in the last 90 days.`
+          : `Catalogue average of ${e.basis} products; switches to your real sales mix after 10 paid pairs.`}
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="bg-surface-alt p-3">
+          <p className="text-caption font-bold uppercase text-ink">Each free pair ({r.salesToShip} sales)</p>
+          <ul className="mt-2 space-y-1 text-caption text-secondary-text">
+            <li>
+              Friends&apos; sales bring in <strong className="text-ink">{inr(now.revenue)}</strong> (ex-GST)
+            </li>
+            <li>
+              The free pair costs us <strong className="text-ink">{inr(now.promoCost)}</strong> ={" "}
+              <strong className="text-ink">{now.promoPct.toFixed(0)}%</strong> of that
+            </li>
+            <li>
+              = <strong className="text-ink">{inr(now.costPerBuyer)}</strong> per new buyer
+            </li>
+            <li>
+              We keep <strong className={now.profit >= 0 ? "text-ink" : "text-red-500"}>{inr(now.profit)}</strong> after
+              all costs
+            </li>
+          </ul>
+        </div>
+        <div className="bg-surface-alt p-3">
+          <p className="text-caption font-bold uppercase text-ink">Each free code ({r.salesPerFreeCode} more sales)</p>
+          <ul className="mt-2 space-y-1 text-caption text-secondary-text">
+            <li>
+              Sales bring in <strong className="text-ink">{inr(free.revenue)}</strong>; the pair costs{" "}
+              <strong className="text-ink">{inr(free.promoCost)}</strong> ({free.promoPct.toFixed(0)}%)
+            </li>
+            <li>
+              We keep <strong className={free.profit >= 0 ? "text-ink" : "text-red-500"}>{inr(free.profit)}</strong>
+            </li>
+            <li>
+              Code is worth up to {inr(r.freeCodeValueRupees)} to them; costs us only the pair it&apos;s used on.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <table className="mt-4 w-full text-left text-caption">
+        <thead className="text-secondary-text">
+          <tr>
+            <th className="py-1 font-normal">Sales to ship</th>
+            <th className="py-1 font-normal">Promo cost</th>
+            <th className="py-1 font-normal">% of sales</th>
+            <th className="py-1 font-normal">Per new buyer</th>
+            <th className="py-1 font-normal">We keep</th>
+          </tr>
+        </thead>
+        <tbody>
+          {options.map((o) => (
+            <tr key={o.sales} className={o.sales === r.salesToShip ? "font-bold text-ink" : "text-secondary-text"}>
+              <td className="py-1">
+                {o.sales}
+                {o.sales === r.salesToShip ? " (now)" : ""}
+              </td>
+              <td className="py-1">{inr(o.promoCost)}</td>
+              <td className="py-1">{o.promoPct.toFixed(0)}%</td>
+              <td className="py-1">{inr(o.costPerBuyer)}</td>
+              <td className={`py-1 ${o.profit < 0 ? "text-red-500" : ""}`}>{inr(o.profit)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-2 text-micro text-secondary-text">
+        Break-even: {breakEven} sale{breakEven === 1 ? "" : "s"} pay for one free pair. Product cost uses actual vendor
+        cost where entered, else the 25% target. Doesn&apos;t include the value of the posts themselves.
+      </p>
     </div>
   );
 }

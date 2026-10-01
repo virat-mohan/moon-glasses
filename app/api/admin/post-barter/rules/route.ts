@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getPwapRules, savePwapRules } from "@/lib/pwap-rules";
+import { getPwapEconomicsInputs } from "@/lib/pwap-economics";
 
 export async function GET() {
-  return NextResponse.json({ rules: await getPwapRules() });
+  const [rules, economics] = await Promise.all([getPwapRules(), getPwapEconomicsInputs()]);
+  return NextResponse.json({ rules, economics });
 }
 
 export async function POST(request: Request) {
