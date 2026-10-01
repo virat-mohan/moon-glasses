@@ -12,6 +12,7 @@ import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
 import { findOrCreateCustomerForGuest } from "@/lib/auth";
 import { checkAndAlertLowStock } from "@/lib/inventory";
 import { shipOrder } from "@/lib/order-shipping";
+import { assertStorefrontPaymentAllowed } from "@/lib/checkout-rules";
 
 export type OrderPayload = {
   customer: {
@@ -51,6 +52,10 @@ export async function finalizeOrder(
   razorpayOrderId: string,
   razorpayPaymentId: string
 ) {
+  // COD is off across Retail OS (founder decision, 2 Oct 2026): a
+  // cod_advance payload is refused here too, not just at checkout.
+  assertStorefrontPaymentAllowed(payload.paymentType);
+
   const supabase = getSupabaseServerClient();
 
   const { data: existingOrder } = await supabase

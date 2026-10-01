@@ -9,6 +9,7 @@ import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import QRCode from "qrcode";
+import { trackEvent } from "@/lib/client-tracking";
 
 type OrderSummary = {
   id: string;
@@ -138,6 +139,10 @@ function OrderConfirmedContent() {
         if (data.order?.payment_status === "paid") {
           setOrder(data.order);
           setUpiStatus("paid");
+          // Browser pixel Purchase only once the payment is confirmed, with
+          // the order id as eventID so Meta dedupes it against the server
+          // Conversions API event sent by confirmUpiOrderPayment.
+          trackEvent("Purchase", { value: Number(data.order.total) || undefined, orderId });
           return;
         }
       } catch {

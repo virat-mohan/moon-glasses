@@ -9,15 +9,14 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { useDiscountRule } from "@/lib/useDiscountRule";
 import { calculateDiscount } from "@/lib/discounts";
-import { trackEvent, getSessionKey, getAttribution, getReferralCode, getCapturedCoupon } from "@/lib/client-tracking";
+import { computeOrderTotal, pickBestDiscount } from "@/lib/checkout-rules";
+import { trackEvent, getSessionKey, getReferralCode, getCapturedCoupon } from "@/lib/client-tracking";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { GiftFirstUrgencyBadge } from "@/components/checkout/GiftFirstUrgencyBadge";
-
-const WHATSAPP_NUMBER = "919318311657";
 
 declare global {
   interface Window {
@@ -72,10 +71,12 @@ export default function CheckoutPage() {
   });
   const [upiSubmitting, setUpiSubmitting] = useState(false);
   const [postBarterEnabled, setPostBarterEnabled] = useState(false);
+  // Products under the Pay With A Post stock floor (see PWAP_MIN_STOCK).
+  const [pwapUnavailableSlugs, setPwapUnavailableSlugs] = useState<string[]>([]);
   // razorpay.enabled defaults to false until /api/checkout/config resolves —
   // without this separate flag, a customer submitting the form before that
   // fetch completes (a real risk: it's an async call fired on mount) would
-  // silently fall through to the WhatsApp-manual-order path instead of
+  // silently fall through to no payment method at all instead of
   // actually being charged via Razorpay, even though Razorpay is properly
   // configured. The submit button stays disabled until this is true.
   const [configLoaded, setConfigLoaded] = useState(false);
@@ -96,14 +97,14 @@ export default function CheckoutPage() {
   const [couponCodeInput, setCouponCodeInput] = useState(() => getCapturedCoupon() ?? "");
   const [couponPreview, setCouponPreview] = useState<{ checked: string; valid: boolean; discountRupees: number } | null>(null);
   const [couponChecking, setCouponChecking] = useState(false);
-  const [paying, setPaying] = useState(false);
+  const [paying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
   const [redeemMiles, setRedeemMiles] = useState(false);
   // Prepaid ships free nationwide; COD charges the real Shiprocket rate
   // (collected by the courier alongside the balance due) plus a small
   // upfront advance to filter out fake/non-serious COD orders.
-  const [paymentType, setPaymentType] = useState<"prepaid" | "cod_advance" | "post_barter" | "upi_qr">("prepaid");
+  const [paymentType, setPaymentType] = useState<"prepaid" | "cod_advance" | "post_barter" | "upi_qr">("upi_qr");
   const [barterHandle, setBarterHandle] = useState("");
   // Open to anyone — this is a preview of which tier a handle will land in,
   // never a pass/fail gate. Submitting works with or without checking it
@@ -281,13 +282,13 @@ export default function CheckoutPage() {
     couponPreview?.checked === normalizedCouponCode && couponPreview.valid
       ? Math.min(couponPreview.discountRupees, subtotal)
       : 0;
-  // Free-shipping-on-prepaid is what the customer is actually charged;
-  // shippingCharge itself always holds the real Shiprocket rate (needed to
-  // confirm the pincode is even deliverable, and shown as-is for COD).
-  const displayShippingCharge = paymentType === "prepaid" ? 0 : (shippingCharge ?? 0);
-  const total =
-    Math.max(0, subtotal - discount - loyaltyDiscount - referralDiscount - couponDiscount) +
-    displayShippingCharge;
+  // Shipping is free on every order; the pincode check only confirms it's
+  // deliverable. One discount per order: only the largest of Miles, referral
+  // and coupon applies — the same rule computeTrustedOrderTotal enforces.
+  const displayShippingCharge = 0;
+  const bestDiscount = pickBestDiscount({ miles: loyaltyDiscount, referral: referralDiscount, coupon: couponDiscount });
+  const total = computeOrderTotal(subtotal, discount, bestDiscount.amount) + displayShippingCharge;
+  const pwapAllowedForCart = items.every((i) => !pwapUnavailableSlugs.includes(i.slug));
   const unitCount = items.reduce((sum, item) => sum + item.quantity, 0);
   // Pay With A Post only covers a single item — the tile itself only
   // renders when unitCount === 1 (see below), and nothing on this page lets
@@ -417,22 +418,23 @@ export default function CheckoutPage() {
     fetch("/api/checkout/config")
       .then((res) => res.json())
       .then((data) => {
+        // Card (Razorpay) and COD stay hidden whatever the settings say:
+        // storefront checkout is UPI only, and the server refuses both.
         setRazorpay({
-          enabled: !!data.razorpayEnabled,
-          keyId: data.razorpayKeyId,
+          enabled: false,
+          keyId: null,
           codAdvanceRupees: data.codAdvanceRupees ?? 99,
-          codEnabled: !!data.codEnabled,
+          codEnabled: false,
         });
         setUpi({ enabled: !!data.upiEnabled, id: data.upiId ?? null, qrImageUrl: data.upiQrImageUrl ?? null });
         setPostBarterEnabled(!!data.postBarterEnabled);
         if (data.pwapRules) setPwapRules(data.pwapRules);
+        if (Array.isArray(data.pwapUnavailableSlugs)) setPwapUnavailableSlugs(data.pwapUnavailableSlugs);
         // With Razorpay off, "prepaid" has no visible tile to select it —
         // default straight to the real payment method so submitting
         // without touching a tile does something sensible instead of
-        // silently falling through to the WhatsApp-manual fallback.
-        if (!data.razorpayEnabled && data.upiEnabled) {
-          setPaymentType("upi_qr");
-        }
+        // silently doing nothing.
+        if (data.upiEnabled) setPaymentType("upi_qr");
       })
       .catch(() => setRazorpay({ enabled: false, keyId: null, codAdvanceRupees: 200, codEnabled: false }))
       .finally(() => setConfigLoaded(true));
@@ -552,89 +554,6 @@ export default function CheckoutPage() {
     }
   }
 
-  async function handleRazorpayPayment() {
-    setPayError(null);
-    setPaying(true);
-    try {
-      const cartItems = items.map((i) => ({ slug: i.slug, quantity: i.quantity }));
-      // Built once, sent to both create-order (as a recoverable snapshot —
-      // see pending_orders) and verify (the actual source of truth) so the
-      // two can never drift apart.
-      const orderPayload = {
-        customer: form,
-        items: cartItems,
-        isGift,
-        giftNote: isGift ? giftNote : null,
-        sessionKey: getSessionKey(),
-        redeemMilesRupees: loyaltyDiscount,
-        newsletterOptIn,
-        paymentType,
-        attributedAdBriefId: getAttribution(),
-        referralCode: referralCodeInput.trim().toUpperCase() || null,
-        couponCode: couponCodeInput.trim().toUpperCase() || null,
-      };
-      const createRes = await fetch("/api/checkout/razorpay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: cartItems,
-          redeemMilesRupees: loyaltyDiscount,
-          pincode: form.pincode,
-          paymentType,
-          phone: form.phone,
-          referralCode: referralCodeInput.trim().toUpperCase() || null,
-          couponCode: couponCodeInput.trim().toUpperCase() || null,
-          order: orderPayload,
-        }),
-      });
-      const createData = await createRes.json();
-      if (!createRes.ok) throw new Error(createData.error ?? "Could not start payment");
-
-      const rzp = new window.Razorpay({
-        key: createData.keyId,
-        order_id: createData.razorpayOrderId,
-        amount: Math.round(createData.chargeAmount * 100),
-        currency: "INR",
-        name: "Moonglasses",
-        description: "Order payment",
-        prefill: { name: form.name, email: form.email, contact: form.phone },
-        handler: async (response: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }) => {
-          try {
-            const verifyRes = await fetch("/api/checkout/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                ...response,
-                order: orderPayload,
-              }),
-            });
-            const verifyData = await verifyRes.json();
-            if (!verifyRes.ok) throw new Error(verifyData.error ?? "Payment verification failed");
-            trackEvent("Purchase", { value: createData.total });
-            setLeaving(true);
-      clear();
-            router.push(`/checkout/confirmed?order=${verifyData.orderId}&paid=1`);
-          } catch (err) {
-            setPayError(err instanceof Error ? err.message : "Payment verification failed");
-          } finally {
-            setPaying(false);
-          }
-        },
-        modal: {
-          ondismiss: () => setPaying(false),
-        },
-      });
-      rzp.open();
-    } catch (err) {
-      setPayError(err instanceof Error ? err.message : "Could not start payment");
-      setPaying(false);
-    }
-  }
-
   // Pay With A Post numbers, from Admin › Pay With A Post › Rules.
   const [pwapRules, setPwapRules] = useState({ salesToShip: 3, salesPerFreeCode: 3 });
   const [payOpen, setPayOpen] = useState(false);
@@ -669,8 +588,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    // No silent WhatsApp fallback from the popup: a real method must be picked.
-    if (paymentType === "prepaid" && !razorpay.enabled) {
+    // A real method must be picked: UPI or Pay With A Post.
+    if (paymentType !== "upi_qr" && paymentType !== "post_barter") {
       setPayError("Choose a payment method above.");
       return;
     }
@@ -685,66 +604,9 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (razorpay.enabled) {
-      await handleRazorpayPayment();
-      return;
-    }
-
-    let createdOrderId: string | null = null;
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer: form,
-          items: items.map((i) => ({
-            slug: i.slug,
-            name: i.name,
-            price: i.price,
-            quantity: i.quantity,
-          })),
-          subtotal,
-          discountAmount: discount,
-          isGift,
-          giftNote: isGift ? giftNote : null,
-          sessionKey: getSessionKey(),
-          redeemMilesRupees: loyaltyDiscount,
-          newsletterOptIn,
-          attributedAdBriefId: getAttribution(),
-          referralCode: referralCodeInput.trim().toUpperCase() || null,
-          couponCode: couponCodeInput.trim().toUpperCase() || null,
-        }),
-      });
-      const data = await res.json().catch(() => null);
-      createdOrderId = data?.orderId ?? null;
-      trackEvent("Purchase", { value: total });
-    } catch (err) {
-      // Best-effort logging — WhatsApp remains the real order channel either way.
-      console.error("Order logging failed", err);
-    }
-
-    const lines = [
-      "New order from moon-glasses.store",
-      "",
-      ...items.map((i) => `${i.quantity} x ${i.name} — ₹${(i.price * i.quantity).toLocaleString("en-IN")}`),
-      "",
-      `Subtotal: ₹${subtotal.toLocaleString("en-IN")}`,
-      ...(discount > 0 ? [`Discount: −₹${discount.toLocaleString("en-IN")}`] : []),
-      ...(loyaltyDiscount > 0 ? [`Moonglasses Good Vibes redeemed: −₹${loyaltyDiscount.toLocaleString("en-IN")}`] : []),
-      ...(displayShippingCharge ? [`Shipping: ₹${displayShippingCharge.toLocaleString("en-IN")}`] : []),
-      `Total: ₹${total.toLocaleString("en-IN")}`,
-      "",
-      `Name: ${form.name}`,
-      `Phone: ${form.phone}`,
-      ...(form.email ? [`Email: ${form.email}`] : []),
-      `Address: ${form.address}, ${form.city}, ${form.state} ${form.pincode}`,
-      ...(isGift ? ["", "This is a gift.", `Gift note: ${giftNote || "(none)"}`] : []),
-    ];
-
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
-    window.open(url, "_blank");
-    clear();
-    router.push(createdOrderId ? `/checkout/confirmed?order=${createdOrderId}` : "/checkout/confirmed");
+    // UPI only (founder decision, 2 Oct 2026): no card, no COD, no
+    // WhatsApp order fallback.
+    setPayError("Please pay by UPI.");
   }
 
   if (leaving) {
@@ -809,32 +671,37 @@ export default function CheckoutPage() {
           <span className="text-tan-gold">−₹{discount.toLocaleString("en-IN")}</span>
         </div>
       )}
-      {loyaltyDiscount > 0 && (
+      {bestDiscount.applied === "miles" && (
         <div className="flex items-center justify-between text-body-s">
           <span className="text-tan-gold">Moonglasses Good Vibes Redeemed</span>
           <span className="text-tan-gold">−₹{loyaltyDiscount.toLocaleString("en-IN")}</span>
         </div>
       )}
-      {referralDiscount > 0 && (
+      {bestDiscount.applied === "referral" && (
         <div className="flex items-center justify-between text-body-s">
           <span className="text-tan-gold">Referral Code ({normalizedReferralCode})</span>
           <span className="text-tan-gold">−₹{referralDiscount.toLocaleString("en-IN")}</span>
         </div>
       )}
-      {couponDiscount > 0 && (
+      {bestDiscount.applied === "coupon" && (
         <div className="flex items-center justify-between text-body-s">
           <span className="text-tan-gold">Coupon ({normalizedCouponCode})</span>
           <span className="text-tan-gold">−₹{couponDiscount.toLocaleString("en-IN")}</span>
         </div>
       )}
+      {bestDiscount.dropped.length > 0 && (
+        <p className="text-caption text-secondary-text">
+          One offer per order, so your best one is applied. Not applied:{" "}
+          {bestDiscount.dropped
+            .map((d) => (d === "miles" ? "Good Vibes" : d === "referral" ? "referral code" : "coupon"))
+            .join(", ")}
+          .
+        </p>
+      )}
       {shippingCharge != null && (
         <div className="flex items-center justify-between text-body-s">
           <span className="text-secondary-text">Shipping</span>
-          {paymentType === "prepaid" ? (
-            <span className="text-tan-gold">FREE</span>
-          ) : (
-            <span className="text-secondary-text">₹{shippingCharge.toLocaleString("en-IN")}</span>
-          )}
+          <span className="text-tan-gold">FREE</span>
         </div>
       )}
       {shippingBlocking && (
@@ -960,7 +827,7 @@ export default function CheckoutPage() {
               ) : upi.enabled ? (
                 "Pay by UPI QR below."
               ) : (
-                "We don't run this through a payment gateway yet — placing an order sends your details and cart straight to us on WhatsApp, and we'll confirm payment and delivery with you directly."
+                "UPI payment is being set up. Please check back in a little while."
               )}
             </p>
 
@@ -1236,7 +1103,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {postBarterEnabled && (unitCount === 1 ? (
+            {postBarterEnabled && pwapAllowedForCart && (unitCount === 1 ? (
               <div className="mt-4 border border-ink/30 p-4">
                 <GiftFirstUrgencyBadge className="mb-2" />
                 <button
@@ -1427,7 +1294,7 @@ export default function CheckoutPage() {
                             : paymentType === "cod_advance"
                               ? `Pay ₹${Math.min(razorpay.codAdvanceRupees, total).toLocaleString("en-IN")} Now`
                               : `Pay ₹${total.toLocaleString("en-IN")}`
-                          : "Place Order via WhatsApp"}
+                          : "Pay by UPI"}
               </button>
                     </div>
                   </div>

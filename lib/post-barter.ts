@@ -8,7 +8,8 @@ import { computeTrustedOrderTotal } from "@/lib/order-pricing";
 import { findOrCreateCustomerForGuest } from "@/lib/auth";
 import { applyNewsletterOptIn } from "@/lib/newsletter";
 import { markCartSessionConverted } from "@/lib/cart-session-convert";
-import { checkAndAlertLowStock } from "@/lib/inventory";
+import { decrementStockForOrder, getInventoryMap } from "@/lib/inventory";
+import { assertPwapStock, assertValidOrderQuantities } from "@/lib/checkout-rules";
 import { shipOrder } from "@/lib/order-shipping";
 import {
   sendPostBarterOrderConfirmationEmail,
@@ -237,14 +238,9 @@ async function createBarterCouponCode(customerName: string, instagramHandle: str
 async function decrementInventoryAndShip(orderId: string) {
   const supabase = getSupabaseServerClient();
   const { data: items } = await supabase.from("order_items").select("chapter_slug, quantity").eq("order_id", orderId);
-  for (const item of items ?? []) {
-    const { data: inv } = await supabase.from("inventory").select("stock_on_hand").eq("chapter_slug", item.chapter_slug).maybeSingle();
-    if (inv) {
-      const newStock = Math.max(0, inv.stock_on_hand - item.quantity);
-      await supabase.from("inventory").update({ stock_on_hand: newStock }).eq("chapter_slug", item.chapter_slug);
-      await checkAndAlertLowStock(item.chapter_slug, newStock);
-    }
-  }
+  // Atomic, never oversells (see decrementStockForOrder). A short line
+  // throws, so nothing ships on trust that isn't on the shelf.
+  await decrementStockForOrder((items ?? []).map((i) => ({ slug: i.chapter_slug, quantity: i.quantity })));
   try {
     await shipOrder(orderId);
   } catch (err) {
@@ -318,6 +314,11 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
       tier: existing.barter_tier as BarterTier,
     };
   }
+
+  // Pay With A Post is only for products with healthy stock (Inventory
+  // Master >= PWAP_MIN_STOCK). Enforced here, whatever the client shows.
+  assertValidOrderQuantities(payload.items);
+  assertPwapStock(payload.items, await getInventoryMap());
 
   const { tier: classifiedTier, followerCount } = await classifyPostBarterApplicant(payload.instagramHandle);
   const { requiredOrders, friendDiscountRupees } = await getPostBarterConfig();

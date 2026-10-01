@@ -13,6 +13,7 @@ import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
+import { MAX_LINE_QUANTITY } from "@/lib/checkout-rules";
 
 /**
  * Lands a WhatsApp-catalog order (or any pre-built cart shared as a link)
@@ -122,7 +123,8 @@ export default function CartPage() {
                       <button
                         aria-label="Increase quantity"
                         onClick={() => setQuantity(item.slug, item.quantity + 1)}
-                        className="text-ink"
+                        disabled={item.quantity >= MAX_LINE_QUANTITY}
+                        className="text-ink disabled:opacity-30"
                       >
                         <Plus size={14} />
                       </button>

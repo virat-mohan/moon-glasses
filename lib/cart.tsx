@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Chapter } from "@/types/chapter";
 import { trackEvent } from "@/lib/client-tracking";
+import { clampLineQuantity } from "@/lib/checkout-rules";
 
 export type CartItem = {
   slug: string;
@@ -54,12 +55,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const existing = prev.find((i) => i.slug === chapter.slug);
       if (existing) {
         return prev.map((i) =>
-          i.slug === chapter.slug ? { ...i, quantity: i.quantity + quantity } : i
+          i.slug === chapter.slug ? { ...i, quantity: clampLineQuantity(i.quantity + quantity) } : i
         );
       }
       return [
         ...prev,
-        { slug: chapter.slug, name: chapter.name, price: chapter.price, image, quantity },
+        { slug: chapter.slug, name: chapter.name, price: chapter.price, image, quantity: clampLineQuantity(quantity) },
       ];
     });
   }
@@ -73,7 +74,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem(slug);
       return;
     }
-    setItems((prev) => prev.map((i) => (i.slug === slug ? { ...i, quantity } : i)));
+    // Whole units, 1 to 50 per line — the server refuses anything else.
+    setItems((prev) => prev.map((i) => (i.slug === slug ? { ...i, quantity: clampLineQuantity(quantity) } : i)));
   }
 
   function clear() {

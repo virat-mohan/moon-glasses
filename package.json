@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test lib/retail-os-brand.test.ts lib/brand-voice.test.ts"
+    "test": "node --experimental-strip-types --test lib/retail-os-brand.test.ts lib/brand-voice.test.ts lib/checkout-rules.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",

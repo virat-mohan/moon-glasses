@@ -9,9 +9,10 @@ import { applyNewsletterOptIn } from "@/lib/newsletter";
 import { recordGuestCheckoutLead } from "@/lib/leads";
 import { resolveReferralDiscount, rewardReferrer } from "@/lib/referrals";
 import { resolveCouponDiscount, redeemCoupon } from "@/lib/coupons";
-import { checkAndAlertLowStock } from "@/lib/inventory";
+import { decrementStockForOrder, getInventoryMap } from "@/lib/inventory";
+import { hasStockFor } from "@/lib/checkout-rules";
 import { shipOrder } from "@/lib/order-shipping";
-import { markCartSessionConverted } from "@/lib/cart-session-convert";
+import { markCartSessionConverted, sendPurchaseConversion } from "@/lib/cart-session-convert";
 import { sendInvoiceEmail, sendOrderNotificationEmail } from "@/lib/email";
 import { sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
 import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
@@ -91,7 +92,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   // QR took a visible moment to appear after tapping "Pay". In parallel
   // instead, total wait time is however long the SLOWEST of the three
   // takes, not the sum of all three.
-  const [config, pricing, customer] = await Promise.all([
+  const [config, pricing, customer, stock] = await Promise.all([
     getUpiPaymentConfig(),
     computeTrustedOrderTotal(
       payload.items,
@@ -103,11 +104,19 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
       "prepaid" // free shipping — UPI is a full-payment method, not COD
     ),
     getCurrentCustomer(),
+    getInventoryMap(),
   ]);
+  // Early, friendly refusal. The binding check is the atomic decrement in
+  // confirmUpiOrderPayment, since stock is only taken once payment lands.
+  for (const item of pricing.items) {
+    if (item.slug in stock && !hasStockFor(stock[item.slug], item.quantity)) {
+      throw new Error(`Sorry, only ${Math.max(0, stock[item.slug])} of ${item.name} left. Please lower the quantity.`);
+    }
+  }
   if (!config) throw new Error("UPI payment isn't set up yet — add UPI_ID in /admin/settings");
-  // A ₹0 total is only allowed when a code (e.g. a Pay With A Post free-pair
-  // reward) covers it — that order confirms immediately below, no QR.
-  if (pricing.total <= 0 && !pricing.coupon) throw new Error("Order total must be greater than zero");
+  // computeTrustedOrderTotal never returns less than ₹1, so every UPI order
+  // is paid through the QR.
+  if (pricing.total <= 0) throw new Error("Order total must be greater than zero");
 
   const wasGuest = !customer;
   const guestCustomer = wasGuest
@@ -172,22 +181,20 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
     payload.newsletterOptIn != null
       ? applyNewsletterOptIn(effectiveCustomerId, savedOrder.customer_email, payload.newsletterOptIn)
       : Promise.resolve(),
-    markCartSessionConverted(payload.sessionKey, {
-      id: savedOrder.id,
-      customer_email: savedOrder.customer_email,
-      customer_phone: savedOrder.customer_phone,
-      total: pricing.total,
-    }),
-    // Server-side Purchase so the founder console credits this order to the
-    // session's channel (the checkout page only fires it for card payments).
-    logTrackingEvent("Purchase", { sessionKey: payload.sessionKey, value: pricing.total }),
+    // The order is unpaid here, so no Purchase yet (Meta or first-party):
+    // confirmUpiOrderPayment fires it once the money lands.
+    markCartSessionConverted(
+      payload.sessionKey,
+      {
+        id: savedOrder.id,
+        customer_email: savedOrder.customer_email,
+        customer_phone: savedOrder.customer_phone,
+        total: pricing.total,
+      },
+      { sendPurchase: false }
+    ),
   ]);
   if (itemsError) throw itemsError;
-
-  if (pricing.total <= 0) {
-    await confirmUpiOrderPayment(savedOrder.id);
-    return { orderId: savedOrder.id as string, total: 0, free: true as const };
-  }
 
   const payAmount = (upiAmountPaise / 100).toFixed(2);
   const upiLink =
@@ -197,6 +204,8 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   return {
     orderId: savedOrder.id as string,
     total: pricing.total as number,
+    appliedDiscount: pricing.appliedDiscount,
+    droppedDiscounts: pricing.droppedDiscounts,
     upiId: config.upiId,
     qrImageUrl: config.qrImageUrl,
     payeeName: config.payeeName,
@@ -217,16 +226,48 @@ export async function confirmUpiOrderPayment(orderId: string) {
     .select("chapter_slug, chapter_name, unit_price, quantity")
     .eq("order_id", orderId);
 
-  await supabase.from("orders").update({ payment_status: "paid", status: "confirmed" }).eq("id", orderId);
+  // Claim the confirmation first, conditionally, so the admin button and the
+  // bank-SMS auto-confirm (lib/payment-auto-confirm.ts, same function) can't
+  // both confirm and decrement stock twice.
+  const { data: claimed } = await supabase
+    .from("orders")
+    .update({ payment_status: "paid", status: "confirmed" })
+    .eq("id", orderId)
+    .neq("payment_status", "paid")
+    .select("id");
+  if (!claimed?.length) return { alreadyConfirmed: true as const };
 
-  for (const item of items ?? []) {
-    const { data: inv } = await supabase.from("inventory").select("stock_on_hand").eq("chapter_slug", item.chapter_slug).maybeSingle();
-    if (inv) {
-      const newStock = Math.max(0, inv.stock_on_hand - item.quantity);
-      await supabase.from("inventory").update({ stock_on_hand: newStock }).eq("chapter_slug", item.chapter_slug);
-      await checkAndAlertLowStock(item.chapter_slug, newStock);
-    }
+  // Stock is only taken now, atomically. If a line is short the sale is
+  // refused: the order goes back to unpaid and flagged for a refund.
+  try {
+    await decrementStockForOrder((items ?? []).map((i) => ({ slug: i.chapter_slug, quantity: i.quantity })));
+  } catch (err) {
+    await supabase
+      .from("orders")
+      .update({ payment_status: order.payment_status, status: "stock_short" })
+      .eq("id", orderId);
+    throw err;
   }
+
+  // Purchase fires only now that payment is confirmed. Meta: one event_id
+  // (the order id) shared with the browser pixel. First-party log: credited
+  // to the shopper's cart session so the founder console sees the channel.
+  const { data: session } = await supabase
+    .from("cart_sessions")
+    .select("session_key")
+    .eq("customer_phone", order.customer_phone)
+    .order("last_activity_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  await Promise.allSettled([
+    sendPurchaseConversion({
+      id: order.id,
+      customer_email: order.customer_email,
+      customer_phone: order.customer_phone,
+      total: order.total,
+    }),
+    logTrackingEvent("Purchase", { sessionKey: session?.session_key ?? undefined, value: order.total }),
+  ]);
 
   if (order.customer_id) {
     const capsBought = (items ?? []).reduce((sum, i) => sum + (i.quantity ?? 0), 0);

@@ -1,5 +1,7 @@
 "use client";
 
+import { pixelTrackArgs } from "@/lib/checkout-rules";
+
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
@@ -145,7 +147,7 @@ export function getSessionKey() {
   return key;
 }
 
-type TrackParams = { chapterSlug?: string; value?: number; currency?: string };
+type TrackParams = { chapterSlug?: string; value?: number; currency?: string; orderId?: string };
 
 /**
  * Fires an event to both the Meta pixel (if loaded) and our own first-party
@@ -159,12 +161,14 @@ export function trackEvent(
   if (typeof window === "undefined") return;
 
   if (window.fbq) {
-    if (params.value != null) {
-      window.fbq("track", eventName, { value: params.value, currency: params.currency ?? "INR" });
-    } else {
-      window.fbq("track", eventName);
-    }
+    // Purchase carries the order id as eventID, the same event_id the server
+    // Conversions API sends, so Meta counts it once.
+    window.fbq(...pixelTrackArgs(eventName, params));
   }
+
+  // The server logs Purchase itself once payment is confirmed (see
+  // confirmUpiOrderPayment), so the browser only sends it to the pixel.
+  if (eventName === "Purchase") return;
 
   // Referrer only matters as an entry signal — capture it on the PageView
   // that started the session, not on every later interaction — and only

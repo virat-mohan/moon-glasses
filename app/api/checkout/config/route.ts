@@ -4,6 +4,8 @@ import { getCodAdvanceRupees, COD_DISABLED } from "@/lib/order-pricing";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
 import { isPostBarterEnabled } from "@/lib/post-barter";
 import { getPwapRules } from "@/lib/pwap-rules";
+import { getInventoryMap } from "@/lib/inventory";
+import { isPwapAvailableForStock } from "@/lib/checkout-rules";
 
 // Turned off at the request of the business owner (keys are configured and
 // the integration itself works — verified end to end against a real test
@@ -21,6 +23,10 @@ export async function GET() {
   const upi = await getUpiPaymentConfig();
   const postBarterEnabled = await isPostBarterEnabled();
   const { salesToShip, salesPerFreeCode } = await getPwapRules();
+  // Pay With A Post is hidden for any product under the stock floor; the
+  // create-order route enforces the same rule server-side.
+  const stock = await getInventoryMap();
+  const pwapUnavailableSlugs = Object.keys(stock).filter((slug) => !isPwapAvailableForStock(stock[slug]));
   return NextResponse.json({
     razorpayEnabled: !RAZORPAY_DISABLED && !!creds,
     razorpayKeyId: creds?.keyId ?? null,
@@ -31,5 +37,6 @@ export async function GET() {
     upiQrImageUrl: upi?.qrImageUrl ?? null,
     postBarterEnabled,
     pwapRules: { salesToShip, salesPerFreeCode },
+    pwapUnavailableSlugs,
   });
 }

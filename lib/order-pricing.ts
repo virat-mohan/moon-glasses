@@ -5,6 +5,13 @@ import { getCurrentCustomer } from "@/lib/auth";
 import { getRedeemableAmount } from "@/lib/loyalty";
 import { getShippingRate } from "@/lib/shiprocket";
 import { getSetting } from "@/lib/settings";
+import {
+  assertValidOrderQuantities,
+  computeOrderTotal,
+  pickBestDiscount,
+  priceItemsFromCatalog,
+  shippingChargeFor,
+} from "@/lib/checkout-rules";
 import { resolveReferralDiscount } from "@/lib/referrals";
 import { resolveCouponDiscount } from "@/lib/coupons";
 
@@ -24,11 +31,11 @@ export async function getCodAdvanceRupees() {
 
 /**
  * Recomputes an order's pricing entirely server-side — item prices, the
- * active discount rule, any Miles redemption, and shipping — rather than
- * trusting whatever numbers the client sent. This is what the Razorpay flow
- * charges against; a tampered client request can't change what actually
- * gets billed. Shipping is looked up fresh from Shiprocket by pincode
- * (never a client-supplied amount) so it stays a genuine cost pass-through.
+ * active discount rule, the one best discount (Miles, referral or coupon),
+ * and shipping — rather than trusting whatever numbers the client sent. A
+ * tampered client request can't change what actually gets billed. Shipping
+ * is free on every order (founder decision, 2 Oct 2026); the pincode is still
+ * checked so a confirmed "can't deliver here" blocks the order.
  */
 export async function computeTrustedOrderTotal(
   items: { slug: string; quantity: number }[],
@@ -39,12 +46,10 @@ export async function computeTrustedOrderTotal(
   couponCode?: string | null,
   paymentType: "prepaid" | "cod_advance" | "post_barter" = "prepaid"
 ) {
+  void paymentType; // shipping no longer depends on the payment type
+  assertValidOrderQuantities(items);
   const chapters = await getAllChapters();
-  const pricedItems = items.map((item) => {
-    const chapter = chapters.find((c) => c.slug === item.slug);
-    if (!chapter) throw new Error(`Unknown chapter: ${item.slug}`);
-    return { slug: item.slug, name: chapter.name, price: chapter.price, quantity: item.quantity };
-  });
+  const pricedItems = priceItemsFromCatalog(items, chapters);
 
   const subtotal = pricedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -66,20 +71,12 @@ export async function computeTrustedOrderTotal(
   const discountAmount = calculateDiscount(pricedItems, discountRule);
 
   const customer = await getCurrentCustomer();
-  let loyaltyDiscountAmount = 0;
-  if (customer && requestedRedeemRupees) {
+  let requestedLoyalty = 0;
+  if (customer && requestedRedeemRupees && requestedRedeemRupees > 0) {
     const { maxRedeemableRupees } = await getRedeemableAmount(customer.id);
-    loyaltyDiscountAmount = Math.min(requestedRedeemRupees, maxRedeemableRupees);
+    requestedLoyalty = Math.min(requestedRedeemRupees, maxRedeemableRupees);
   }
 
-  // Every paid order — prepaid or COD — is charged the real, live Shiprocket
-  // rate for its pincode; there's no more "prepaid ships free" perk. The one
-  // exception is post_barter: that order is genuinely free end to end (the
-  // whole point of paying with a post instead of money), so it never adds a
-  // shipping line regardless of what Shiprocket quotes. The rate is still
-  // looked up either way, since a confirmed "can't deliver here" must block
-  // the order even when nothing is being charged for shipping.
-  let shippingCharge = 0;
   if (deliveryPincode) {
     const unitCount = pricedItems.reduce((sum, item) => sum + item.quantity, 0);
     const shippingResult = await getShippingRate(deliveryPincode, unitCount);
@@ -91,21 +88,24 @@ export async function computeTrustedOrderTotal(
         `We can't currently deliver to pincode ${deliveryPincode} — please double-check it or use a different address.`
       );
     }
-    const realRate = shippingResult.status === "available" ? shippingResult.rate : 0;
-    shippingCharge = paymentType === "post_barter" ? 0 : realRate;
   }
+  const shippingCharge = shippingChargeFor();
 
-  const referral = await resolveReferralDiscount(referralCode, customer?.id ?? null, checkoutPhone ?? "");
-  const referralDiscountAmount = referral ? Math.min(referral.discountRupees, subtotal) : 0;
+  const resolvedReferral = await resolveReferralDiscount(referralCode, customer?.id ?? null, checkoutPhone ?? "");
+  const referralCandidate = resolvedReferral ? Math.min(resolvedReferral.discountRupees, subtotal) : 0;
 
-  const coupon = await resolveCouponDiscount(couponCode, subtotal);
-  const couponDiscountAmount = coupon ? coupon.discountRupees : 0;
+  const resolvedCoupon = await resolveCouponDiscount(couponCode, subtotal);
+  const couponCandidate = resolvedCoupon ? resolvedCoupon.discountRupees : 0;
 
-  const total =
-    Math.max(
-      0,
-      subtotal - discountAmount - loyaltyDiscountAmount - referralDiscountAmount - couponDiscountAmount
-    ) + shippingCharge;
+  // One discount per order: only the single largest of the three applies.
+  const best = pickBestDiscount({ miles: requestedLoyalty, referral: referralCandidate, coupon: couponCandidate });
+  const loyaltyDiscountAmount = best.applied === "miles" ? best.amount : 0;
+  const referralDiscountAmount = best.applied === "referral" ? best.amount : 0;
+  const couponDiscountAmount = best.applied === "coupon" ? best.amount : 0;
+  const referral = best.applied === "referral" ? resolvedReferral : null;
+  const coupon = best.applied === "coupon" ? resolvedCoupon : null;
+
+  const total = computeOrderTotal(subtotal, discountAmount, best.amount) + shippingCharge;
 
   return {
     items: pricedItems,
@@ -117,6 +117,8 @@ export async function computeTrustedOrderTotal(
     referral,
     couponDiscountAmount,
     coupon,
+    appliedDiscount: best.applied,
+    droppedDiscounts: best.dropped,
     shippingCharge,
     total,
     customer,
