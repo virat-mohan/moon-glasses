@@ -100,11 +100,14 @@ export const ORDER_NOTIFICATION_RECIPIENTS = ["virat@moon-glasses.store", "anun@
 export async function sendOrderNotificationEmail(order: InvoiceOrder, items: InvoiceItem[]) {
   const invoiceHtml = await renderInvoiceHtml(order, items);
   const orderNumber = order.id.slice(0, 8).toUpperCase();
-  await Promise.all(
-    ORDER_NOTIFICATION_RECIPIENTS.map((to) =>
-      sendEmail(to, `New order confirmed — #${orderNumber}`, invoiceHtml)
-    )
-  );
+  // The warehouse (WAREHOUSE_EMAIL, comma-separated) gets the confirmation too,
+  // not just the later "Ship this" email with the label.
+  const warehouse = ((await getSetting("WAREHOUSE_EMAIL")) ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const recipients = [...new Map([...ORDER_NOTIFICATION_RECIPIENTS, ...warehouse].map((e) => [e.toLowerCase(), e])).values()];
+  await Promise.all(recipients.map((to) => sendEmail(to, `New order confirmed — #${orderNumber}`, invoiceHtml)));
 }
 
 /** Fires once when a Chapter's stock crosses at/under the low-stock threshold — see lib/inventory.ts for the guard against repeat alerts. */
