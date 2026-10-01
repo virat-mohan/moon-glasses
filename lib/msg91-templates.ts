@@ -73,6 +73,20 @@ async function templateDefs(): Promise<TemplateDef[]> {
       example: ["Anun", "ANUNAFTERGLOW", "3", "b306b861-551e-4b2a-a5e6-10636e46457a"],
     },
     {
+      settingKey: "MSG91_PWAP_STATUS_TEMPLATE_ID",
+      name: "pwap_order_status",
+      category: "UTILITY",
+      body: `Order update for {{1}}: {{2}} of {{3}} orders have been placed with your code {{4}}. Your order is dispatched automatically once the target is reached. Order page: ${domain}/barter/{{5}} for details.`,
+      example: ["Anun", "2", "3", "ANUNAFTERGLOW", "b306b861-551e-4b2a-a5e6-10636e46457a"],
+    },
+    {
+      settingKey: "MSG91_PWAP_DISPATCHED_TEMPLATE_ID",
+      name: "pwap_order_dispatched",
+      category: "UTILITY",
+      body: `Hi {{1}}, your Pay With A Post order for {{2}} has been dispatched. Tracking details will follow from the courier. Order page: ${domain}/barter/{{3}} for details.`,
+      example: ["Anun", "Blackout Rectangle — Black Purple", "b306b861-551e-4b2a-a5e6-10636e46457a"],
+    },
+    {
       settingKey: "MSG91_PWAP_PROGRESS_TEMPLATE_ID",
       name: "pwap_progress",
       category: "UTILITY",
@@ -232,4 +246,40 @@ export async function listMsg91TemplateStatuses(): Promise<{ name: string; statu
     const r = row as { name?: string; languages?: { status?: string }[]; status?: string };
     return { name: r.name ?? "?", status: r.languages?.[0]?.status ?? r.status ?? "unknown" };
   });
+}
+
+/**
+ * Switches on a template's setting only once Meta has approved it, and only
+ * if it kept the category we asked for. A UTILITY template re-classed as
+ * MARKETING stays off: WhatsApp can silently hold marketing messages back
+ * (error 131049), so routing order updates through it would lose them.
+ * Runs hourly from /api/cron/msg91-template-sync.
+ */
+export async function syncApprovedTemplateSettings() {
+  const authKey = await getSetting("MSG91_AUTH_KEY");
+  const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
+  if (!authKey || !integratedNumber) return { enabled: [] as string[], skipped: [] as string[] };
+  const res = await fetch(`https://control.msg91.com/api/v5/whatsapp/get-template-client/${integratedNumber}`, {
+    headers: { authkey: authKey },
+  });
+  const data = await res.json().catch(() => null);
+  const rows: { name?: string; category?: string; languages?: { status?: string }[] }[] = Array.isArray(data?.data)
+    ? data.data
+    : [];
+  const enabled: string[] = [];
+  const skipped: string[] = [];
+  for (const def of await templateDefs()) {
+    const row = rows.find((r) => r.name === def.name);
+    const approved = row?.languages?.[0]?.status === "approved";
+    if (!approved) continue;
+    if (def.category === "UTILITY" && row?.category && row.category !== "UTILITY") {
+      skipped.push(`${def.name} (re-classed ${row.category})`);
+      continue;
+    }
+    if ((await getSetting(def.settingKey)) !== def.name) {
+      await setSetting(def.settingKey, def.name);
+      enabled.push(def.name);
+    }
+  }
+  return { enabled, skipped };
 }

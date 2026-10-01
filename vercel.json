@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/bank-mail",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/msg91-template-sync",
+      "schedule": "20 * * * *"
     }
   ]
 }

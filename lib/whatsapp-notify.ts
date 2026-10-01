@@ -336,6 +336,16 @@ export async function sendPostBarterProgressWhatsApp(
   required: number,
   couponCode: string
 ) {
+  // UTILITY order-status version first (delivers); Meta re-classed the
+  // original pwap_progress as MARKETING, which WhatsApp can hold back.
+  const status = await sendTemplateByName(
+    phone,
+    "pwap_order_status",
+    await getSetting("MSG91_PWAP_STATUS_TEMPLATE_ID"),
+    [name, String(soFar), String(required), couponCode, orderId],
+    { orderId }
+  );
+  if (status) return true;
   const templateName = await getSetting("MSG91_PWAP_PROGRESS_TEMPLATE_ID");
   return sendTemplateByName(
     phone,
@@ -348,6 +358,15 @@ export async function sendPostBarterProgressWhatsApp(
 
 /** Sent when a Pay With A Post order hits its threshold and ships free. */
 export async function sendPostBarterShippedWhatsApp(orderId: string, phone: string, name: string, itemName: string) {
+  // UTILITY dispatch notice first; pwap_shipped was re-classed MARKETING.
+  const dispatched = await sendTemplateByName(
+    phone,
+    "pwap_order_dispatched",
+    await getSetting("MSG91_PWAP_DISPATCHED_TEMPLATE_ID"),
+    [name, itemName, orderId],
+    { orderId }
+  );
+  if (dispatched) return true;
   const templateName = await getSetting("MSG91_PWAP_SHIPPED_TEMPLATE_ID");
   return sendTemplateByName(phone, "pwap_shipped", templateName, [name, itemName], { orderId });
 }
