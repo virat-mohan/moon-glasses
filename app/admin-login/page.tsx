@@ -63,7 +63,7 @@ function AdminLoginForm() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6">
+    <main className="mx-auto flex w-full max-w-sm flex-col px-6 pt-32 pb-24 md:pt-40">
       <h1 className="font-display text-heading-l uppercase text-ink">Admin</h1>
       {mode === null && <p className="mt-6 text-body-s text-secondary-text">Loading…</p>}
       {mode === "unconfigured" && (
