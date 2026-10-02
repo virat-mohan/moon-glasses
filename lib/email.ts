@@ -788,7 +788,7 @@ export async function sendPostBarterOrderConfirmationEmail(
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
-  return sendEmail(toEmail, testSubject(`You're in — here's your ${brand.brandName} code`, { is_test: isTest }), html);
+  return sendEmail(toEmail, testSubject(`Your Pay With A Post™ order is confirmed — your ${brand.brandName} code inside`, { is_test: isTest }), html);
 }
 
 /** Sent the moment a "Pay With A Post" order clears its required-orders line and actually ships. */

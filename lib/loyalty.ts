@@ -27,6 +27,15 @@ export async function getRedeemableAmount(customerId: string) {
 
 /** Earns Miles for a purchase — one row per order, so it can never be double-applied. */
 export async function earnMilesForOrder(customerId: string, orderId: string, capsBought: number) {
+  // Pairs paid with a post (Pay With A Post orders and free-pair codes, which
+  // come through as ₹0 orders) earn no Good Vibes. See /pay-with-a-post/terms.
+  const { data: order } = await getSupabaseServerClient()
+    .from("orders")
+    .select("is_post_barter, total")
+    .eq("id", orderId)
+    .maybeSingle();
+  if (order && (order.is_post_barter || Number(order.total) <= 0)) return;
+
   const milesPerCapSetting = await getSetting("MILES_PER_CAP");
   const milesPerCap = milesPerCapSetting ? Number(milesPerCapSetting) : 250;
   const delta = capsBought * milesPerCap;

@@ -79,7 +79,7 @@ export default async function PayWithAPostTermsPage() {
             After your pair ships, every <strong>{r.salesPerFreeCode}</strong> more qualifying sales on your code
             earns a free code, sent on WhatsApp and email. Each code takes up to{" "}
             {rupees(r.freeCodeValueRupees)} off one order, works once, is valid for {r.freeCodeValidDays} days and
-            has no cash value. Keep it private: whoever uses it first gets the pair.
+            has no cash value. Keep it private: whoever uses it first gets the pair. Pairs paid with a post, including pairs bought with a free code, don&apos;t earn Good Vibes loyalty points.
           </Section>
 
           {r.shipFirstEnabled && (
