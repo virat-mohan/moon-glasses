@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WhatsAppTemplatesPanel } from "@/components/admin/WhatsAppTemplatesPanel";
+import { canReplyFreeForm } from "@/lib/whatsapp-window";
 import { VoiceFindings, voiceBlocked } from "@/components/admin/VoiceFindings";
 
 type Conversation = {
@@ -167,6 +168,11 @@ export default function WhatsAppInboxPage() {
               </div>
 
               <div className="border-t border-divider p-4">
+                {!loadingThread && !canReplyFreeForm(messages) && (
+                  <p className="mb-2 text-caption text-secondary-text">
+                    More than 24 hours since their last message, so free text won&apos;t deliver. Send an approved template from the panel above.
+                  </p>
+                )}
                 {error && <p className="mb-2 text-caption text-paint-orange">{error}</p>}
                 <VoiceFindings text={replyText} kind="whatsapp" className="mb-2" />
                 <div className="flex gap-2">
@@ -179,7 +185,7 @@ export default function WhatsAppInboxPage() {
                   />
                   <button
                     onClick={sendReply}
-                    disabled={sending || !replyText.trim() || voiceBlocked(replyText, "whatsapp")}
+                    disabled={sending || !replyText.trim() || !canReplyFreeForm(messages) || voiceBlocked(replyText, "whatsapp")}
                     className="shrink-0 border border-ink bg-ink px-4 py-2 text-caption font-bold uppercase tracking-[0.05em] text-cream disabled:opacity-40"
                   >
                     {sending ? "Sending..." : "Send"}

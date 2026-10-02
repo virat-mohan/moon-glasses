@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendWhatsAppSessionMessage } from "@/lib/msg91";
+import { canReplyFreeForm } from "@/lib/whatsapp-window";
 import { logOutboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 
 /**
@@ -24,6 +25,20 @@ export async function POST(request: Request) {
       .eq("id", body.conversationId)
       .maybeSingle();
     if (!conversation) return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+
+    const { data: lastIn } = await supabase
+      .from("whatsapp_conversation_messages")
+      .select("direction, created_at")
+      .eq("conversation_id", body.conversationId)
+      .eq("direction", "inbound")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (!canReplyFreeForm(lastIn ?? [])) {
+      return NextResponse.json(
+        { error: "More than 24 hours since the customer's last message. Use an approved template instead." },
+        { status: 409 }
+      );
+    }
 
     const result = await sendWhatsAppSessionMessage(conversation.customer_phone, body.text);
     await logOutboundWhatsAppMessage({

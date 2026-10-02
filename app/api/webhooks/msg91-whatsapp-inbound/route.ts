@@ -3,6 +3,8 @@ import { getSetting } from "@/lib/settings";
 import { logInboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
 import { logWebhookRequest } from "@/lib/webhook-log";
+import { statusesFromWebhook } from "@/lib/whatsapp-window";
+import { getSupabaseServerClient } from "@/lib/supabase";
 import { replyWithPwapPost, wantsPwapPost } from "@/lib/pwap-whatsapp-reply";
 
 /**
@@ -45,6 +47,20 @@ export async function POST(request: Request) {
       // leave as-is
     }
   }
+  // Delivery/read statuses for our replies: update the stored message and stop.
+  const statuses = statusesFromWebhook(body);
+  if (statuses.length) {
+    const supabase = getSupabaseServerClient();
+    for (const st of statuses) {
+      await supabase
+        .from("whatsapp_conversation_messages")
+        .update({ status: st.status })
+        .eq("provider_message_id", st.providerMessageId)
+        .eq("direction", "outbound");
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   const msg = Array.isArray(body.messages) ? body.messages[0] : body;
   const contact = Array.isArray(body.contacts) ? body.contacts[0] : undefined;
 
@@ -57,6 +73,15 @@ export async function POST(request: Request) {
   if (!phone) {
     console.error("MSG91 inbound webhook: unrecognized payload shape", JSON.stringify(body));
     return NextResponse.json({ ok: true });
+  }
+
+  if (providerMessageId) {
+    const { data: dupe } = await getSupabaseServerClient()
+      .from("whatsapp_conversation_messages")
+      .select("id")
+      .eq("provider_message_id", String(providerMessageId))
+      .maybeSingle();
+    if (dupe) return NextResponse.json({ ok: true });
   }
 
   try {
