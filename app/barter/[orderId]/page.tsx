@@ -8,7 +8,6 @@ import { getBrandProfile } from "@/lib/brand";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { getPwapRules } from "@/lib/pwap-rules";
 import { SharePost } from "@/components/checkout/SharePost";
-import { generateAndUploadPwapShareCard } from "@/lib/pwap-share-card";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { OpenOnPhoneQr } from "@/components/checkout/OpenOnPhoneQr";
 
@@ -55,14 +54,11 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
     return { code, used: (c?.times_used ?? 0) > 0, expires: c?.expires_at ?? null };
   });
 
-  // The post image is rendered on the server when the order is placed; reuse
-  // that file so the page shows it instantly (render it once if missing).
+  // The post image is made right after the order is placed. Link it straight
+  // away (no storage check before render); if it isn't ready yet, SharePost
+  // shows "making your post" and asks /api/barter/[id]/card to finish it.
   const supabaseUrl = process.env.SUPABASE_URL ?? "";
-  let cardUrl = `${supabaseUrl}/storage/v1/object/public/ad-creatives/pwap-share/${order.id}.png`;
-  if (order.barter_coupon_code) {
-    const head = await fetch(cardUrl, { method: "HEAD", cache: "no-store" }).catch(() => null);
-    if (!head?.ok) cardUrl = (await generateAndUploadPwapShareCard(order.id, order.barter_coupon_code).catch(() => null)) ?? "";
-  }
+  const cardUrl = `${supabaseUrl}/storage/v1/object/public/ad-creatives/pwap-share/${order.id}.png`;
   const siteDomain = brand.siteUrl.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
   const handle = brand.instagramHandle.startsWith("@") ? brand.instagramHandle : `@${brand.instagramHandle}`;
   const caption = `Shop ${siteDomain} and use my code ${order.barter_coupon_code} at checkout 🌙 ${handle}\n\nPowered by Pay With A Post™`;

@@ -5,7 +5,6 @@ import { pickShareCardForOrder } from "@/lib/share-card-pool";
 
 const W = 1080;
 const H = 1350;
-const TOP_BAND = 260;
 
 // Satori's own remote-image fetching is unreliable (see lib/order-card.tsx), so images are inlined.
 async function asDataUri(url: string): Promise<string | null> {
@@ -37,57 +36,39 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
   ]);
   if (!hero) return null;
 
+  // Brand standard: the whole face shows, and no text sits on it. Photo on
+  // top, fading into black; all the words go underneath on the black.
+  const PHOTO_H = 860;
   const image = new ImageResponse(
     (
       <div style={{ display: "flex", flexDirection: "column", width: W, height: H, backgroundColor: "#050505", position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", height: TOP_BAND, paddingLeft: 56 }}>
+        <div style={{ display: "flex", position: "relative", width: W, height: PHOTO_H }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {logo && <img src={logo} height={168} width={336} alt="" style={{ objectFit: "contain" }} />}
-        </div>
-
-        <div style={{ display: "flex", position: "relative", width: W, height: H - TOP_BAND }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hero} width={W} height={H - TOP_BAND} alt="" style={{ objectFit: "cover", objectPosition: "50% 20%" }} />
+          <img src={hero} width={W} height={PHOTO_H} alt="" style={{ objectFit: "cover", objectPosition: "50% 18%" }} />
           <div
             style={{
               display: "flex",
               position: "absolute",
-              left: 56,
-              top: 24,
-              padding: "10px 16px",
-              borderRadius: 21,
-              backgroundColor: "rgba(5,5,5,0.55)",
-              color: "#f7f7f4",
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: 1,
+              left: 0,
+              bottom: 0,
+              width: W,
+              height: 220,
+              backgroundImage: "linear-gradient(to bottom, rgba(5,5,5,0) 0%, rgba(5,5,5,1) 100%)",
             }}
-          >
-            {pick.productName.toUpperCase()}
-          </div>
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {logo && <img src={logo} height={120} width={240} alt="" style={{ position: "absolute", left: 48, top: 36, objectFit: "contain" }} />}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            position: "absolute",
-            left: 0,
-            bottom: 0,
-            width: W,
-            height: 560,
-            paddingTop: 170,
-            backgroundImage: "linear-gradient(to bottom, rgba(5,5,5,0) 0%, rgba(5,5,5,0.9) 40%, rgba(5,5,5,0.98) 100%)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-end", color: "#8b8b86", fontSize: 22, letterSpacing: 4 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: W, height: H - PHOTO_H, paddingTop: 14 }}>
+          <div style={{ display: "flex", color: "#8b8b86", fontSize: 22, letterSpacing: 3 }}>{pick.productName.toUpperCase()}</div>
+          <div style={{ display: "flex", alignItems: "flex-end", marginTop: 22, color: "#8b8b86", fontSize: 22, letterSpacing: 4 }}>
             POWERED BY
             <span style={{ color: "#e7c77a", fontSize: 34, fontStyle: "italic", fontWeight: 700, letterSpacing: 0, marginLeft: 12 }}>
               Pay With A Post™
             </span>
           </div>
-          <div style={{ display: "flex", marginTop: 16, color: "#f7f7f4", fontSize: 44, fontWeight: 700, letterSpacing: 2 }}>
+          <div style={{ display: "flex", marginTop: 12, color: "#f7f7f4", fontSize: 44, fontWeight: 700, letterSpacing: 2 }}>
             {domain}
           </div>
           <div
@@ -95,7 +76,7 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              marginTop: 24,
+              marginTop: 22,
               width: 640,
               height: 132,
               border: "2px solid #e7c77a",
@@ -108,7 +89,7 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
               {couponCode}
             </div>
           </div>
-          <div style={{ display: "flex", marginTop: 20, color: "#8b8b86", fontSize: 26 }}>Use my code at checkout</div>
+          <div style={{ display: "flex", marginTop: 18, color: "#8b8b86", fontSize: 26 }}>Use my code at checkout</div>
         </div>
       </div>
     ),
@@ -117,13 +98,23 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
   return image.arrayBuffer();
 }
 
-/** Renders the card and uploads it to public storage, returning its URL. */
+/**
+ * Renders the card and uploads it to public storage, returning its URL.
+ * Stored as a JPEG (~150 KB instead of a ~1.6 MB PNG) so it opens fast on a
+ * phone and is what Android Instagram wants for Feed. The object keeps its
+ * .png name so every existing link (emails, WhatsApp, share variants) still
+ * works; the content type says JPEG, which is what browsers and apps follow.
+ */
 export async function generateAndUploadPwapShareCard(orderId: string, couponCode: string, variant = 0): Promise<string | null> {
   const png = await renderPwapShareCardPng(orderId, couponCode, variant);
   if (!png) return null;
+  const sharp = (await import("sharp")).default;
+  const jpeg = await sharp(Buffer.from(png)).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
   const supabase = getSupabaseServerClient();
   const path = variant ? `pwap-share/${orderId}-${variant}.png` : `pwap-share/${orderId}.png`;
-  const { error } = await supabase.storage.from("ad-creatives").upload(path, png, { contentType: "image/png", upsert: true });
+  const { error } = await supabase.storage
+    .from("ad-creatives")
+    .upload(path, jpeg, { contentType: "image/jpeg", upsert: true, cacheControl: "86400" });
   if (error) throw error;
   return supabase.storage.from("ad-creatives").getPublicUrl(path).data.publicUrl;
 }

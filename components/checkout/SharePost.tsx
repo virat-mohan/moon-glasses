@@ -13,6 +13,8 @@ export function SharePost({ orderId, cardUrl, caption }: { orderId: string; card
   const [state, setState] = useState<"idle" | "busy" | "shared" | "saved">("idle");
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState(cardUrl);
+  const [loaded, setLoaded] = useState(false);
+  const [making, setMaking] = useState(false);
   const variant = useRef(0);
   // The image is fetched as soon as it's shown: iOS only opens the share
   // sheet if share() runs straight from the tap, with nothing awaited first.
@@ -80,7 +82,33 @@ export function SharePost({ orderId, cardUrl, caption }: { orderId: string; card
   return (
     <div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={url} alt="Your post" className="aspect-[4/5] w-full border border-ink/20 object-cover" />
+      <div className="relative aspect-[4/5] w-full border border-ink/20 bg-surface-alt">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt="Your post"
+          decoding="async"
+          fetchPriority="high"
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            // Not made yet (it's finished in the background after the order):
+            // ask the server to make it, then show it.
+            if (making) return;
+            setMaking(true);
+            fetch(`/api/barter/${orderId}/card?n=0`)
+              .then((r) => r.json())
+              .then((d) => d.url && setUrl(`${d.url}?t=${Date.now()}`))
+              .catch(() => {})
+              .finally(() => setMaking(false));
+          }}
+          className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        />
+        {!loaded && (
+          <p className="absolute inset-0 flex items-center justify-center px-6 text-center text-caption text-secondary-text">
+            making your post with your code… takes a few seconds.
+          </p>
+        )}
+      </div>
       <button
         type="button"
         onClick={() => share(false)}
@@ -120,6 +148,8 @@ export function SharePost({ orderId, cardUrl, caption }: { orderId: string; card
  */
 async function toJpegFile(url: string): Promise<File> {
   const blob = await (await fetch(url)).blob();
+  // Cards are stored as JPEG now: share as-is, no re-encoding on the phone.
+  if (blob.type === "image/jpeg") return new File([blob], "moon-glasses-post.jpg", { type: "image/jpeg" });
   const bmp = await createImageBitmap(blob);
   const canvas = document.createElement("canvas");
   canvas.width = bmp.width;
