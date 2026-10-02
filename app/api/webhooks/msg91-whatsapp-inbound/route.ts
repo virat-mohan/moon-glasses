@@ -5,6 +5,8 @@ import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
 import { logWebhookRequest } from "@/lib/webhook-log";
 import { statusesFromWebhook } from "@/lib/whatsapp-window";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { parseWhatsAppOrder, looksLikeOrderPayload, safeStringify, syntheticOrderMessageId } from "@/lib/wa-order";
+import { handleWaCartMessage, handleWaPendingText } from "@/lib/wa-flow";
 import { replyWithPwapPost, wantsPwapPost } from "@/lib/pwap-whatsapp-reply";
 
 /**
@@ -64,11 +66,22 @@ export async function POST(request: Request) {
   const msg = Array.isArray(body.messages) ? body.messages[0] : body;
   const contact = Array.isArray(body.contacts) ? body.contacts[0] : undefined;
 
-  const phone = msg?.from ?? msg?.sender ?? msg?.mobile ?? body.customerNumber ?? body.from ?? body.mobile ?? null;
-  const text = msg?.text?.body ?? msg?.body ?? msg?.message ?? body.text ?? null;
+  // WhatsApp catalogue cart ("order" message): found anywhere in the payload.
+  const waOrder = parseWhatsAppOrder(body);
+  const orderUnreadable = !waOrder && looksLikeOrderPayload(body);
+
+  const phone = waOrder?.phone ?? msg?.from ?? msg?.sender ?? msg?.mobile ?? body.customerNumber ?? body.from ?? body.mobile ?? null;
+  const textRaw = msg?.text?.body ?? msg?.body ?? msg?.message ?? body.text ?? null;
+  // Inbox body: a readable line for a cart; the raw payload (truncated) when an order-looking message could not be read, so it can be inspected.
+  const text: string | null = waOrder
+    ? `[WhatsApp cart] ${waOrder.items.map((i) => `${i.qty}× ${i.retailerId}`).join(", ") || "no items"}`
+    : orderUnreadable
+      ? `[unrecognised order payload] ${safeStringify(body)}`
+      : textRaw;
   const name = contact?.profile?.name ?? msg?.name ?? body.customerName ?? body.name ?? null;
   const mediaUrl = msg?.image?.link ?? msg?.media?.url ?? body.media_url ?? null;
-  const providerMessageId = msg?.id ?? msg?.message_id ?? body.message_id ?? null;
+  const providerMessageId =
+    waOrder?.messageId ?? msg?.id ?? msg?.message_id ?? body.message_id ?? (waOrder && phone ? syntheticOrderMessageId(String(phone), waOrder.items) : null);
 
   if (!phone) {
     console.error("MSG91 inbound webhook: unrecognized payload shape", JSON.stringify(body));
@@ -85,13 +98,24 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { messageId } = await logInboundWhatsAppMessage({
+    const { messageId, conversationId } = await logInboundWhatsAppMessage({
       phone: String(phone),
       body: text ?? "",
       customerName: name,
       mediaUrl,
       providerMessageId: providerMessageId ? String(providerMessageId) : null,
     });
+
+    // Cart from the WhatsApp catalogue, or the address for a pending cart. Errors never fail the webhook.
+    if (waOrder) {
+      await handleWaCartMessage({ ...waOrder, phone: String(phone), name: waOrder.name ?? name }, conversationId).catch((err) =>
+        console.error("WhatsApp cart handling failed", err)
+      );
+    } else if (textRaw && !mediaUrl && !wantsPwapPost(textRaw)) {
+      await handleWaPendingText({ phone: String(phone), text: String(textRaw), profileName: name, conversationId }).catch((err) =>
+        console.error("WhatsApp address handling failed", err)
+      );
+    }
 
     // Awaited (not fire-and-forget) deliberately — on a serverless runtime
     // the process can be frozen/killed right after the response is sent,
@@ -100,8 +124,8 @@ export async function POST(request: Request) {
     // caught and logged inside processInboundPaymentScreenshot itself,
     // never thrown here.
     // "Get my post on WhatsApp": reply with their Pay With A Post image.
-    if (wantsPwapPost(text)) {
-      await replyWithPwapPost(String(phone), String(text)).catch((err) =>
+    if (wantsPwapPost(textRaw)) {
+      await replyWithPwapPost(String(phone), String(textRaw)).catch((err) =>
         console.error("Pay With A Post WhatsApp reply failed", err)
       );
     }

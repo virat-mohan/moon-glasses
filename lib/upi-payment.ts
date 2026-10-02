@@ -18,6 +18,7 @@ import { sendOrderAlertWhatsApp, sendOrderConfirmationWhatsApp } from "@/lib/wha
 import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
 import { isTestOrder } from "@/lib/test-order";
 import { after } from "next/server";
+import { sendWaPaidMessage } from "@/lib/wa-paid";
 
 /**
  * "Pay With A Post"'s stablemate for regular currency when Razorpay isn't
@@ -71,7 +72,7 @@ export type UpiOrderPayload = {
   customer: {
     name: string;
     phone: string;
-    email: string;
+    email: string | null;
     address: string;
     city?: string;
     state?: string;
@@ -308,7 +309,10 @@ export async function confirmUpiOrderPayment(orderId: string) {
       customer_phone: order.customer_phone,
       total: order.total,
     }),
-    logTrackingEvent("Purchase", { sessionKey: session?.session_key ?? undefined, value: order.total }),
+    logTrackingEvent("Purchase", {
+      sessionKey: order.order_source === "whatsapp" ? `wa-${order.id}` : session?.session_key ?? undefined,
+      value: order.total,
+    }),
   ]);
 
   if (order.customer_id) {
@@ -353,6 +357,7 @@ export async function confirmUpiOrderPayment(orderId: string) {
     sendOrderNotificationEmail(order, items ?? []),
     sendOrderConfirmationWhatsApp(order),
     sendOrderAlertWhatsApp(order, "paid"),
+    sendWaPaidMessage(order),
   ]);
 
   try {

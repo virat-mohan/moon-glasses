@@ -12,6 +12,7 @@ import QRCode from "qrcode";
 import { trackEvent } from "@/lib/client-tracking";
 import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
 import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
+import { upiAppLinks } from "@/lib/upi-links";
 
 type OrderSummary = {
   id: string;
@@ -500,26 +501,6 @@ function OrderConfirmedContent() {
       <FooterEditorial />
     </>
   );
-}
-
-/**
- * UPI app buttons for paying on the same phone (a QR can't be scanned from
- * the device showing it). Same pay link, re-targeted at each app: Android
- * uses intent URLs (falls back to the UPI chooser), iOS uses each app's
- * scheme. "Other UPI app" is the generic upi:// link.
- */
-function upiAppLinks(upiLink: string, device: "android" | "ios" | "desktop") {
-  // Google Pay + the generic UPI chooser only: Paytm/PhonePe app links were
-  // unreliable for payments to this UPI ID.
-  const query = upiLink.split("?")[1] ?? "";
-  const gpay =
-    device === "android"
-      ? `intent://pay?${query}#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`
-      : `gpay://upi/pay?${query}`;
-  return [
-    { name: "Google Pay", href: gpay, primary: true },
-    { name: "Other UPI app", href: upiLink, primary: true },
-  ];
 }
 
 function UpiQrImage({ upiQr, fallback }: { upiQr: string | null; fallback: string }) {
