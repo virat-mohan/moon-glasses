@@ -95,7 +95,7 @@ export default function AboutPage() {
           <div>
             <p className="font-display text-heading-m text-ink">Virat Mohan</p>
             <p className="mt-1 text-caption uppercase tracking-[0.1em] text-secondary-text">
-              Co-Founder And AI Enabler
+              Co-Founder And AI Enabler · Founder, DevShop
             </p>
             <p className="mt-4 text-body-s text-ink">Powering D2C businesses with AI.</p>
             <a
@@ -105,6 +105,23 @@ export default function AboutPage() {
               className="mt-3 inline-block text-caption uppercase tracking-[0.1em] text-ink underline underline-offset-4 transition-colors hover:text-[var(--moon-gold)]"
             >
               viratmohan.com
+            </a>
+
+            <a
+              href="https://www.viratmohan.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="DevShop — built fast, for real businesses"
+              className="mt-6 block"
+            >
+              <Image
+                src="/images/devshop-logo.png"
+                alt="DevShop"
+                width={480}
+                height={184}
+                sizes="180px"
+                className="h-auto w-[180px] opacity-90 transition-opacity hover:opacity-100"
+              />
             </a>
           </div>
         </div>
