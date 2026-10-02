@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function ContactForm() {
   const [name, setName] = useState("");
@@ -9,6 +9,15 @@ export function ContactForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [website, setWebsite] = useState("");
+  const [token, setToken] = useState("");
+
+  useEffect(() => {
+    fetch("/api/contact", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setToken(typeof d?.token === "string" ? d.token : ""))
+      .catch(() => {});
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -18,7 +27,7 @@ export function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({ name, email, message, website, token }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error ?? "Could not send your message");
@@ -40,6 +49,12 @@ export function ContactForm() {
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
+        <label>
+          Website
+          <input type="text" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+        </label>
+      </div>
       <div>
         <label className="block font-sans text-caption uppercase tracking-[0.1em] text-secondary-text">
           Name
