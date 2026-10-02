@@ -41,8 +41,8 @@ export async function shipOrder(orderId: string) {
     .select("chapter_slug, chapter_name, unit_price, quantity")
     .eq("order_id", orderId);
 
-  // Warehouse-facing names (supplier model, colour, code) for everything the
-  // warehouse reads: Shiprocket lines/label, the email and the WhatsApp.
+  // Warehouse-facing names (supplier model, colour, code) for the warehouse
+  // email and WhatsApp only. Never Shiprocket: it shows the name to customers.
   const pickNames = await warehouseItemNames(items ?? []);
   const warehouseItems = (items ?? []).map((item) => ({ ...item, chapter_name: pickNames.get(item.chapter_slug)?.name ?? item.chapter_name }));
 
@@ -64,7 +64,11 @@ export async function shipOrder(orderId: string) {
     // against what actually shows in Shiprocket's dashboard.
     subtotal: order.payment_type === "cod_advance" ? order.balance_due : order.subtotal,
     total: order.total,
-    items: warehouseItems.map((item) => ({
+    // Shiprocket shows the product name to the CUSTOMER (its WhatsApp and
+    // tracking page), so it gets only the Moonglasses name. The supplier code
+    // rides in the SKU for picking; the warehouse email/WhatsApp keep the full
+    // supplier line (warehouseItems).
+    items: (items ?? []).map((item) => ({
       name: item.chapter_name,
       sku: pickNames.get(item.chapter_slug)?.sku ?? item.chapter_slug,
       quantity: item.quantity,

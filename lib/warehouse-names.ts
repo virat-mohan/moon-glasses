@@ -4,7 +4,8 @@ import { getSupabaseServerClient } from "@/lib/supabase";
  * The warehouse picks stock by the supplier's model name, colour and code, so
  * team-facing lines carry both our name and the supplier's (not just our customer-facing names
  * (product_costing.supplier_model / supplier_sku). Used for the warehouse
- * email, the warehouse WhatsApp and the Shiprocket order lines; the customer's
+ * email and the warehouse WhatsApp only (Shiprocket shows names to customers,
+ * so it gets the Moonglasses name plus the supplier SKU); the customer's
  * invoice and messages keep the Moonglasses name.
  */
 export async function warehouseItemNames(items: { chapter_slug: string; chapter_name: string }[]) {
