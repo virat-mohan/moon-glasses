@@ -48,6 +48,7 @@ export const NAV_SECTIONS: AdminNavSection[] = [
     label: "Customers",
     tone: "terracotta",
     links: [
+      { href: "/admin/whatsapp", label: "WhatsApp Inbox" },
       { href: "/admin/customers", label: "Customers & Good Vibes" },
       { href: "/admin/leads", label: "Leads" },
     ],
