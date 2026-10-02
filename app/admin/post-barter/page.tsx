@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PwapRulesPanel } from "@/components/admin/PwapRulesPanel";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { PostBarterToggle } from "@/components/admin/PostBarterToggle";
+import { AutoReshareToggle } from "@/components/admin/AutoReshareToggle";
 
 type BarterOrder = {
   id: string;
@@ -38,7 +39,7 @@ type LeaderboardRow = {
 
 type Mention = {
   id: string;
-  kind: "story" | "mention" | "collab";
+  kind: "story" | "mention" | "collab" | "tag";
   ig_username: string | null;
   permalink: string | null;
   media_ref: string | null;
@@ -46,9 +47,26 @@ type Mention = {
   matched_order_id: string | null;
   reposted_at: string | null;
   created_at: string;
+  auto_reshare: { status: "reshared" | "skipped" | "failed" | "pending"; reason?: string; at: string } | null;
 };
 
-const SOURCE_LABEL = { story: "Story mention", mention: "Caption mention", collab: "Collab post" } as const;
+const SOURCE_LABEL = { story: "Story mention", mention: "Caption mention", collab: "Collab post", tag: "Tagged post" } as const;
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function AutoReshareStatus({ m }: { m: Mention }) {
+  const a = m.auto_reshare;
+  if (!a) return null;
+  if (a.status === "reshared") return <span className="text-tan-gold">Reshared automatically · {formatTime(m.reposted_at ?? a.at)}</span>;
+  if (a.status === "pending") return <span className="text-secondary-text">Resharing…</span>;
+  return (
+    <span className={a.status === "failed" ? "text-paint-orange" : "text-secondary-text"}>
+      {a.status === "failed" ? "Auto-reshare failed" : "Not reshared"}: {a.reason ?? "unknown"}
+    </span>
+  );
+}
 
 type Stats = {
   postedCount: number;
@@ -182,6 +200,7 @@ export default function AdminPostBarterPage() {
           Stories and posts that mention @moonglassesonline, picked up automatically. Stories are saved the moment they
           arrive, since Instagram deletes them after 24 hours.
         </p>
+        <AutoReshareToggle />
         {mentions.length === 0 ? (
           <p className="mt-3 text-caption text-secondary-text">Nothing picked up yet.</p>
         ) : (
@@ -214,7 +233,18 @@ export default function AdminPostBarterPage() {
                       )}
                     </td>
                     <td className="p-3">
-                      {m.kind === "story" && m.media_ref && <RepostButton mention={m} onDone={load} />}
+                      {m.auto_reshare && m.auto_reshare.status !== "failed" ? (
+                        <AutoReshareStatus m={m} />
+                      ) : (
+                        <>
+                          {m.auto_reshare && (
+                            <div className="mb-1">
+                              <AutoReshareStatus m={m} />
+                            </div>
+                          )}
+                          {m.kind === "story" && m.media_ref && <RepostButton mention={m} onDone={load} />}
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

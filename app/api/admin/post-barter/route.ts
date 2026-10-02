@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
     const { data: mentionRows } = await supabase
       .from("instagram_mentions")
-      .select("id, kind, ig_username, permalink, media_ref, caption, matched_order_id, reposted_at, created_at")
+      .select("id, kind, ig_username, permalink, media_ref, caption, matched_order_id, reposted_at, created_at, auto_reshare:raw->auto_reshare")
       .order("created_at", { ascending: false })
       .limit(50);
     const mentions = await Promise.all(

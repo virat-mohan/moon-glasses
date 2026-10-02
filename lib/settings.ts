@@ -85,6 +85,8 @@ export const SETTINGS_KEYS = [
   "SUPPORT_WHATSAPP",
   "ORDER_ALERT_WHATSAPP",
   "MSG91_ORDER_ALERT_TEMPLATE_ID",
+  "AUTO_RESHARE_TAGS",
+  "AUTO_RESHARE_SEEDED_AT",
 ] as const;
 
 export type SettingKey = (typeof SETTINGS_KEYS)[number];

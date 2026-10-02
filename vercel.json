@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/msg91-template-sync",
       "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/cron/tagged-reshare",
+      "schedule": "*/30 * * * *"
     }
   ]
 }

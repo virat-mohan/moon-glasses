@@ -330,6 +330,10 @@ export type InstagramTaggedMedia = {
   timestamp: string;
   likeCount: number | null;
   commentsCount: number | null;
+  /** Image (or video file) URL, when Meta exposes it for someone else's media. */
+  mediaUrl: string | null;
+  /** Cover frame for videos/reels. */
+  thumbnailUrl: string | null;
 };
 
 /**
@@ -343,29 +347,49 @@ export type InstagramTaggedMedia = {
  * app/api/admin/creators/content/route.ts.
  */
 export async function getTaggedMedia(limit = 25): Promise<InstagramTaggedMedia[]> {
-  const { accessToken, igUserId } = await getInstagramAuth();
+  const fields = "id,caption,media_type,permalink,timestamp,username,like_count,comments_count,media_url,thumbnail_url";
+  // Facebook-token route first (the documented home of /tags); if that isn't
+  // configured, try the Instagram-login connection on graph.instagram.com.
+  const errors: string[] = [];
+  const routes: (() => Promise<{ base: string; igUserId: string; accessToken: string }>)[] = [
+    async () => ({ ...(await getInstagramAuth()), base: `https://graph.facebook.com/${GRAPH_VERSION}` }),
+    async () => {
+      const c = await getInstagramConnection();
+      if (!c) throw new Error("no Instagram login connection");
+      return { accessToken: c.accessToken, igUserId: c.userId, base: `https://graph.instagram.com/${GRAPH_VERSION}` };
+    },
+  ];
+  for (const route of routes) {
+    try {
+      const { base, igUserId, accessToken } = await route();
+      const res = await fetch(
+        `${base}/${igUserId}/tags?` + new URLSearchParams({ fields, limit: String(limit), access_token: accessToken })
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(`Instagram Graph API error: ${JSON.stringify(data?.error?.message ?? data)}`);
+      return (data.data ?? []).map((item: Record<string, unknown>) => ({
+        id: item.id as string,
+        caption: (item.caption as string) ?? null,
+        permalink: (item.permalink as string) ?? null,
+        mediaType: item.media_type as string,
+        username: (item.username as string) ?? null,
+        timestamp: item.timestamp as string,
+        likeCount: (item.like_count as number) ?? null,
+        commentsCount: (item.comments_count as number) ?? null,
+        mediaUrl: (item.media_url as string) ?? null,
+        thumbnailUrl: (item.thumbnail_url as string) ?? null,
+      }));
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+  throw new Error(`Could not read tagged posts: ${errors.join(" | ")}`);
+}
 
-  const res = await fetch(
-    `https://graph.facebook.com/${GRAPH_VERSION}/${igUserId}/tags?` +
-      new URLSearchParams({
-        fields: "id,caption,media_type,permalink,timestamp,username,like_count,comments_count",
-        limit: String(limit),
-        access_token: accessToken,
-      })
-  );
-  const data = await res.json();
-  if (!res.ok) throw new Error(`Instagram Graph API error: ${JSON.stringify(data)}`);
-
-  return (data.data ?? []).map((item: Record<string, unknown>) => ({
-    id: item.id as string,
-    caption: (item.caption as string) ?? null,
-    permalink: (item.permalink as string) ?? null,
-    mediaType: item.media_type as string,
-    username: (item.username as string) ?? null,
-    timestamp: item.timestamp as string,
-    likeCount: (item.like_count as number) ?? null,
-    commentsCount: (item.comments_count as number) ?? null,
-  }));
+/** Our own Instagram username (so we never reshare ourselves). */
+export async function getOwnInstagramUsername(): Promise<string | null> {
+  const c = await getInstagramConnection().catch(() => null);
+  return c?.username?.toLowerCase() ?? null;
 }
 
 /**
