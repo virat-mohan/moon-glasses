@@ -27,7 +27,7 @@ export async function computeDailyAdReport(sinceIso: string, untilIso: string) {
 
   const [dailyInsights, { data: orders }] = await Promise.all([
     getAccountInsightsDaily(sinceDate, untilDate),
-    supabase.from("orders").select("total, created_at").gte("created_at", sinceIso).lt("created_at", untilIso).neq("status", "cancelled"),
+    supabase.from("orders").select("total, created_at").eq("is_test", false).gte("created_at", sinceIso).lt("created_at", untilIso).neq("status", "cancelled"),
   ]);
 
   const revenueByDay = new Map<string, { revenue: number; orders: number }>();
@@ -86,7 +86,7 @@ export async function getAttributedRevenue(adBriefId: string, days: number) {
   const supabase = getSupabaseServerClient();
   const { data } = await supabase
     .from("orders")
-    .select("total")
+    .select("total").eq("is_test", false)
     .eq("attributed_ad_brief_id", adBriefId)
     .gte("created_at", since);
   const orders = data ?? [];
@@ -122,7 +122,7 @@ export async function generateWeeklyReport(weekEnd: Date = new Date()): Promise<
       .select("event_name")
       .gte("created_at", sinceISO)
       .lt("created_at", untilISO),
-    supabase.from("orders").select("total").gte("created_at", sinceISO).lt("created_at", untilISO),
+    supabase.from("orders").select("total").eq("is_test", false).gte("created_at", sinceISO).lt("created_at", untilISO),
     supabase
       .from("cart_sessions")
       .select("id")

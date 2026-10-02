@@ -29,7 +29,7 @@ export async function computeOpsDigest(sinceIso?: string, untilIso?: string): Pr
     await Promise.all([
       supabase
         .from("orders")
-        .select("id, total")
+        .select("id, total").eq("is_test", false)
         .gte("created_at", since)
         .lt("created_at", until)
         .neq("status", "cancelled"),

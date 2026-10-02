@@ -94,7 +94,7 @@ export async function computeWebsiteAnalytics(sinceIso: string, untilIso: string
     // Only need to know WHICH session keys existed before this window, to
     // classify new vs. returning — not their full event history.
     supabase.from("tracking_events").select("session_key").lt("created_at", sinceIso).not("session_key", "is", null),
-    supabase.from("orders").select("total, created_at").gte("created_at", sinceIso).lt("created_at", untilIso).neq("status", "cancelled"),
+    supabase.from("orders").select("total, created_at").eq("is_test", false).gte("created_at", sinceIso).lt("created_at", untilIso).neq("status", "cancelled"),
   ]);
 
   const events = (eventsData ?? []) as RawEvent[];

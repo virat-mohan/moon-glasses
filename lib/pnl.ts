@@ -32,7 +32,7 @@ export async function computePnl(monthKey: string) {
     .from("orders")
     .select(
       "id, subtotal, discount_amount, referral_discount_amount, loyalty_discount_amount, coupon_discount_amount, shipping_charge, refunded_amount, status, is_post_barter"
-    )
+    ).eq("is_test", false)
     .gte("created_at", rangeStart)
     .lt("created_at", rangeEnd)
     .neq("status", "cancelled");

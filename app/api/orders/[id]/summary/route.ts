@@ -13,7 +13,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { data: order } = await supabase
       .from("orders")
       .select(
-        "id, customer_name, total, subtotal, discount_amount, referral_discount_amount, shipping_charge, payment_type, cod_advance_amount, balance_due, payment_status, delivery_address, delivery_city, delivery_state, delivery_pincode"
+        "id, customer_name, total, subtotal, discount_amount, referral_discount_amount, shipping_charge, payment_type, cod_advance_amount, balance_due, payment_status, delivery_address, delivery_city, delivery_state, delivery_pincode, is_test"
       )
       .eq("id", id)
       .maybeSingle();

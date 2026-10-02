@@ -113,6 +113,7 @@ export default async function AdminOrdersPage() {
     barter_coupon_code: string | null;
     barter_required_orders: number | null;
     barter_qualified_at: string | null;
+    is_test: boolean | null;
   }[] = [];
   let configError = false;
 
@@ -121,7 +122,7 @@ export default async function AdminOrdersPage() {
     const { data } = await supabase
       .from("orders")
       .select(
-        "id, created_at, customer_name, customer_phone, total, subtotal, discount_amount, payment_type, payment_status, balance_due, status, shipment_status, refund_status, is_gift, gift_note, shiprocket_order_id, shiprocket_shipment_id, shiprocket_awb_code, shiprocket_label_url, courier_name, razorpay_payment_id, refunded_amount, return_shipment_id, is_post_barter, barter_tier, barter_coupon_code, barter_required_orders, barter_qualified_at"
+        "id, created_at, customer_name, customer_phone, total, subtotal, discount_amount, payment_type, payment_status, balance_due, status, shipment_status, refund_status, is_gift, gift_note, shiprocket_order_id, shiprocket_shipment_id, shiprocket_awb_code, shiprocket_label_url, courier_name, razorpay_payment_id, refunded_amount, return_shipment_id, is_post_barter, barter_tier, barter_coupon_code, barter_required_orders, barter_qualified_at, is_test"
       )
       .order("created_at", { ascending: false })
       .limit(50);
@@ -194,7 +195,17 @@ export default async function AdminOrdersPage() {
                       )}
                     </td>
                     <td className="py-3 pr-4">
-                      <p className="font-sans text-body-s text-ink">{o.customer_name}</p>
+                      <p className="font-sans text-body-s text-ink">
+                        {o.customer_name}
+                        {o.is_test && (
+                          <span
+                            title="Test order: nothing ships, no stock used, not in reports"
+                            className="ml-2 inline-block bg-paint-orange px-1.5 py-0.5 align-middle text-micro font-bold uppercase tracking-[0.05em] text-cream"
+                          >
+                            Test
+                          </span>
+                        )}
+                      </p>
                       <p className="text-micro text-secondary-text">
                         #{o.id.slice(0, 8).toUpperCase()} · {formatDate(o.created_at)}
                       </p>

@@ -11,6 +11,9 @@ import { markCartSessionConverted } from "@/lib/cart-session-convert";
 import { decrementStockForOrder, getInventoryMap } from "@/lib/inventory";
 import { assertPwapStock, assertValidOrderQuantities } from "@/lib/checkout-rules";
 import { shipOrder } from "@/lib/order-shipping";
+import { isTestOrder } from "@/lib/test-order";
+import { pwapDedupeOrFilter } from "@/lib/pwap-dedupe";
+import { after } from "next/server";
 import {
   sendPostBarterOrderConfirmationEmail,
   sendPostBarterQualifiedEmail,
@@ -238,6 +241,8 @@ async function createBarterCouponCode(customerName: string, instagramHandle: str
 /** Shared by both ship paths: the moment a barter order is either created (gift_first) or qualifies (sell_first), decrement inventory and ship exactly like a normal paid order does. */
 async function decrementInventoryAndShip(orderId: string) {
   const supabase = getSupabaseServerClient();
+  const { data: o } = await supabase.from("orders").select("is_test").eq("id", orderId).maybeSingle();
+  if (isTestOrder(o)) return;
   const { data: items } = await supabase.from("order_items").select("chapter_slug, quantity").eq("order_id", orderId);
   // Atomic, never oversells (see decrementStockForOrder). A short line
   // throws, so nothing ships on trust that isn't on the shelf.
@@ -260,7 +265,8 @@ export type PostBarterOrderPayload = {
     pincode?: string;
   };
   items: { slug: string; quantity: number }[];
-  instagramHandle: string;
+  /** Optional: no handle is asked at checkout any more (sell first only). */
+  instagramHandle?: string | null;
   /** Only meaningful when the applicant classifies as gift_first — see verifyGiftFirstOwnership. Missing or wrong just means a safe downgrade to sell_first, never a hard rejection. */
   ownershipCode?: string;
   /** Required (server-enforced) whenever the order actually resolves to gift_first — explicit acceptance of the post-within-12-hours-of-delivery condition. Meaningless for sell_first, where nothing ships before a post exists anyway. */
@@ -269,6 +275,8 @@ export type PostBarterOrderPayload = {
   giftNote?: string | null;
   sessionKey?: string;
   newsletterOptIn?: boolean;
+  /** Set only by the route after verifying an admin session (lib/admin-request.ts). */
+  testOrder?: boolean;
 };
 
 /**
@@ -291,6 +299,9 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   }
 
   const supabase = getSupabaseServerClient();
+  const handle = payload.instagramHandle ? parseInstagramHandle(payload.instagramHandle) : "";
+  const dedupeFilter = pwapDedupeOrFilter({ phone: payload.customer.phone, email: payload.customer.email, handle });
+  if (!dedupeFilter) throw new Error("Please add your phone number and email.");
 
   // One active barter order per person at a time — also doubles as
   // idempotency protection against a double-submit/retry: a retry just
@@ -302,10 +313,11 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     .is("barter_qualified_at", null)
     // ...and per Instagram account, so one handle can't run several at once
     // from different phone numbers.
-    .or(
-      `customer_phone.eq.${payload.customer.phone},customer_email.eq.${payload.customer.email},barter_instagram_handle.ilike.${parseInstagramHandle(payload.instagramHandle)}`
-    )
+    // The handle clause only when a handle was given (see lib/pwap-dedupe.ts).
+    .or(dedupeFilter)
     .neq("status", "cancelled")
+    // Test orders never block (or get handed back to) a real shopper, and vice versa.
+    .eq("is_test", payload.testOrder === true)
     .maybeSingle();
   if (existing) {
     return {
@@ -321,7 +333,10 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   assertValidOrderQuantities(payload.items);
   assertPwapStock(payload.items, await getInventoryMap());
 
-  const { tier: classifiedTier, followerCount } = await classifyPostBarterApplicant(payload.instagramHandle);
+  // No handle: straight to sell first, no Instagram lookup.
+  const { tier: classifiedTier, followerCount } = handle
+    ? await classifyPostBarterApplicant(handle)
+    : { tier: "sell_first" as BarterTier, followerCount: null };
   const { requiredOrders, friendDiscountRupees } = await getPostBarterConfig();
 
   // Re-verify ownership server-side even if the client claims it already
@@ -329,8 +344,8 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   // that ships real inventory on trust.
   let tier = classifiedTier;
   if (classifiedTier === "gift_first") {
-    const verified = payload.ownershipCode
-      ? await verifyGiftFirstOwnership(payload.instagramHandle, payload.ownershipCode)
+    const verified = payload.ownershipCode && handle
+      ? await verifyGiftFirstOwnership(handle, payload.ownershipCode)
       : false;
     if (!verified) tier = "sell_first";
   }
@@ -346,8 +361,9 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
 
   const pricing = await computeTrustedOrderTotal(payload.items, 0, payload.customer.pincode, null, payload.customer.phone, null, "post_barter");
 
-  const guestCustomer = await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name);
-  const couponCode = await createBarterCouponCode(payload.customer.name, payload.instagramHandle, friendDiscountRupees);
+  const isTest = payload.testOrder === true;
+  const guestCustomer = isTest ? null : await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name);
+  const couponCode = await createBarterCouponCode(payload.customer.name, handle, friendDiscountRupees);
   const isGiftFirst = tier === "gift_first";
 
   const { data: savedOrder, error: orderError } = await supabase
@@ -371,7 +387,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
       status: "confirmed",
       is_post_barter: true,
       barter_tier: tier,
-      barter_instagram_handle: parseInstagramHandle(payload.instagramHandle),
+      barter_instagram_handle: handle || null,
       barter_follower_count: followerCount,
       barter_coupon_code: couponCode,
       barter_required_orders: requiredOrders,
@@ -380,6 +396,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
       // maybeQualifyBarterOrderForCoupon to set later.
       barter_qualified_at: isGiftFirst ? new Date().toISOString() : null,
       barter_terms_accepted_at: isGiftFirst ? new Date().toISOString() : null,
+      is_test: isTest,
     })
     .select()
     .single();
@@ -395,7 +412,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
   if (itemsError) throw itemsError;
 
-  if (payload.newsletterOptIn != null) {
+  if (!isTest && payload.newsletterOptIn != null) {
     await applyNewsletterOptIn(guestCustomer?.id ?? null, savedOrder.customer_email, payload.newsletterOptIn);
   }
 
@@ -404,31 +421,36 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
     customer_email: savedOrder.customer_email,
     customer_phone: savedOrder.customer_phone,
     total: pricing.total,
-  });
+  }, { sendPurchase: !isTest });
   // Server-side Purchase so the founder console credits this order to the
   // session's channel (the checkout page only fires it for paid flows).
-  await logTrackingEvent("Purchase", { sessionKey: payload.sessionKey, value: pricing.total });
+  if (!isTest) await logTrackingEvent("Purchase", { sessionKey: payload.sessionKey, value: pricing.total });
 
-  if (isGiftFirst) {
+  // Test orders never take stock or ship (decrementInventoryAndShip also guards).
+  if (isGiftFirst && !isTest) {
     await decrementInventoryAndShip(savedOrder.id);
   }
 
-  // Make their post image first so the confirmation email can show it.
+  // Everything below runs after the response, so the shopper lands on their
+  // post page straight away. Order kept: card first (the email embeds it),
+  // then the customer email, WhatsApp and team emails.
+  after(async () => {
   if (!isGiftFirst) {
     const { generateAndUploadPwapShareCard } = await import("@/lib/pwap-share-card");
     await generateAndUploadPwapShareCard(savedOrder.id, couponCode).catch(() => null);
   }
 
   await Promise.allSettled([
-    sendPostBarterOrderConfirmationEmail(savedOrder.customer_email, savedOrder.customer_name, savedOrder.id, couponCode, requiredOrders, tier),
+    sendPostBarterOrderConfirmationEmail(savedOrder.customer_email, savedOrder.customer_name, savedOrder.id, couponCode, requiredOrders, tier, isTest),
     sendOrderNotificationEmail(savedOrder, orderItems),
-    sendOrderAlertWhatsApp(savedOrder, "created", orderItems.reduce((sum, i) => sum + i.quantity, 0)),
+    isTest ? Promise.resolve(false) : sendOrderAlertWhatsApp(savedOrder, "created", orderItems.reduce((sum, i) => sum + i.quantity, 0)),
     // Post First shoppers need their code and target on WhatsApp; Gift First
     // ships now, so it gets the ordinary order confirmation.
     tier === "sell_first"
       ? sendPostBarterConfirmedWhatsApp(savedOrder, couponCode, requiredOrders, orderItems[0]?.chapter_name ?? "pair")
       : sendOrderConfirmationWhatsApp(savedOrder),
   ]);
+  });
 
   return { orderId: savedOrder.id as string, couponCode, requiredOrders, tier };
 }
@@ -465,6 +487,7 @@ export async function maybeQualifyBarterOrderForCoupon(
     .eq("is_post_barter", true)
     .eq("barter_coupon_code", couponCode.toUpperCase())
     .neq("status", "cancelled")
+    .eq("is_test", false)
     .maybeSingle();
   if (!order) return;
 
@@ -489,6 +512,8 @@ export async function maybeQualifyBarterOrderForCoupon(
       .select("id")
       .in("id", redemptionOrderIds)
       .eq("payment_status", "paid")
+      // A test order never counts toward anyone's PWAP code.
+      .eq("is_test", false)
       // Cancelled or refunded orders don't count (see /pay-with-a-post/terms).
       .neq("status", "cancelled")
       .or("refunded_amount.is.null,refunded_amount.eq.0");

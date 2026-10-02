@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveTestOrderForRequest } from "@/lib/admin-request";
 import { isOrderingBlocked } from "@/lib/launch";
 import { createPostBarterOrder } from "@/lib/post-barter";
 
@@ -7,15 +8,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "We're launching soon and not taking orders just yet." }, { status: 403 });
   }
   const body = await request.json().catch(() => null);
-  if (!body?.customer || !body?.items?.length || !body?.instagramHandle) {
-    return NextResponse.json({ error: "Missing customer, items, or Instagram handle" }, { status: 400 });
+  // Instagram handle is optional now (sell first only).
+  if (!body?.customer || !body?.items?.length) {
+    return NextResponse.json({ error: "Missing customer or items" }, { status: 400 });
   }
+
+  // Test orders only for a browser signed in to admin; the flag alone is ignored.
+  const testOrder = await resolveTestOrderForRequest(body.testOrder);
 
   try {
     const result = await createPostBarterOrder({
+      testOrder,
       customer: body.customer,
       items: body.items,
-      instagramHandle: body.instagramHandle,
+      instagramHandle: typeof body.instagramHandle === "string" ? body.instagramHandle : null,
       ownershipCode: body.ownershipCode,
       termsAccepted: !!body.termsAccepted,
       isGift: body.isGift,

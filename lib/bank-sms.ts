@@ -52,7 +52,7 @@ export async function handleBankSms(body: string) {
   const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const { data: amountMatches } = await supabase
     .from("orders")
-    .select("id, customer_name")
+    .select("id, customer_name").eq("is_test", false)
     .eq("payment_type", "upi_qr")
     .neq("payment_status", "paid")
     .eq("upi_amount_paise", parsed.amountPaise)
@@ -80,7 +80,7 @@ export async function handleBankSms(body: string) {
       // this exact amount was just confirmed, say so rather than "no match".
       const { data: paid } = await supabase
         .from("orders")
-        .select("id")
+        .select("id").eq("is_test", false)
         .eq("payment_type", "upi_qr")
         .eq("payment_status", "paid")
         .eq("upi_amount_paise", parsed.amountPaise)

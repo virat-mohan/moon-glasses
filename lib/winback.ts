@@ -24,7 +24,7 @@ export async function runWinbackSweep() {
 
   const { data: orders } = await supabase
     .from("orders")
-    .select("customer_id, created_at")
+    .select("customer_id, created_at").eq("is_test", false)
     .not("customer_id", "is", null)
     .order("created_at", { ascending: false });
 

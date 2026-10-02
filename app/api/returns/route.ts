@@ -19,8 +19,10 @@ export async function POST(request: Request) {
 
     // Never trust the client on window eligibility — recompute the same way
     // the /return/[orderId] page itself does.
-    const { data: order } = await supabase.from("orders").select("id, delivered_at").eq("id", orderId).maybeSingle();
+    const { data: order } = await supabase.from("orders").select("id, delivered_at, is_test").eq("id", orderId).maybeSingle();
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    // Test orders never ship, so they can't be returned (and never alert the team).
+    if (order.is_test) return NextResponse.json({ error: "This is a test order, so there is nothing to return" }, { status: 400 });
     if (!(await isWithinReturnWindow(order.delivered_at))) {
       return NextResponse.json({ error: "This order is outside its return window" }, { status: 400 });
     }

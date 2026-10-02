@@ -312,8 +312,15 @@ function BarterRow({ order }: { order: BarterOrder }) {
     <div className="border-t border-divider pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-body-s font-bold text-ink">
-          {order.customer_name} · @{order.barter_instagram_handle} ·{" "}
-          {order.barter_follower_count?.toLocaleString("en-IN") ?? "?"} followers
+          {order.customer_name}
+          {order.barter_instagram_handle ? (
+            <>
+              {" "}· @{order.barter_instagram_handle} ·{" "}
+              {order.barter_follower_count?.toLocaleString("en-IN") ?? "?"} followers
+            </>
+          ) : (
+            <> · no handle (post first)</>
+          )}
         </p>
         <p className="text-caption text-secondary-text">{formatDate(order.created_at)}</p>
       </div>

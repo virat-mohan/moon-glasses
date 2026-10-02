@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   const supabase = getSupabaseServerClient();
   const { data: overdue, error } = await supabase
     .from("orders")
-    .select("id, customer_name, customer_email, total")
+    .select("id, customer_name, customer_email, total").eq("is_test", false)
     .eq("is_post_barter", true)
     .eq("barter_tier", "gift_first")
     .is("barter_post_url", null)

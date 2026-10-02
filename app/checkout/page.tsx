@@ -42,6 +42,9 @@ type Account = {
 
 type IdentityStep = "checking" | "identify" | "otp" | "guest" | "verified";
 
+/** Shown while a Pay With A Post order is placed and the shopper is sent to their post. */
+const PWAP_MAKING_LINE = "Making your post with your code… takes a few seconds.";
+
 export default function CheckoutPage() {
   const { items, subtotal, clear, removeItem, setQuantity } = useCart();
   const discountRule = useDiscountRule();
@@ -59,6 +62,15 @@ export default function CheckoutPage() {
   const [isGift, setIsGift] = useState(false);
   const [giftNote, setGiftNote] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(true);
+  // Test order mode: only offered when this browser has an admin session
+  // (/api/admin/me 200). The server re-checks the session; the flag alone does nothing.
+  const [canTestOrder, setCanTestOrder] = useState(false);
+  const [testOrder, setTestOrder] = useState(false);
+  useEffect(() => {
+    fetch("/api/admin/me", { cache: "no-store" })
+      .then((res) => setCanTestOrder(res.ok))
+      .catch(() => setCanTestOrder(false));
+  }, []);
   const [razorpay, setRazorpay] = useState<{ enabled: boolean; keyId: string | null; codAdvanceRupees: number; codEnabled: boolean }>({
     enabled: false,
     keyId: null,
@@ -107,14 +119,14 @@ export default function CheckoutPage() {
   // (collected by the courier alongside the balance due) plus a small
   // upfront advance to filter out fake/non-serious COD orders.
   const [paymentType, setPaymentType] = useState<"prepaid" | "cod_advance" | "post_barter" | "upi_qr">("upi_qr");
-  const [barterHandle, setBarterHandle] = useState("");
+  // No handle input any more (sell first only); kept empty so verify-ownership stays inert.
+  const [barterHandle] = useState("");
   // Open to anyone — this is a preview of which tier a handle will land in,
   // never a pass/fail gate. Submitting works with or without checking it
   // first; the server re-classifies independently either way.
-  const [barterPreview, setBarterPreview] = useState<
+  const [barterPreview] = useState<
     { tier: "gift_first" | "sell_first"; followerCount: number | null; minFollowers: number; verificationCode: string | null } | null
   >(null);
-  const [barterChecking, setBarterChecking] = useState(false);
   const [barterSubmitting, setBarterSubmitting] = useState(false);
   const [barterError, setBarterError] = useState<string | null>(null);
   // gift_first ships real inventory on trust, so it needs proof the shopper
@@ -127,27 +139,6 @@ export default function CheckoutPage() {
   // submit whenever the preview says gift_first; meaningless for sell_first,
   // where nothing ships before a post exists anyway.
   const [giftFirstTermsAccepted, setGiftFirstTermsAccepted] = useState(false);
-
-  async function checkBarterTier() {
-    if (!barterHandle.trim()) return;
-    setBarterChecking(true);
-    setBarterPreview(null);
-    setOwnershipVerified(false);
-    setGiftFirstTermsAccepted(false);
-    try {
-      const res = await fetch("/api/checkout/post-barter/check-eligibility", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instagramHandle: barterHandle.trim() }),
-      });
-      const data = await res.json();
-      setBarterPreview(data);
-    } catch {
-      setBarterPreview(null);
-    } finally {
-      setBarterChecking(false);
-    }
-  }
 
   async function verifyOwnership() {
     if (!barterPreview?.verificationCode) return;
@@ -171,10 +162,6 @@ export default function CheckoutPage() {
 
   async function handlePostBarterSubmit() {
     setBarterError(null);
-    if (!barterHandle.trim()) {
-      setBarterError("Enter your Instagram handle.");
-      return;
-    }
     if (unitCount !== 1) {
       setBarterError("Pay With A Post covers one item per order — adjust your cart to a single item.");
       return;
@@ -191,13 +178,15 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           customer: form,
           items: items.map((i) => ({ slug: i.slug, quantity: i.quantity })),
-          instagramHandle: barterHandle.trim(),
+          // No handle asked any more (sell first only); the server copes without one.
+          instagramHandle: barterHandle.trim() || undefined,
           ownershipCode: ownershipVerified ? barterPreview?.verificationCode : undefined,
           termsAccepted: giftFirstTermsAccepted,
           isGift,
           giftNote: isGift ? giftNote : null,
           sessionKey: getSessionKey(),
           newsletterOptIn,
+          testOrder: canTestOrder && testOrder,
         }),
       });
       const data = await res.json();
@@ -230,6 +219,7 @@ export default function CheckoutPage() {
           newsletterOptIn,
           referralCode: referralCodeInput.trim().toUpperCase() || null,
           couponCode: couponCodeInput.trim().toUpperCase() || null,
+          testOrder: canTestOrder && testOrder,
         }),
       });
       const data = await res.json();
@@ -616,7 +606,7 @@ export default function CheckoutPage() {
     return (
       <main className="mx-auto flex min-h-[60vh] w-full max-w-[700px] flex-col items-center justify-center px-6 pt-32 pb-24 text-center">
         <p className="animate-pulse font-sans text-caption uppercase tracking-[0.15em] text-secondary-text">
-          Taking you to payment…
+          {paymentType === "post_barter" ? PWAP_MAKING_LINE : "Taking you to payment…"}
         </p>
       </main>
     );
@@ -1135,61 +1125,19 @@ export default function CheckoutPage() {
 
                 {paymentType === "post_barter" && (
                   <div className="mt-4 space-y-4">
-                    <div className="flex gap-2">
-                      <input
-                        value={barterHandle}
-                        onChange={(e) => {
-                          setBarterHandle(e.target.value);
-                          setBarterPreview(null);
-                          setOwnershipVerified(false);
-                          setGiftFirstTermsAccepted(false);
-                        }}
-                        placeholder="Instagram profile link or @handle"
-                        className="min-w-0 flex-1 border border-ink/30 bg-surface px-4 py-3 font-sans text-body-s text-ink outline-none placeholder:text-secondary-text focus:border-ink"
-                      />
-                      <button
-                        type="button"
-                        onClick={checkBarterTier}
-                        disabled={!barterHandle.trim() || barterChecking}
-                        className="shrink-0 bg-[var(--moon-gold)] px-5 py-3 font-sans text-caption font-bold uppercase tracking-[0.05em] text-black transition hover:brightness-110 disabled:opacity-40"
-                      >
-                        {barterChecking ? "Checking…" : "Check"}
-                      </button>
-                    </div>
-
-                    {!barterPreview && (
-                      <p className="text-caption text-secondary-text">
-                        Enter your Instagram, tap Check.
+                    {/* Sell first only (ship first is off): no Instagram handle is asked. */}
+                    <div className="border-2 border-ink bg-surface-alt p-4">
+                      <p className="font-sans text-body font-bold uppercase text-ink">
+                        Post First, Ship After {pwapRules.salesToShip} Sales
                       </p>
-                    )}
-
-                    {barterPreview && (
-                      <div className="border-2 border-ink bg-surface-alt p-4">
-                        {barterPreview.tier === "gift_first" ? (
-                          <>
-                            <p className="font-sans text-body font-bold uppercase text-ink">
-                              You Qualify — We Ship Now
-                            </p>
-                            <p className="mt-1 text-body-s text-secondary-text">
-                              Verify it&apos;s you below. We ship today, you post when it arrives.
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-sans text-body font-bold uppercase text-ink">
-                              Post First, Ship After {pwapRules.salesToShip} Sales
-                            </p>
-                            <p className="mt-1 text-body-s text-secondary-text">
-                              Post, share your code. {pwapRules.salesToShip} sales = your pair ships free. Every{" "}
-                              {pwapRules.salesPerFreeCode} more = another pair.{" "}
-                              <a href="/pay-with-a-post/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">
-                                Terms
-                              </a>
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    )}
+                      <p className="mt-1 text-body-s text-secondary-text">
+                        Post, share your code. {pwapRules.salesToShip} sales = your pair ships free. Every{" "}
+                        {pwapRules.salesPerFreeCode} more = another pair.{" "}
+                        <a href="/pay-with-a-post/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                          Terms
+                        </a>
+                      </p>
+                    </div>
 
                     {barterPreview?.tier === "gift_first" && barterPreview.verificationCode && (
                       <div className="border border-ink/20 bg-surface-alt p-3">
@@ -1296,6 +1244,20 @@ export default function CheckoutPage() {
                       />
                     </p>
 
+                    {canTestOrder && (
+                      <label className="mt-4 flex min-h-[44px] cursor-pointer items-center gap-3 border border-dashed border-paint-orange px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={testOrder}
+                          onChange={(e) => setTestOrder(e.target.checked)}
+                          className="h-5 w-5 shrink-0 accent-[var(--moon-gold)]"
+                        />
+                        <span className="text-caption text-ink">
+                          <strong className="uppercase tracking-[0.05em]">Test order (admin only):</strong> nothing ships, no stock used
+                        </span>
+                      </label>
+                    )}
+
                     <div className="mt-4 sticky bottom-0 -mx-5 border-t border-divider bg-[var(--moon-black)] px-5 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 md:static md:mx-0 md:border-0 md:p-0">
               <button
                 form="checkout-form"
@@ -1304,7 +1266,7 @@ export default function CheckoutPage() {
                   paying ||
                   shippingBlocking ||
                   !configLoaded ||
-                  (paymentType === "post_barter" && (!barterHandle.trim() || barterSubmitting)) ||
+                  (paymentType === "post_barter" && barterSubmitting) ||
                   (paymentType === "upi_qr" && upiSubmitting)
                 }
                 className="w-full bg-[var(--moon-gold)] py-4 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-black transition hover:brightness-110 disabled:opacity-50"
@@ -1335,6 +1297,11 @@ export default function CheckoutPage() {
                               : `Pay ₹${total.toLocaleString("en-IN")}`
                           : "Pay by UPI"}
               </button>
+              {paymentType === "post_barter" && barterSubmitting && (
+                <p role="status" className="mt-2 text-center text-caption text-secondary-text">
+                  {PWAP_MAKING_LINE}
+                </p>
+              )}
                     </div>
                   </div>
                 </div>,

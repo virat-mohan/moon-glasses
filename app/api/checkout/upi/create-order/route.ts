@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveTestOrderForRequest } from "@/lib/admin-request";
 import { isOrderingBlocked } from "@/lib/launch";
 import { createUpiOrder } from "@/lib/upi-payment";
 
@@ -11,8 +12,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing customer or items" }, { status: 400 });
   }
 
+  // Test orders only for a browser signed in to admin; the flag alone is ignored.
+  const testOrder = await resolveTestOrderForRequest(body.testOrder);
+
   try {
     const result = await createUpiOrder({
+      testOrder,
       customer: body.customer,
       items: body.items,
       isGift: body.isGift,

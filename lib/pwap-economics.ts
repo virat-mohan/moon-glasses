@@ -28,7 +28,7 @@ export async function getPwapEconomicsInputs(): Promise<PwapEconomicsInputs> {
   const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const { data: paid } = await supabase
     .from("orders")
-    .select("id")
+    .select("id").eq("is_test", false)
     .eq("payment_status", "paid")
     .neq("status", "cancelled")
     .gte("created_at", since);

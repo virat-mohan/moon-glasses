@@ -129,7 +129,9 @@ export async function processInboundPaymentScreenshot(input: {
     .from("orders")
     .select("id, total, customer_phone, upi_utr")
     .eq("payment_type", "upi_qr")
-    .eq("payment_status", "unpaid");
+    .eq("payment_status", "unpaid")
+    // Never match a real payment screenshot to a test order.
+    .eq("is_test", false);
 
   const candidates = (pendingOrders ?? []).filter((o) => normalizePhone(o.customer_phone ?? "") === normalizedPhone);
 

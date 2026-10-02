@@ -1,3 +1,4 @@
+import { isTestOrder, testSubject } from "@/lib/test-order";
 import { getSetting } from "@/lib/settings";
 import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
 import { buildStockShortAlert } from "@/lib/checkout-rules";
@@ -5,7 +6,7 @@ import { renderInvoiceHtml } from "@/lib/invoice";
 import { getBrandProfile } from "@/lib/brand";
 import { BRAND_VOICE, stripHtml, voiceGate } from "@/lib/brand-voice";
 
-type InvoiceOrder = Parameters<typeof renderInvoiceHtml>[0];
+type InvoiceOrder = Parameters<typeof renderInvoiceHtml>[0] & { is_test?: boolean | null };
 type InvoiceItem = Parameters<typeof renderInvoiceHtml>[1][number];
 
 /**
@@ -109,7 +110,7 @@ export async function sendInvoiceEmail(order: InvoiceOrder, items: InvoiceItem[]
   const invoiceHtml = await renderInvoiceHtml(order, items);
   return sendEmail(
     order.customer_email,
-    `Your Moonglasses Invoice — Order #${order.id.slice(0, 8).toUpperCase()}`,
+    testSubject(`Your Moonglasses Invoice — Order #${order.id.slice(0, 8).toUpperCase()}`, order),
     invoiceHtml
   );
 }
@@ -133,7 +134,7 @@ const FOUNDER_ORDER_EMAIL = "founder@viratmohan.com";
 
 /** Internal heads-up when a UPI order is placed but not yet paid. Team + founder only, never warehouse or customer. */
 export async function sendOrderPlacedTeamEmail(
-  order: { id: string; total: number | string },
+  order: { id: string; total: number | string; is_test?: boolean | null },
   items: { chapter_name: string; quantity: number }[]
 ) {
   const orderNumber = order.id.slice(0, 8).toUpperCase();
@@ -147,7 +148,7 @@ export async function sendOrderPlacedTeamEmail(
   `;
   const recipients = [...ORDER_NOTIFICATION_RECIPIENTS, FOUNDER_ORDER_EMAIL];
   await Promise.all(
-    recipients.map((to) => sendEmail(to, `New UPI order, payment pending — #${orderNumber}`, html, undefined, { internal: true }))
+    recipients.map((to) => sendEmail(to, testSubject(`New UPI order, payment pending — #${orderNumber}`, order), html, undefined, { internal: true }))
   );
 }
 
@@ -157,13 +158,14 @@ export async function sendOrderNotificationEmail(order: InvoiceOrder, items: Inv
   const orderNumber = order.id.slice(0, 8).toUpperCase();
   // The warehouse (WAREHOUSE_EMAIL, comma-separated) gets the confirmation too,
   // not just the later "Ship this" email with the label.
-  const warehouse = ((await getSetting("WAREHOUSE_EMAIL")) ?? "")
+  // Test orders: team + founder only ("[TEST]" subject), never the warehouse.
+  const warehouse = (isTestOrder(order) ? "" : (await getSetting("WAREHOUSE_EMAIL")) ?? "")
     .split(",")
     .map((e) => e.trim())
     .filter(Boolean);
   // founder@viratmohan.com gets every order (UPI confirm, PWAP, Razorpay, manual) until the WhatsApp alert is live.
   const recipients = [...new Map([...ORDER_NOTIFICATION_RECIPIENTS, FOUNDER_ORDER_EMAIL, ...warehouse].map((e) => [e.toLowerCase(), e])).values()];
-  await Promise.all(recipients.map((to) => sendEmail(to, `New order confirmed — #${orderNumber}`, invoiceHtml, undefined, { internal: true })));
+  await Promise.all(recipients.map((to) => sendEmail(to, testSubject(`New order confirmed — #${orderNumber}`, order), invoiceHtml, undefined, { internal: true })));
 }
 
 /** Fires once when a Chapter's stock crosses at/under the low-stock threshold — see lib/inventory.ts for the guard against repeat alerts. */
@@ -744,7 +746,8 @@ export async function sendPostBarterOrderConfirmationEmail(
   orderId: string,
   couponCode: string,
   requiredOrders: number,
-  tier: "gift_first" | "sell_first"
+  tier: "gift_first" | "sell_first",
+  isTest = false
 ) {
   const brand = await getBrandProfile();
   const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
@@ -785,7 +788,7 @@ export async function sendPostBarterOrderConfirmationEmail(
       <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
     </div>
   `;
-  return sendEmail(toEmail, `You're in — here's your ${brand.brandName} code`, html);
+  return sendEmail(toEmail, testSubject(`You're in — here's your ${brand.brandName} code`, { is_test: isTest }), html);
 }
 
 /** Sent the moment a "Pay With A Post" order clears its required-orders line and actually ships. */

@@ -8,8 +8,9 @@ export async function POST(request: Request) {
   }
   const body = await request.json().catch(() => null);
   const instagramHandle = String(body?.instagramHandle ?? "").trim();
+  // No handle (sell first only now): straight to sell first, no Instagram lookup.
   if (!instagramHandle) {
-    return NextResponse.json({ error: "Enter your Instagram handle" }, { status: 400 });
+    return NextResponse.json({ tier: "sell_first", followerCount: null, verificationCode: null });
   }
 
   const result = await classifyPostBarterApplicant(instagramHandle);

@@ -59,7 +59,7 @@ async function fetchActualBaseline() {
   const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const { data: orders } = await supabase
     .from("orders")
-    .select("subtotal, payment_type, is_post_barter, rto_processed_at, created_at")
+    .select("subtotal, payment_type, is_post_barter, rto_processed_at, created_at").eq("is_test", false)
     .gte("created_at", since)
     .neq("status", "cancelled");
 

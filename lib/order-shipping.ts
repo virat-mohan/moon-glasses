@@ -1,3 +1,4 @@
+import { isTestOrder } from "@/lib/test-order";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import {
   createShiprocketOrder,
@@ -28,6 +29,8 @@ export async function shipOrder(orderId: string) {
   const supabase = getSupabaseServerClient();
   const { data: order } = await supabase.from("orders").select("*").eq("id", orderId).maybeSingle();
   if (!order) throw new Error("Order not found");
+  // Test orders never reach Shiprocket, the warehouse email or warehouse WhatsApp.
+  if (isTestOrder(order)) throw new Error("Test order: nothing ships");
   if (order.shiprocket_shipment_id) throw new Error("This order already has a shipment");
   if (!order.delivery_city || !order.delivery_state || !order.delivery_pincode) {
     throw new Error("Order is missing city/state/pincode — this order predates structured addresses");

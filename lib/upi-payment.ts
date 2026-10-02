@@ -16,6 +16,8 @@ import { markCartSessionConverted, sendPurchaseConversion } from "@/lib/cart-ses
 import { sendInvoiceEmail, sendOrderNotificationEmail, sendOrderPlacedTeamEmail, sendStockShortRefundAlert } from "@/lib/email";
 import { sendOrderAlertWhatsApp, sendOrderConfirmationWhatsApp } from "@/lib/whatsapp-notify";
 import { maybeQualifyBarterOrderForCoupon } from "@/lib/post-barter";
+import { isTestOrder } from "@/lib/test-order";
+import { after } from "next/server";
 
 /**
  * "Pay With A Post"'s stablemate for regular currency when Razorpay isn't
@@ -83,6 +85,8 @@ export type UpiOrderPayload = {
   newsletterOptIn?: boolean;
   referralCode?: string | null;
   couponCode?: string | null;
+  /** Set only by the route after verifying an admin session (lib/admin-request.ts). */
+  testOrder?: boolean;
 };
 
 export async function createUpiOrder(payload: UpiOrderPayload) {
@@ -118,8 +122,9 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   // computeTotalWithCoupon); that order confirms immediately below, no QR.
   if (pricing.total <= 0 && !pricing.coupon) throw new Error("Order total must be greater than zero");
 
+  const isTest = payload.testOrder === true;
   const wasGuest = !customer;
-  const guestCustomer = wasGuest
+  const guestCustomer = wasGuest && !isTest
     ? await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name)
     : null;
   const effectiveCustomerId = customer?.id ?? guestCustomer?.id ?? null;
@@ -152,6 +157,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
       customer_id: effectiveCustomerId,
       status: "pending_upi_payment",
       upi_amount_paise: upiAmountPaise,
+      is_test: isTest,
     })
     .select()
     .single();
@@ -169,7 +175,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
   // already being known — so they run together instead of one after another.
   const [{ error: itemsError }] = await Promise.all([
     supabase.from("order_items").insert(orderItems),
-    pricing.discountRule && pricing.discountAmount > 0
+    !isTest && pricing.discountRule && pricing.discountAmount > 0
       ? supabase.from("discount_rule_redemptions").insert({
           discount_rule_id: pricing.discountRule.id,
           order_id: savedOrder.id,
@@ -178,7 +184,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
           discount_amount: pricing.discountAmount,
         })
       : Promise.resolve(),
-    payload.newsletterOptIn != null
+    !isTest && payload.newsletterOptIn != null
       ? applyNewsletterOptIn(effectiveCustomerId, savedOrder.customer_email, payload.newsletterOptIn)
       : Promise.resolve(),
     // The order is unpaid here, so no Purchase yet (Meta or first-party):
@@ -198,10 +204,14 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
 
   // Team heads-up the moment the order exists (unpaid). Never blocks checkout.
   const itemCount = orderItems.reduce((sum, i) => sum + i.quantity, 0);
-  await Promise.allSettled([
-    sendOrderAlertWhatsApp(savedOrder, "created", itemCount),
-    sendOrderPlacedTeamEmail(savedOrder, orderItems),
-  ]);
+  // Test orders: no WhatsApp alert to Virat; the team email still goes, "[TEST]"-prefixed.
+  // Runs after the response so the QR shows without waiting on sends.
+  after(async () => {
+    await Promise.allSettled([
+      isTest ? Promise.resolve(false) : sendOrderAlertWhatsApp(savedOrder, "created", itemCount),
+      sendOrderPlacedTeamEmail(savedOrder, orderItems),
+    ]);
+  });
 
   if (pricing.total <= 0) {
     await confirmUpiOrderPayment(savedOrder.id);
@@ -248,6 +258,19 @@ export async function confirmUpiOrderPayment(orderId: string) {
     .neq("payment_status", "paid")
     .select("id");
   if (!claimed?.length) return { alreadyConfirmed: true as const };
+
+  // Test order (admin-placed): show it as paid, keep the customer confirmation
+  // ("[TEST]" email + WhatsApp) and the "[TEST]" team email. Skip stock, Meta,
+  // first-party Purchase, loyalty, leads, referral, coupon/PWAP counting, the
+  // WhatsApp alert to Virat and shipping.
+  if (isTestOrder(order)) {
+    await Promise.allSettled([
+      sendInvoiceEmail(order, items ?? []),
+      sendOrderNotificationEmail(order, items ?? []),
+      sendOrderConfirmationWhatsApp(order),
+    ]);
+    return { alreadyConfirmed: false as const, test: true as const };
+  }
 
   // Stock is only taken now, atomically. If a line is short the sale is
   // refused: the order goes back to unpaid and flagged for a refund.

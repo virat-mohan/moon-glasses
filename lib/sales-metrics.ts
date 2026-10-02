@@ -13,7 +13,7 @@ export async function getChapterSalesInRange(sinceIso: string, untilIso: string)
 
   const { data: orders } = await supabase
     .from("orders")
-    .select("id")
+    .select("id").eq("is_test", false)
     .gte("created_at", sinceIso)
     .lt("created_at", untilIso);
 

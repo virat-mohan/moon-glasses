@@ -144,7 +144,8 @@ function OrderConfirmedContent() {
           // Browser pixel Purchase only once the payment is confirmed, with
           // the order id as eventID so Meta dedupes it against the server
           // Conversions API event sent by confirmUpiOrderPayment.
-          trackEvent("Purchase", { value: Number(data.order.total) || undefined, orderId });
+          // Test orders (admin-placed) never reach the pixel.
+          if (!data.order.is_test) trackEvent("Purchase", { value: Number(data.order.total) || undefined, orderId });
           return;
         }
       } catch {
