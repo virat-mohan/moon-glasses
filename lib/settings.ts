@@ -87,6 +87,7 @@ export const SETTINGS_KEYS = [
   "MSG91_ORDER_ALERT_TEMPLATE_ID",
   "AUTO_RESHARE_TAGS",
   "AUTO_RESHARE_SEEDED_AT",
+  "TAGGED_READ_ERROR",
 ] as const;
 
 export type SettingKey = (typeof SETTINGS_KEYS)[number];

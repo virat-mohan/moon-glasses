@@ -9,6 +9,7 @@ import {
 } from "@/lib/instagram";
 import { STORAGE_REF_PREFIX } from "@/lib/barter-post-detection";
 import { checkVoice, hasBlock, describeBlocks } from "@/lib/brand-voice";
+import { sendCustomerIssueAlert } from "@/lib/email";
 import { uploadReshareStory } from "@/lib/reshare-story-card";
 import { selectReshares, RESHARE_MAX_PER_RUN } from "@/lib/tagged-reshare-select";
 
@@ -76,6 +77,11 @@ export async function runTaggedReshare(): Promise<{ results: Result[]; notes: st
         const claimed = await recordTag(item, mark("pending"), null);
         if (!claimed) continue;
         budget--;
+        // ONE internal heads-up per media id: only here, on first sight (the insert above is the dedupe).
+        void sendCustomerIssueAlert(`New tag waiting: @${item.username ?? "unknown"}`, [
+          `New tag waiting: @${item.username ?? "unknown"}`,
+          `Story reshare is automatic. Approve or skip the grid post: <a href="https://www.moon-glasses.store/admin/tagged-posts">Open tagged posts</a>`,
+        ]).catch(() => {});
         const source = item.mediaType === "VIDEO" ? item.thumbnailUrl : (item.mediaUrl ?? item.thumbnailUrl);
         if (!source) throw new Error("Instagram gave no image for this post");
         const storyUrl = await uploadReshareStory(item.id, source, item.username);
@@ -95,6 +101,8 @@ export async function runTaggedReshare(): Promise<{ results: Result[]; notes: st
     console.error("tagged-reshare: could not read tagged posts", msg);
     notes.push(msg.slice(0, 300));
   }
+  // Surfaced on /admin/tagged-posts so a blocked token is visible.
+  await setSetting("TAGGED_READ_ERROR", tagsRead ? "" : (notes[0] ?? "Could not read tags")).catch(() => {});
 
   // b. Story mentions already saved by the webhook, not yet reposted.
   try {
@@ -159,7 +167,13 @@ export async function runTaggedReshare(): Promise<{ results: Result[]; notes: st
       ig_username: item.username?.toLowerCase() ?? null,
       permalink: item.permalink,
       caption: item.caption,
-      raw: { auto_reshare: m, media_type: item.mediaType, timestamp: item.timestamp },
+      raw: {
+        auto_reshare: m,
+        media_type: item.mediaType,
+        timestamp: item.timestamp,
+        media_url: item.mediaUrl,
+        thumbnail_url: item.thumbnailUrl,
+      },
       reposted_at: repostedAt,
     });
     if (error && error.code !== "23505") console.error("tagged-reshare: could not record", item.id, error);

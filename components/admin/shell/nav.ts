@@ -19,6 +19,7 @@ export const NAV_SECTIONS: AdminNavSection[] = [
     tone: "cobalt",
     links: [
       { href: "/admin/social", label: "Social (Instagram)" },
+      { href: "/admin/tagged-posts", label: "Tagged Posts (Grid)" },
       { href: "/admin/analytics", label: "Website Analytics" },
       { href: "/admin/ad-briefs", label: "Ad Brief Generator" },
       { href: "/admin/content-calendar", label: "Content Calendar" },
