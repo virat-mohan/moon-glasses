@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ActionTile } from "./ActionTile";
 
 const CANCELLABLE_SHIPMENT_STATUSES = new Set(["not_shipped", "processing"]);
 
@@ -117,46 +118,38 @@ export function RefundActions({
   }
 
   return (
-    <div className="flex flex-col items-start gap-1">
+    <>
       {canCancel && (
-        <button
-          onClick={cancelOrder}
-          disabled={cancelling}
-          className="border border-paint-orange px-2 py-1 text-micro uppercase tracking-[0.05em] text-paint-orange hover:bg-paint-orange hover:text-cream disabled:opacity-50"
-        >
-          {cancelling ? "..." : "Cancel Order"}
-        </button>
+        <ActionTile hint="Cancels before pickup, refunds the customer in full and puts the stock back. Cannot be undone.">
+          <button type="button" onClick={cancelOrder} disabled={cancelling} className="ord-btn ord-btn--danger">
+            {cancelling ? "Cancelling…" : "Cancel order"}
+          </button>
+        </ActionTile>
       )}
       {hasRazorpayPayment && maxRefundable > 0 && (
-        <button
-          onClick={refund}
-          disabled={refunding}
-          className="border border-ink px-2 py-1 text-micro uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-50"
-        >
-          {refunding ? "..." : `Refund${refunded > 0 ? ` (₹${refunded} done)` : ""}`}
-        </button>
+        <ActionTile hint="Sends part or all of the money back to the customer's original payment method. You choose the amount.">
+          <button type="button" onClick={refund} disabled={refunding} className="ord-btn">
+            {refunding ? "Refunding…" : `Refund${refunded > 0 ? ` (₹${refunded} done)` : ""}`}
+          </button>
+        </ActionTile>
       )}
       {returnScheduled ? (
-        <span className="text-micro text-secondary-text">Return pickup scheduled</span>
+        <p className="ord-muted">Return pickup scheduled</p>
       ) : (
-        <button
-          onClick={scheduleReturn}
-          disabled={schedulingReturn}
-          className="text-micro text-secondary-text underline disabled:opacity-50"
-        >
-          {schedulingReturn ? "..." : "Schedule Return Pickup"}
-        </button>
+        <ActionTile hint="Asks the courier to collect the parcel back from the customer.">
+          <button type="button" onClick={scheduleReturn} disabled={schedulingReturn} className="ord-btn">
+            {schedulingReturn ? "Scheduling…" : "Schedule return pickup"}
+          </button>
+        </ActionTile>
       )}
       {hasRazorpayPayment && (
-        <button
-          onClick={syncFromRazorpay}
-          disabled={syncing}
-          className="text-micro text-secondary-text underline disabled:opacity-50"
-        >
-          {syncing ? "Syncing..." : "Sync from Razorpay"}
-        </button>
+        <ActionTile hint="Re-reads the payment and refund amounts from Razorpay if they look out of date.">
+          <button type="button" onClick={syncFromRazorpay} disabled={syncing} className="ord-btn">
+            {syncing ? "Syncing…" : "Sync from Razorpay"}
+          </button>
+        </ActionTile>
       )}
-      {error && <p className="max-w-[160px] text-micro text-paint-orange">{error}</p>}
-    </div>
+      {error && <p className="ord-err ord-span">{error}</p>}
+    </>
   );
 }

@@ -35,13 +35,13 @@ export function ShipmentStatusCell({ orderId, currentLabel }: { orderId: string;
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-caption text-secondary-text">{label}</span>
+    <div className="ord-inline">
+      <span className="ord-val">{label}</span>
       <select
         value=""
         onChange={(e) => update(e.target.value)}
         disabled={saving}
-        className="border border-divider bg-surface px-1.5 py-1 font-sans text-micro text-ink"
+        className="ord-select"
       >
         <option value="">Mark as...</option>
         {MANUAL_OPTIONS.map((o) => (

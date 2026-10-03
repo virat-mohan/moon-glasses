@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ActionTile } from "./ActionTile";
 
 export function MarkUpiPaidButton({ orderId }: { orderId: string }) {
   const [state, setState] = useState<"idle" | "confirming" | "done" | "error">("idle");
@@ -18,15 +19,13 @@ export function MarkUpiPaidButton({ orderId }: { orderId: string }) {
     }
   }
 
-  if (state === "done") return <span className="text-micro text-tan-gold">Paid ✓</span>;
+  if (state === "done") return <span className="ord-ok">Paid ✓</span>;
 
   return (
-    <button
-      onClick={confirm}
-      disabled={state === "confirming"}
-      className="border border-ink px-2 py-1 font-sans text-micro font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-50"
-    >
-      {state === "confirming" ? "Confirming…" : state === "error" ? "Retry Mark Paid" : "Mark Paid"}
-    </button>
+    <ActionTile hint="Only after you have seen the money arrive in your account. Confirms payment and releases the order for shipping.">
+      <button type="button" onClick={confirm} disabled={state === "confirming"} className="ord-btn ord-btn--solid">
+        {state === "confirming" ? "Confirming…" : state === "error" ? "Retry: Mark paid" : "Mark paid"}
+      </button>
+    </ActionTile>
   );
 }

@@ -48,7 +48,7 @@ export function OrderStatusCell({
       onChange={(e) => update(e.target.value)}
       disabled={saving}
       data-tone={TONES[current]}
-      className="adm-status-select border border-divider bg-surface px-2 py-1 font-sans text-caption text-ink"
+      className="adm-status-select ord-select"
     >
       {OPTIONS[field].map((o) => (
         <option key={o} value={o}>

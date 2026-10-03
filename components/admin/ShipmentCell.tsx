@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ActionTile } from "./ActionTile";
 
 export function ShipmentCell({
   orderId,
@@ -69,37 +70,29 @@ export function ShipmentCell({
 
   if (!state.shipmentId) {
     return (
-      <div>
-        <button
-          onClick={ship}
-          disabled={busy}
-          className="border border-ink px-2 py-1 text-micro uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-50"
-        >
-          {busy ? "..." : "Ship"}
+      <ActionTile
+        hint="Creates the Shiprocket shipment for this order. It normally happens by itself once paid, so use this to retry."
+        feedback={error ? <p className="ord-err">{error}</p> : undefined}
+      >
+        <button type="button" onClick={ship} disabled={busy} className="ord-btn">
+          {busy ? "Booking…" : "Book shipping"}
         </button>
-        {error && <p className="mt-1 max-w-[160px] text-micro text-paint-orange">{error}</p>}
-      </div>
+      </ActionTile>
     );
   }
 
   return (
-    <div>
-      <p className="text-caption text-secondary-text">
-        {state.courierName ?? "Awaiting courier"}
-        {state.awbCode && <> · {state.awbCode}</>}
+    <div className="ord-ship-live">
+      <p className="ord-val">
+        {state.courierName ?? "Waiting for courier"}
+        {state.awbCode && <> · AWB {state.awbCode}</>}
       </p>
-      {state.shiprocketOrderId && (
-        <p className="text-micro text-secondary-text">SR #{state.shiprocketOrderId}</p>
-      )}
-      <button
-        onClick={track}
-        disabled={busy}
-        className="mt-1 text-micro text-secondary-text underline disabled:opacity-50"
-      >
-        {busy ? "Checking..." : "Refresh Tracking"}
+      {state.shiprocketOrderId && <p className="ord-muted">Shiprocket order #{state.shiprocketOrderId}</p>}
+      <button type="button" onClick={track} disabled={busy} className="ord-link">
+        {busy ? "Checking…" : "Check tracking now"}
       </button>
-      {warning && <p className="mt-1 max-w-[180px] text-micro text-paint-orange">{warning}</p>}
-      {error && <p className="mt-1 max-w-[160px] text-micro text-paint-orange">{error}</p>}
+      {warning && <p className="ord-err">{warning}</p>}
+      {error && <p className="ord-err">{error}</p>}
     </div>
   );
 }

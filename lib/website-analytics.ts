@@ -1,5 +1,15 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { chapters } from "@/lib/chapters";
+import {
+  buildFunnel,
+  groupSource,
+  isBounce,
+  isTeamVisitor,
+  splitVisits,
+  type BiggestDrop,
+  type FunnelStep,
+  type SourceGroup,
+} from "@/lib/analytics-helpers";
 
 type RawEvent = {
   event_name: string;
@@ -13,55 +23,55 @@ type RawEvent = {
   created_at: string;
 };
 
-const SOCIAL_HOST_RE = /instagram\.com|facebook\.com|fb\.com/i;
-const WHATSAPP_HOST_RE = /wa\.me|whatsapp\.com/i;
-const SEARCH_HOST_RE = /google\.|bing\.|duckduckgo\.|yahoo\./i;
-
-/**
- * Classifies a session's traffic source from its first PageView. `ab`
- * (a launched-campaign landing param, see app/api/admin/ad-briefs/launch)
- * is the strongest signal — it's ours, not a guess — so it wins over
- * referrer/utm even if both are present. utm_source covers channels whose
- * referrer gets stripped in-app (WhatsApp in particular).
- */
-function classifyTrafficSource(ev: Pick<RawEvent, "ad_brief_id" | "utm_source" | "referrer_host">): string {
-  if (ev.ad_brief_id) return "Paid Ad (Meta)";
-  const utm = ev.utm_source?.toLowerCase();
-  if (utm === "whatsapp") return "WhatsApp";
-  if (utm && ["meta", "facebook", "instagram", "fb", "ig"].includes(utm)) return "Meta (Organic/Social)";
-  if (utm) return `Other (utm: ${ev.utm_source})`;
-  const host = ev.referrer_host;
-  if (!host) return "Direct";
-  if (WHATSAPP_HOST_RE.test(host)) return "WhatsApp";
-  if (SOCIAL_HOST_RE.test(host)) return "Meta (Organic/Social)";
-  if (SEARCH_HOST_RE.test(host)) return "Organic Search";
-  return "Other Referral";
-}
+export type SourceRow = {
+  source: SourceGroup | "Not tracked";
+  visitors: number;
+  orders: number;
+  revenue: number;
+  /** orders ÷ visitors, 0-1 (0 when no visitors) */
+  conversionRate: number;
+  adClickOrders: number;
+};
 
 export type WebsiteAnalytics = {
+  /** Visitors: distinct browsers/devices (session_key) in the window. Same as the old "sessions". */
+  visitors: number;
+  /** Visits: visitor activity split by the 30-minute inactivity rule. */
+  visits: number;
+  /** Kept for existing consumers (growth recommendations): same number as visitors. */
   sessions: number;
   pageviews: number;
-  bounceRate: number; // 0-1
-  newSessions: number;
-  returningSessions: number;
+  bounceRate: number; // 0-1, of visitors
+  newVisitors: number;
+  returningVisitors: number;
   funnel: {
+    // legacy keys (still used by lib/growth-recommendations.ts)
     sessions: number;
     viewedProduct: number;
     addedToCart: number;
     initiatedCheckout: number;
     purchased: number;
   };
-  cartAbandonmentRate: number; // 0-1, of sessions that added to cart
+  funnelSteps: FunnelStep[];
+  biggestDrop: BiggestDrop;
+  cartAbandonmentRate: number; // 0-1, of visitors that added to cart
   revenue: number;
   orders: number;
   averageOrderValue: number;
-  revenuePerSession: number;
+  revenuePerVisitor: number;
+  conversionRate: number; // orders / visitors, 0-1
+  /** Share of orders that did not come from an ad click, 0-1; null when there are no orders. */
+  nonAdOrderShare: number | null;
+  adClickOrders: number;
+  teamVisitorsExcluded: number;
+  sources: SourceRow[];
   topPages: { path: string; views: number }[];
   topViewedChapters: { slug: string; name: string; views: number }[];
   topAddedChapters: { name: string; adds: number }[];
   topReferrers: { host: string; sessions: number }[];
+  /** Legacy shape: visitors per source group. */
   trafficSources: { source: string; sessions: number }[];
-  dailyTrend: { date: string; sessions: number; addToCarts: number; purchases: number }[];
+  dailyTrend: { date: string; visitors: number; addToCarts: number; purchases: number }[];
 };
 
 function chapterName(slug: string | null) {
@@ -73,83 +83,190 @@ function dayKey(iso: string) {
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
-/**
- * Computes every number on /admin/analytics from the same tracking_events
- * log the ad/growth reports already trust — deliberately one source of
- * truth instead of a second pipeline that could drift from it. Revenue/AOV
- * comes from `orders` (the money is real there, not from a Purchase event
- * that could be missed by an ad blocker) but everything session-shaped
- * comes from tracking_events.
- */
-export async function computeWebsiteAnalytics(sinceIso: string, untilIso: string): Promise<WebsiteAnalytics> {
-  const supabase = getSupabaseServerClient();
 
-  const [{ data: eventsData }, { data: priorSessionRows }, { data: orders }] = await Promise.all([
-    supabase
+const PAGE = 1000;
+
+/** Supabase returns at most 1000 rows per request, so page through until a short page. */
+async function fetchAllEvents(sinceIso: string, untilIso: string): Promise<RawEvent[]> {
+  const supabase = getSupabaseServerClient();
+  const out: RawEvent[] = [];
+  for (let from = 0; from < 200_000; from += PAGE) {
+    const { data, error } = await supabase
       .from("tracking_events")
       .select("event_name, session_key, chapter_slug, value, path, referrer_host, ad_brief_id, utm_source, created_at")
       .gte("created_at", sinceIso)
       .lt("created_at", untilIso)
-      .order("created_at", { ascending: true }),
-    // Only need to know WHICH session keys existed before this window, to
-    // classify new vs. returning — not their full event history.
-    supabase.from("tracking_events").select("session_key").lt("created_at", sinceIso).not("session_key", "is", null),
-    supabase.from("orders").select("total, created_at").eq("is_test", false).gte("created_at", sinceIso).lt("created_at", untilIso).neq("status", "cancelled"),
-  ]);
+      .order("created_at", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    out.push(...((data ?? []) as RawEvent[]));
+    if (!data || data.length < PAGE) break;
+  }
+  return out;
+}
 
-  const events = (eventsData ?? []) as RawEvent[];
-  const priorSessionKeys = new Set((priorSessionRows ?? []).map((r) => r.session_key));
+/** Which of these visitors were already seen before the window (returning). Chunked to keep URLs short. */
+async function priorVisitors(keys: string[], sinceIso: string): Promise<Set<string>> {
+  const supabase = getSupabaseServerClient();
+  const seen = new Set<string>();
+  for (let i = 0; i < keys.length; i += 100) {
+    const chunk = keys.slice(i, i + 100);
+    const { data } = await supabase
+      .from("tracking_events")
+      .select("session_key")
+      .in("session_key", chunk)
+      .lt("created_at", sinceIso)
+      .limit(PAGE);
+    for (const r of data ?? []) if (r.session_key) seen.add(r.session_key);
+  }
+  return seen;
+}
 
-  const bySession = new Map<string, RawEvent[]>();
+/**
+ * Computes every number on /admin/analytics from the same tracking_events
+ * log the ad/growth reports already trust, one source of truth instead of a
+ * second pipeline that could drift. Revenue and order counts come from
+ * `orders` (real money; test and cancelled orders left out). Everything about
+ * visitors comes from tracking_events. Team traffic (anyone who opened an
+ * /admin page) is left out, and test orders never write a Purchase event.
+ */
+export async function computeWebsiteAnalytics(sinceIso: string, untilIso: string): Promise<WebsiteAnalytics> {
+  const supabase = getSupabaseServerClient();
+
+  const allEvents = await fetchAllEvents(sinceIso, untilIso);
+
+  const orderQuery = (cols: string) =>
+    supabase.from("orders").select(cols).eq("is_test", false).gte("created_at", sinceIso).lt("created_at", untilIso).neq("status", "cancelled");
+  type OrderLite = { total: number | null; order_source?: string | null; attributed_ad_brief_id?: string | null };
+  let orderRows: OrderLite[] = [];
+  {
+    const full = await orderQuery("total, order_source, attributed_ad_brief_id");
+    if (full.error) {
+      const base = await orderQuery("total");
+      orderRows = (base.data ?? []) as unknown as OrderLite[];
+    } else {
+      orderRows = (full.data ?? []) as unknown as OrderLite[];
+    }
+  }
+
+  // Team visitors: any browser that opened an /admin page in the window.
+  const teamKeys = new Set<string>();
+  {
+    const pathsByKey = new Map<string, string[]>();
+    for (const ev of allEvents) {
+      if (!ev.session_key || !ev.path) continue;
+      const list = pathsByKey.get(ev.session_key) ?? [];
+      list.push(ev.path);
+      pathsByKey.set(ev.session_key, list);
+    }
+    for (const [k, paths] of pathsByKey) if (isTeamVisitor(paths)) teamKeys.add(k);
+  }
+
+  const events = allEvents.filter((e) => !e.session_key || !teamKeys.has(e.session_key));
+
+  // wa-<orderId> keys are synthetic: a WhatsApp order's Purchase event, not a browser visit.
+  const isSynthetic = (k: string | null) => !!k && k.startsWith("wa-");
+
+  const byVisitor = new Map<string, RawEvent[]>();
   for (const ev of events) {
-    if (!ev.session_key) continue;
-    const list = bySession.get(ev.session_key) ?? [];
+    if (!ev.session_key || isSynthetic(ev.session_key)) continue;
+    const list = byVisitor.get(ev.session_key) ?? [];
     list.push(ev);
-    bySession.set(ev.session_key, list);
+    byVisitor.set(ev.session_key, list);
   }
 
-  const sessions = bySession.size;
-  const pageviews = events.filter((e) => e.event_name === "PageView").length;
+  const visitors = byVisitor.size;
+  const prior = await priorVisitors([...byVisitor.keys()], sinceIso);
+  const pageviews = events.filter((e) => e.event_name === "PageView" && !isSynthetic(e.session_key)).length;
 
+  let visits = 0;
   let bounced = 0;
-  let newSessions = 0;
-  let returningSessions = 0;
-  let viewedProductSessions = 0;
-  let addedToCartSessions = 0;
-  let initiatedCheckoutSessions = 0;
-  let purchasedSessions = 0;
-  let abandonedCartSessions = 0;
+  let newVisitors = 0;
+  let returningVisitors = 0;
+  let viewedProduct = 0;
+  let addedToCart = 0;
+  let startedCheckout = 0;
+  let paid = 0;
+  let abandonedCart = 0;
 
-  for (const [sessionKey, sessionEvents] of bySession) {
-    if (sessionEvents.length === 1 && sessionEvents[0].event_name === "PageView") bounced++;
-    if (priorSessionKeys.has(sessionKey)) returningSessions++;
-    else newSessions++;
+  const sourceOfVisitor = new Map<string, { group: SourceGroup; adClick: boolean }>();
+  const sourceVisitors = new Map<SourceGroup, number>();
 
-    const names = new Set(sessionEvents.map((e) => e.event_name));
-    if (names.has("ViewContent")) viewedProductSessions++;
-    if (names.has("AddToCart")) addedToCartSessions++;
-    if (names.has("InitiateCheckout")) initiatedCheckoutSessions++;
-    if (names.has("Purchase")) purchasedSessions++;
-    if (names.has("AddToCart") && !names.has("Purchase")) abandonedCartSessions++;
+  for (const [key, evs] of byVisitor) {
+    visits += splitVisits(evs.map((e) => new Date(e.created_at).getTime()));
+    if (prior.has(key)) returningVisitors++;
+    else newVisitors++;
+
+    const names = new Set(evs.map((e) => e.event_name));
+    const pv = evs.filter((e) => e.event_name === "PageView").length;
+    if (isBounce({ pageViews: pv, addedToCart: names.has("AddToCart"), startedCheckout: names.has("InitiateCheckout"), purchased: names.has("Purchase") })) bounced++;
+    if (names.has("ViewContent")) viewedProduct++;
+    if (names.has("AddToCart")) addedToCart++;
+    if (names.has("InitiateCheckout")) startedCheckout++;
+    if (names.has("Purchase")) paid++;
+    if (names.has("AddToCart") && !names.has("Purchase")) abandonedCart++;
+
+    // Entry point = first PageView, but an ad id on any event of the visitor still marks an ad click.
+    const first = evs.find((e) => e.event_name === "PageView") ?? evs[0];
+    const adClick = evs.some((e) => !!e.ad_brief_id);
+    const g = groupSource({ ad_brief_id: adClick ? "ad" : null, utm_source: first.utm_source ?? evs.find((e) => e.utm_source)?.utm_source, referrer_host: first.referrer_host });
+    sourceOfVisitor.set(key, g);
+    sourceVisitors.set(g.group, (sourceVisitors.get(g.group) ?? 0) + 1);
   }
 
-  const sourceCounts = new Map<string, number>();
-  for (const sessionEvents of bySession.values()) {
-    // Events are already ordered ascending, so the first PageView in this
-    // session's slice is genuinely its entry point.
-    const firstPageView = sessionEvents.find((e) => e.event_name === "PageView");
-    const source = classifyTrafficSource(firstPageView ?? { ad_brief_id: null, utm_source: null, referrer_host: null });
-    sourceCounts.set(source, (sourceCounts.get(source) ?? 0) + 1);
+  // Orders and revenue per source from Purchase events.
+  const sourceOrders = new Map<string, { orders: number; revenue: number; ad: number }>();
+  let eventOrders = 0;
+  let eventRevenue = 0;
+  for (const ev of events) {
+    if (ev.event_name !== "Purchase") continue;
+    let group: SourceGroup | "Not tracked";
+    let ad = false;
+    if (isSynthetic(ev.session_key)) group = "WhatsApp";
+    else if (ev.session_key && sourceOfVisitor.has(ev.session_key)) {
+      const g = sourceOfVisitor.get(ev.session_key)!;
+      group = g.group;
+      ad = g.adClick;
+    } else group = "Not tracked";
+    const row = sourceOrders.get(group) ?? { orders: 0, revenue: 0, ad: 0 };
+    row.orders++;
+    row.revenue += ev.value ?? 0;
+    if (ad) row.ad++;
+    sourceOrders.set(group, row);
+    eventOrders++;
+    eventRevenue += ev.value ?? 0;
   }
+
+  const revenue = orderRows.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  const orderCount = orderRows.length;
+  // Orders the tracking log missed (ad blocker, older orders) are shown honestly as "Not tracked".
+  if (orderCount > eventOrders) {
+    const row = sourceOrders.get("Not tracked") ?? { orders: 0, revenue: 0, ad: 0 };
+    row.orders += orderCount - eventOrders;
+    row.revenue += Math.max(0, revenue - eventRevenue);
+    sourceOrders.set("Not tracked", row);
+  }
+  const attributedAd = orderRows.filter((o) => !!o.attributed_ad_brief_id).length;
+  const sessionAd = [...sourceOrders.values()].reduce((s, r) => s + r.ad, 0);
+  const adClickOrders = Math.min(orderCount, Math.max(attributedAd, sessionAd));
+
+  const sources: SourceRow[] = ([...sourceOrders.keys(), ...sourceVisitors.keys()] as (SourceGroup | "Not tracked")[])
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .map((source) => {
+      const v = source === "Not tracked" ? 0 : sourceVisitors.get(source) ?? 0;
+      const o = sourceOrders.get(source) ?? { orders: 0, revenue: 0, ad: 0 };
+      return { source, visitors: v, orders: o.orders, revenue: o.revenue, conversionRate: v > 0 ? o.orders / v : 0, adClickOrders: o.ad };
+    })
+    .sort((a, b) => b.visitors - a.visitors || b.orders - a.orders);
 
   const pageCounts = new Map<string, number>();
-  const viewedChapterCounts = new Map<string, number>(); // keyed by chapter_slug
+  const viewedChapterCounts = new Map<string, number>();
   const addedChapterCounts = new Map<string, number>();
   const referrerCounts = new Map<string, Set<string>>();
-  const dailyMap = new Map<string, { sessions: Set<string>; addToCarts: number; purchases: number }>();
+  const dailyMap = new Map<string, { visitors: Set<string>; addToCarts: number; purchases: number }>();
 
   for (const ev of events) {
-    if (ev.event_name === "PageView" && ev.path) {
+    if (ev.event_name === "PageView" && ev.path && !isSynthetic(ev.session_key)) {
       pageCounts.set(ev.path, (pageCounts.get(ev.path) ?? 0) + 1);
     }
     if (ev.event_name === "ViewContent" && ev.chapter_slug) {
@@ -164,57 +281,47 @@ export async function computeWebsiteAnalytics(sinceIso: string, untilIso: string
       if (ev.session_key) set.add(ev.session_key);
       referrerCounts.set(ev.referrer_host, set);
     }
-
     const day = dayKey(ev.created_at);
-    const bucket = dailyMap.get(day) ?? { sessions: new Set<string>(), addToCarts: 0, purchases: 0 };
-    if (ev.session_key) bucket.sessions.add(ev.session_key);
+    const bucket = dailyMap.get(day) ?? { visitors: new Set<string>(), addToCarts: 0, purchases: 0 };
+    if (ev.session_key && !isSynthetic(ev.session_key)) bucket.visitors.add(ev.session_key);
     if (ev.event_name === "AddToCart") bucket.addToCarts++;
     if (ev.event_name === "Purchase") bucket.purchases++;
     dailyMap.set(day, bucket);
   }
 
-  const revenue = (orders ?? []).reduce((sum, o) => sum + (o.total ?? 0), 0);
-  const orderCount = (orders ?? []).length;
+  const { steps, biggestDrop } = buildFunnel({ visitors, viewedProduct, addedToCart, startedCheckout, paid });
 
   return {
-    sessions,
+    visitors,
+    visits,
+    sessions: visitors,
     pageviews,
-    bounceRate: sessions > 0 ? bounced / sessions : 0,
-    newSessions,
-    returningSessions,
-    funnel: {
-      sessions,
-      viewedProduct: viewedProductSessions,
-      addedToCart: addedToCartSessions,
-      initiatedCheckout: initiatedCheckoutSessions,
-      purchased: purchasedSessions,
-    },
-    cartAbandonmentRate: addedToCartSessions > 0 ? abandonedCartSessions / addedToCartSessions : 0,
+    bounceRate: visitors > 0 ? bounced / visitors : 0,
+    newVisitors,
+    returningVisitors,
+    funnel: { sessions: visitors, viewedProduct, addedToCart, initiatedCheckout: startedCheckout, purchased: paid },
+    funnelSteps: steps,
+    biggestDrop,
+    cartAbandonmentRate: addedToCart > 0 ? abandonedCart / addedToCart : 0,
     revenue,
     orders: orderCount,
     averageOrderValue: orderCount > 0 ? revenue / orderCount : 0,
-    revenuePerSession: sessions > 0 ? revenue / sessions : 0,
-    topPages: [...pageCounts.entries()]
-      .map(([path, views]) => ({ path, views }))
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 10),
+    revenuePerVisitor: visitors > 0 ? revenue / visitors : 0,
+    conversionRate: visitors > 0 ? orderCount / visitors : 0,
+    nonAdOrderShare: orderCount > 0 ? (orderCount - adClickOrders) / orderCount : null,
+    adClickOrders,
+    teamVisitorsExcluded: teamKeys.size,
+    sources,
+    topPages: [...pageCounts.entries()].map(([path, views]) => ({ path, views })).sort((a, b) => b.views - a.views).slice(0, 10),
     topViewedChapters: [...viewedChapterCounts.entries()]
       .map(([slug, views]) => ({ slug, name: chapterName(slug), views }))
       .sort((a, b) => b.views - a.views)
       .slice(0, 8),
-    topAddedChapters: [...addedChapterCounts.entries()]
-      .map(([name, adds]) => ({ name, adds }))
-      .sort((a, b) => b.adds - a.adds)
-      .slice(0, 8),
-    topReferrers: [...referrerCounts.entries()]
-      .map(([host, set]) => ({ host, sessions: set.size }))
-      .sort((a, b) => b.sessions - a.sessions)
-      .slice(0, 8),
-    trafficSources: [...sourceCounts.entries()]
-      .map(([source, count]) => ({ source, sessions: count }))
-      .sort((a, b) => b.sessions - a.sessions),
+    topAddedChapters: [...addedChapterCounts.entries()].map(([name, adds]) => ({ name, adds })).sort((a, b) => b.adds - a.adds).slice(0, 8),
+    topReferrers: [...referrerCounts.entries()].map(([host, set]) => ({ host, sessions: set.size })).sort((a, b) => b.sessions - a.sessions).slice(0, 8),
+    trafficSources: [...sourceVisitors.entries()].map(([source, n]) => ({ source, sessions: n })).sort((a, b) => b.sessions - a.sessions),
     dailyTrend: [...dailyMap.entries()]
-      .map(([date, b]) => ({ date, sessions: b.sessions.size, addToCarts: b.addToCarts, purchases: b.purchases }))
+      .map(([date, b]) => ({ date, visitors: b.visitors.size, addToCarts: b.addToCarts, purchases: b.purchases }))
       .sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
