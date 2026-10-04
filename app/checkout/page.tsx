@@ -1097,8 +1097,8 @@ export default function CheckoutPage() {
 
                 {paymentType === "upi_qr" && (
                   <p className="mx-auto mt-3 max-w-[340px] text-center text-caption text-secondary-text">
-                    Tap Pay to open Google Pay or your UPI app with the exact amount (or scan a QR on a
-                    laptop). It confirms automatically once paid, usually within a minute or two.
+                    Tap Pay to view your UPI QR code. Scan or upload with Google Pay, PhonePe, Paytm, or
+                    any UPI app. Confirms automatically once paid.
                   </p>
                 )}
               </div>
