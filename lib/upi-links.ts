@@ -8,7 +8,7 @@ export type UpiDevice = "android" | "ios" | "desktop";
 export function buildUpiLink(input: { upiId: string; payeeName: string; amountPaise: number; orderId: string }) {
   const amount = (input.amountPaise / 100).toFixed(2);
   return (
-    `upi://pay?pa=${encodeURIComponent(input.upiId)}&pn=${encodeURIComponent(input.payeeName)}` +
+    `upi://pay?pa=${input.upiId}&pn=${encodeURIComponent(input.payeeName)}` +
     `&am=${amount}&cu=INR&tn=${encodeURIComponent(`Order ${input.orderId.slice(0, 8).toUpperCase()}`)}`
   );
 }

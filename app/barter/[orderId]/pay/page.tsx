@@ -34,7 +34,7 @@ export default async function BarterChargePage({ params }: { params: Promise<{ o
   // QR generated with the amount baked in, so the shopper can't mistype it.
   const qr = upiConfig
     ? await QRCode.toDataURL(
-        `upi://pay?pa=${encodeURIComponent(upiConfig.upiId)}&pn=${encodeURIComponent(upiConfig.payeeName)}&am=${order.total}&cu=INR&tn=${encodeURIComponent(`Order ${order.id.slice(0, 8).toUpperCase()}`)}`,
+        `upi://pay?pa=${upiConfig.upiId}&pn=${encodeURIComponent(upiConfig.payeeName)}&am=${order.total}&cu=INR&tn=${encodeURIComponent(`Order ${order.id.slice(0, 8).toUpperCase()}`)}`,
         { width: 440, margin: 1 }
       )
     : null;
