@@ -12,7 +12,6 @@ import QRCode from "qrcode";
 import { trackEvent } from "@/lib/client-tracking";
 import { WhatsAppHelp } from "@/components/help/WhatsAppHelp";
 import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
-import { upiAppLinks } from "@/lib/upi-links";
 
 type OrderSummary = {
   id: string;
@@ -252,48 +251,21 @@ function OrderConfirmedContent() {
               </p>
             )}
 
-            {device !== "desktop" && upiPending.upiLink && (
-              <div className="mt-2 w-full max-w-[360px]">
-                <p className="mb-2 text-caption uppercase tracking-[0.08em] text-secondary-text">Pay with your UPI app</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {upiAppLinks(upiPending.upiLink, device).map((app) => (
-                    <a
-                      key={app.name}
-                      href={app.href}
-                      className={`px-3 py-3.5 font-sans text-caption font-bold uppercase tracking-[0.05em] transition ${
-                        app.primary ? "bg-[var(--moon-gold)] text-black hover:brightness-110" : "border border-ink/40 text-ink"
-                      }`}
-                    >
-                      {app.name}
-                    </a>
-                  ))}
-                </div>
-                <p className="mt-2 text-micro text-secondary-text">
-                  Opens your app with the amount filled in. Pay, then come back here.
-                </p>
-              </div>
-            )}
-
-            {device === "desktop" ? (
+            {/* Direct QR Code display for all devices */}
+            <div className="mt-2 flex flex-col items-center">
               <UpiQrImage upiQr={upiQr} fallback={upiPending.qrImageUrl} />
-            ) : (
-              <details className="w-full max-w-[360px] text-center">
-                <summary className="cursor-pointer text-caption text-secondary-text underline">
-                  Paying from another phone? Show QR code
-                </summary>
-                <div className="mt-3 flex justify-center">
-                  <UpiQrImage upiQr={upiQr} fallback={upiPending.qrImageUrl} />
-                </div>
-              </details>
-            )}
+              <p className="mt-2 text-micro uppercase tracking-[0.08em] text-secondary-text">
+                Scan with Google Pay, PhonePe, Paytm, or any UPI app
+              </p>
+            </div>
 
-            {upiPending.upiId && (
-              <div className="flex flex-wrap items-center justify-center gap-2 text-caption text-secondary-text">
-                <span>UPI ID: {upiPending.upiId}</span>
-                <CopyButton value={upiPending.upiId} label="Copy UPI ID" />
-                <CopyButton value={upiPayAmount.toFixed(2)} label="Copy amount" />
-              </div>
-            )}
+            {/* Actions: Download QR, Share QR, Step-by-step guide, Copy UPI ID */}
+            <QrActions
+              upiQr={upiQr}
+              upiId={upiPending.upiId}
+              amount={upiPayAmount}
+              orderRef={orderId ? shortOrderId(orderId) : ""}
+            />
 
             <div className="mt-6 w-full border-t border-divider pt-5">
               {upiStatus === "waiting" ? (
@@ -521,5 +493,100 @@ function CopyButton({ value, label }: { value: string; label: string }) {
     >
       {copied ? "Copied" : label}
     </button>
+  );
+}
+
+function QrActions({
+  upiQr,
+  upiId,
+  amount,
+  orderRef,
+}: {
+  upiQr: string | null;
+  upiId: string;
+  amount: number;
+  orderRef: string;
+}) {
+  const [downloaded, setDownloaded] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      setCanShare(true);
+    }
+  }, []);
+
+  const handleDownload = () => {
+    if (!upiQr) return;
+    const a = document.createElement("a");
+    a.href = upiQr;
+    a.download = `moon-glasses-order-${orderRef || "pay"}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setDownloaded(true);
+    setTimeout(() => setDownloaded(false), 2500);
+  };
+
+  const handleShare = async () => {
+    if (!upiQr) return;
+    try {
+      const res = await fetch(upiQr);
+      const blob = await res.blob();
+      const file = new File([blob], `moon-glasses-${orderRef || "pay"}.png`, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "Moon Glasses Payment QR",
+          text: `Pay ₹${amount.toFixed(2)} for Moon Glasses order #${orderRef} to ${upiId}`,
+        });
+        return;
+      }
+    } catch {
+      // share cancelled or unsupported
+    }
+    handleDownload();
+  };
+
+  return (
+    <div className="mt-2 flex flex-col items-center gap-3">
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {upiQr && (
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="inline-flex min-h-[44px] items-center justify-center bg-[var(--moon-gold)] px-5 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-black transition hover:brightness-110"
+          >
+            {downloaded ? "QR Downloaded! ✓" : "Download QR Code"}
+          </button>
+        )}
+        {upiQr && canShare && (
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex min-h-[44px] items-center justify-center border border-ink/40 px-4 py-2.5 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink transition hover:bg-ink/5"
+          >
+            Share QR
+          </button>
+        )}
+      </div>
+
+      <div className="w-full max-w-[340px] rounded border border-divider bg-surface/50 p-3.5 text-left">
+        <p className="text-micro font-bold uppercase tracking-[0.06em] text-ink">Paying on this phone?</p>
+        <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-micro text-secondary-text">
+          <li>Tap <strong>Download QR Code</strong> above (or screenshot).</li>
+          <li>Open <strong>Google Pay</strong>, <strong>PhonePe</strong>, or <strong>Paytm</strong>.</li>
+          <li>Tap <strong>Scan QR (📷)</strong> &gt; <strong>Upload from Gallery / Photos</strong> to pay.</li>
+        </ol>
+      </div>
+
+      {upiId && (
+        <div className="flex flex-wrap items-center justify-center gap-2 text-caption text-secondary-text">
+          <span>UPI ID: {upiId}</span>
+          <CopyButton value={upiId} label="Copy UPI ID" />
+          <CopyButton value={amount.toFixed(2)} label="Copy amount" />
+        </div>
+      )}
+    </div>
   );
 }
