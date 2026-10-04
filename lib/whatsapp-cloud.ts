@@ -32,13 +32,29 @@ function toE164(phone: string) {
   return digits.length === 10 ? `91${digits}` : digits;
 }
 
-async function getMetaCloudCredentials() {
-  const [accessToken, phoneNumberId] = await Promise.all([
+let latestMetaPhoneNumberId: string | null = null;
+
+export function setLatestMetaPhoneNumberId(id: string) {
+  if (id && typeof id === "string") {
+    latestMetaPhoneNumberId = id.trim();
+  }
+}
+
+export function getLatestMetaPhoneNumberId(): string | null {
+  return latestMetaPhoneNumberId;
+}
+
+async function getMetaCloudCredentials(explicitPhoneNumberId?: string) {
+  const [accessToken, settingPhoneId] = await Promise.all([
     getSetting("META_WHATSAPP_ACCESS_TOKEN"),
     getSetting("META_WHATSAPP_PHONE_NUMBER_ID"),
   ]);
-  if (!accessToken || !phoneNumberId) return null;
-  return { accessToken, phoneNumberId };
+  const rawPhoneId = explicitPhoneNumberId || latestMetaPhoneNumberId || settingPhoneId;
+  if (!accessToken || !rawPhoneId) return null;
+  return {
+    accessToken: accessToken.trim(),
+    phoneNumberId: rawPhoneId.trim(),
+  };
 }
 
 type MetaComponent =
@@ -115,13 +131,16 @@ export async function sendMetaCloudTemplate(
  * Sends a freeform text message in an active customer session (within 24 hours of customer inbound)
  * via Meta WhatsApp Cloud API.
  */
-export async function sendMetaCloudSessionMessage(phone: string, text: string) {
-  const creds = await getMetaCloudCredentials();
+export async function sendMetaCloudSessionMessage(phone: string, text: string, explicitPhoneNumberId?: string) {
+  const creds = await getMetaCloudCredentials(explicitPhoneNumberId);
   if (!creds) {
     return { sent: false as const, error: "Meta WhatsApp credentials missing" };
   }
 
   try {
+    const toPhone = toE164(phone);
+    console.log(`[Meta Cloud WhatsApp] Sending session message to ${toPhone} via phone_number_id=${creds.phoneNumberId}`);
+
     const res = await fetch(`https://graph.facebook.com/v21.0/${creds.phoneNumberId}/messages`, {
       method: "POST",
       headers: {
@@ -131,10 +150,10 @@ export async function sendMetaCloudSessionMessage(phone: string, text: string) {
       body: JSON.stringify({
         messaging_product: "whatsapp",
         recipient_type: "individual",
-        to: toE164(phone),
+        to: toPhone,
         type: "text",
         text: {
-          preview_url: true,
+          preview_url: false,
           body: text,
         },
       }),
@@ -142,11 +161,12 @@ export async function sendMetaCloudSessionMessage(phone: string, text: string) {
 
     const data = await res.json().catch(() => null);
     if (!res.ok || data?.error) {
-      console.error("Meta WhatsApp Cloud API session message failed", res.status, data?.error ?? data);
+      console.error(`Meta WhatsApp Cloud API session message failed (status ${res.status}, ID ${creds.phoneNumberId}):`, data?.error ?? data);
       return { sent: false as const, error: data?.error?.message || `HTTP ${res.status}` };
     }
 
     const messageId = data?.messages?.[0]?.id as string | undefined;
+    console.log(`[Meta Cloud WhatsApp] Session message successfully delivered! messageId: ${messageId}`);
     return { sent: true as const, messageId };
   } catch (err) {
     console.error("Meta WhatsApp Cloud API session message failed", err);
