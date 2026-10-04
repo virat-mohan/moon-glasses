@@ -221,7 +221,7 @@ export async function createUpiOrder(payload: UpiOrderPayload) {
 
   const payAmount = (upiAmountPaise / 100).toFixed(2);
   const upiLink =
-    `upi://pay?pa=${encodeURIComponent(config.upiId)}&pn=${encodeURIComponent(config.payeeName)}` +
+    `upi://pay?pa=${config.upiId}&pn=${encodeURIComponent(config.payeeName)}` +
     `&am=${payAmount}&cu=INR&tn=${encodeURIComponent(`Order ${savedOrder.id.slice(0, 8).toUpperCase()}`)}`;
 
   return {
