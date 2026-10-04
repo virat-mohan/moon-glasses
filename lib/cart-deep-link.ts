@@ -13,7 +13,13 @@ export function parseCartDeepLink(itemsParam: string) {
   for (const part of itemsParam.split(",")) {
     const [slug, qtyRaw] = part.split(":");
     if (!slug) continue;
-    const chapter = chapters.find((c) => c.slug === slug.trim());
+    const cleanSlug = slug.trim().toLowerCase();
+    const chapter = chapters.find(
+      (c) =>
+        c.slug.toLowerCase() === cleanSlug ||
+        c.slug.toLowerCase().replace(/^moon-/, "") === cleanSlug ||
+        `moon-${c.slug.toLowerCase()}` === cleanSlug
+    );
     if (!chapter) continue;
     const quantity = Math.max(1, parseInt(qtyRaw ?? "1", 10) || 1);
     resolved.push({ chapter, image: chapterImageSrc(chapter.folder, chapter.sideImage), quantity });

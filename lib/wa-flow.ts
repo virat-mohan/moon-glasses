@@ -103,7 +103,8 @@ export async function handleWaCartMessage(parsed: ParsedWaOrder, conversationId:
       name: parsed.name,
       items: cart.lines.map((l) => ({ s: l.slug, q: l.qty })),
     });
-    link = `${SITE}/cart/whatsapp?c=${signCartToken(cart.lines.map((l) => ({ s: l.slug, q: l.qty })))}`;
+    const itemsParam = cart.lines.map((l) => `${l.slug}:${l.qty}`).join(",");
+    link = `${SITE}/cart?items=${itemsParam}`;
   }
   const sent = await reply(parsed.phone, buildOrderReply(cart, link), conversationId, "cart received");
   await sendCustomerIssueAlert(`WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(cart.total)}`, [
