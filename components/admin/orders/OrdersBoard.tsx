@@ -28,6 +28,7 @@ import { ShipmentStatusCell } from "@/components/admin/ShipmentStatusCell";
 import { ShipmentCell } from "@/components/admin/ShipmentCell";
 import { RefundActions } from "@/components/admin/RefundActions";
 import { MarkUpiPaidButton } from "@/components/admin/MarkUpiPaidButton";
+import { SendPaymentLinkButton } from "@/components/admin/SendPaymentLinkButton";
 
 function useIsDesktop() {
   return useSyncExternalStore(
@@ -132,6 +133,7 @@ export function OrderDetail({ o }: { o: AdminOrderRow }) {
         <h3 className="ord-sec-title">What you can do</h3>
         <div className="ord-actions-grid">
           {upiUnpaid && <MarkUpiPaidButton orderId={o.id} />}
+          {upiUnpaid && <SendPaymentLinkButton orderId={o.id} />}
           {!o.shiprocket_shipment_id && !cancelled && (
             <ShipmentCell
               orderId={o.id}

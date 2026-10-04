@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isCronAuthorized } from "@/lib/cron-auth";
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { retargetOneSession, sendSecondNudgeForSession } from "@/lib/abandoned-cart";
+import { retargetOneSession, sendSecondNudgeForSession, retargetUnpaidUpiOrders } from "@/lib/abandoned-cart";
 
 const STAGE_1_AFTER_MINUTES = 5; // first plain reminder
 const STAGE_2_AFTER_STAGE_1_MINUTES = 120; // BUYNOW10 coupon nudge, 2 hours after stage 1
@@ -63,11 +63,16 @@ export async function GET(request: Request) {
       if (whatsappSent || emailSent) stage2Sent++;
     }
 
+    // Unpaid orders recovery — shoppers who filled address, reached UPI payment screen, but dropped off
+    const unpaidRecovery = await retargetUnpaidUpiOrders(10, 24);
+
     return NextResponse.json({
       abandoned: staleSessions?.length ?? 0,
       stage1Sent,
       stage2Eligible: dueForStage2?.length ?? 0,
       stage2Sent,
+      unpaidEligible: unpaidRecovery.eligible,
+      unpaidSent: unpaidRecovery.sent,
     });
   } catch (err) {
     console.error("Abandon sweep failed", err);

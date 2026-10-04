@@ -3,6 +3,8 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { getSetting } from "@/lib/settings";
 import { logInboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
+import { parseWhatsAppOrder, looksLikeOrderPayload } from "@/lib/wa-order";
+import { handleWaCartMessage, handleWaPendingText } from "@/lib/wa-flow";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 export const WHATSAPP_MEDIA_BUCKET = "whatsapp-media";
@@ -24,6 +26,8 @@ type CloudMessage = {
   text?: { body?: string };
   image?: { id: string; mime_type?: string; caption?: string };
   document?: { id: string; mime_type?: string; caption?: string; filename?: string };
+  order?: unknown;
+  [key: string]: unknown;
 };
 
 type CloudChangeValue = {
@@ -85,10 +89,17 @@ async function handleMessage(msg: CloudMessage, value: CloudChangeValue, signatu
         ? msg.document
         : null;
 
+  const isOrder = msg.type === "order" || looksLikeOrderPayload(msg);
+  const parsedOrder = isOrder ? (parseWhatsAppOrder({ ...msg, customerName: name, profile: { name } }) ?? parseWhatsAppOrder(value)) : null;
+
   const text =
     msg.text?.body ??
     media?.caption ??
-    (media || msg.type === "text" ? "" : `(unsupported message type: ${msg.type})`);
+    (parsedOrder && parsedOrder.items.length > 0
+      ? `(cart with ${parsedOrder.items.reduce((s, i) => s + (i.qty || 1), 0)} pairs)`
+      : media || msg.type === "text" || isOrder
+        ? ""
+        : `(unsupported message type: ${msg.type})`);
 
   let stored: Awaited<ReturnType<typeof fetchAndStoreMedia>> | null = null;
   let mediaError: string | null = null;
@@ -101,15 +112,30 @@ async function handleMessage(msg: CloudMessage, value: CloudChangeValue, signatu
     }
   }
 
-  const { messageId } = await logInboundWhatsAppMessage({
+  const { conversationId, messageId } = await logInboundWhatsAppMessage({
     phone: msg.from,
-    body: text || (media ? "(image)" : ""),
+    body: text || (media ? "(image)" : isOrder ? "(cart)" : ""),
     customerName: name,
     mediaUrl: stored?.storageRef ?? null,
     providerMessageId: msg.id,
   });
 
-  if (!media) return;
+  if (parsedOrder && parsedOrder.items.length > 0) {
+    await handleWaCartMessage(parsedOrder, conversationId);
+    return;
+  }
+
+  if (!media) {
+    if (text) {
+      await handleWaPendingText({
+        phone: msg.from,
+        text,
+        profileName: name,
+        conversationId,
+      });
+    }
+    return;
+  }
 
   if (!stored) {
     // Still surface it for manual review rather than silently losing a claimed payment.

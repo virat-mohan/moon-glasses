@@ -195,10 +195,19 @@ const droppedText = (cart: ValidatedCart) =>
     ? cart.dropped.map((d) => (d.name ? `${d.name} isn't available right now.` : "one pair in your cart isn't available right now.")).join(" ")
     : null;
 
-/** First reply to a cart: summary, total, and the one ask (delivery details in one message). */
-export function buildOrderReply(cart: ValidatedCart): string {
+/** First reply to a cart: summary, total, and the direct checkout link (or address ask fallback if no link). */
+export function buildOrderReply(cart: ValidatedCart, link?: string | null): string {
   if (!cart.lines.length) {
     return `thanks for the cart 🌙\n\nthe pairs in it aren't available right now. the full catalogue is here whenever you want a look: ${SITE}/catalogue`;
+  }
+  if (link) {
+    return [
+      "got your cart 🌙",
+      orderLinesText(cart),
+      `total ${rupees(cart.total)}, shipping free.`,
+      droppedText(cart),
+      `tap below to complete your order on our secure checkout:\n${link}`,
+    ].filter(Boolean).join("\n\n");
   }
   return [
     "got your cart 🌙",
