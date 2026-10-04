@@ -19,6 +19,7 @@ type CartContextValue = {
   removeItem: (slug: string) => void;
   setQuantity: (slug: string, quantity: number) => void;
   clear: () => void;
+  replaceCart: (newItems: { chapter: Chapter; image: string; quantity: number }[]) => void;
   count: number;
   subtotal: number;
   /** True once the initial localStorage read has completed — callers that add
@@ -82,12 +83,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   }
 
+  function replaceCart(newItems: { chapter: Chapter; image: string; quantity: number }[]) {
+    const nextItems: CartItem[] = newItems.map(({ chapter, image, quantity }) => ({
+      slug: chapter.slug,
+      name: chapter.name,
+      price: chapter.price,
+      image,
+      quantity: clampLineQuantity(quantity),
+    }));
+    setItems(nextItems);
+  }
+
   const count = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, removeItem, setQuantity, clear, count, subtotal, loaded }}
+      value={{ items, addItem, removeItem, setQuantity, clear, replaceCart, count, subtotal, loaded }}
     >
       {children}
     </CartContext.Provider>

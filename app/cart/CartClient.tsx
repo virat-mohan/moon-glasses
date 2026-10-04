@@ -8,7 +8,6 @@ import { Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { useDiscountRule } from "@/lib/useDiscountRule";
 import { calculateDiscount, describeDiscountRule } from "@/lib/discounts";
-import { parseCartDeepLink } from "@/lib/cart-deep-link";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
@@ -21,31 +20,55 @@ import { MAX_LINE_QUANTITY } from "@/lib/checkout-rules";
  * `items` param is stripped so refreshing/back-nav doesn't re-add it.
  * Split out because useSearchParams() requires a Suspense boundary.
  */
-function CartDeepLinkApplier() {
-  const { addItem, setQuantity, loaded } = useCart();
+import type { Chapter } from "@/types/chapter";
+
+export default function CartClient({
+  initialDeepLinkItems = [],
+}: {
+  initialDeepLinkItems?: { chapter: Chapter; image: string; quantity: number }[];
+}) {
+  const { items, setQuantity, removeItem, addItem, clear, replaceCart, subtotal, loaded } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
   const appliedDeepLink = useRef(false);
 
   useEffect(() => {
     if (appliedDeepLink.current || !loaded) return;
-    const itemsParam = searchParams.get("items");
-    if (!itemsParam) return;
-    appliedDeepLink.current = true;
 
-    for (const { chapter, image, quantity } of parseCartDeepLink(itemsParam)) {
-      addItem(chapter, image, quantity);
-      setQuantity(chapter.slug, quantity);
+    // Server-resolved items passed as props
+    if (initialDeepLinkItems && initialDeepLinkItems.length > 0) {
+      appliedDeepLink.current = true;
+      try {
+        localStorage.setItem("moonglasses-utm-source", JSON.stringify({ source: "whatsapp", capturedAt: Date.now() }));
+      } catch {}
+      replaceCart(initialDeepLinkItems);
+      router.replace("/cart");
+      return;
     }
-    router.replace("/cart");
+
+    // Client fallback: resolve from items param via API
+    const itemsParam = searchParams.get("items");
+    if (itemsParam) {
+      appliedDeepLink.current = true;
+      try {
+        localStorage.setItem("moonglasses-utm-source", JSON.stringify({ source: "whatsapp", capturedAt: Date.now() }));
+      } catch {}
+
+      fetch(`/api/cart/resolve-items?items=${encodeURIComponent(itemsParam)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.lines?.length) {
+            replaceCart(data.lines);
+          }
+          router.replace("/cart");
+        })
+        .catch(() => {
+          router.replace("/cart");
+        });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, loaded]);
+  }, [searchParams, loaded, initialDeepLinkItems]);
 
-  return null;
-}
-
-export default function CartClient() {
-  const { items, setQuantity, removeItem, subtotal } = useCart();
   const discountRule = useDiscountRule();
   const discount = calculateDiscount(items, discountRule);
   const total = subtotal - discount;
@@ -60,9 +83,6 @@ export default function CartClient() {
 
   return (
     <>
-      <Suspense fallback={null}>
-        <CartDeepLinkApplier />
-      </Suspense>
       <main className="mx-auto w-full max-w-[900px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
         <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">Your Cart</p>
         <h1 className="mt-2 font-display text-heading-xl uppercase text-ink md:text-display-m">
