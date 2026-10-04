@@ -195,16 +195,25 @@ const droppedText = (cart: ValidatedCart) =>
     ? cart.dropped.map((d) => (d.name ? `${d.name} isn't available right now.` : "one pair in your cart isn't available right now.")).join(" ")
     : null;
 
-/** First reply to a cart: summary, total, and the direct checkout link (or address ask fallback if no link). */
-export function buildOrderReply(cart: ValidatedCart, link?: string | null): string {
+export type OrderOffer = { discount: number; ruleName?: string | null };
+
+/** First reply to a cart: summary, total (with active offer applied if eligible), and the direct checkout link. */
+export function buildOrderReply(cart: ValidatedCart, link?: string | null, offer?: OrderOffer | null): string {
   if (!cart.lines.length) {
     return `thanks for the cart 🌙\n\nthe pairs in it aren't available right now. the full catalogue is here whenever you want a look: ${SITE}/catalogue`;
   }
+
+  const hasOffer = offer && offer.discount > 0;
+  const finalTotal = hasOffer ? Math.max(0, cart.total - offer.discount) : cart.total;
+  const totalBlock = hasOffer
+    ? `subtotal ${rupees(cart.total)}\n${offer.ruleName ? `${offer.ruleName}, ` : "offer applied, "}−${rupees(offer.discount)}\ntotal ${rupees(finalTotal)}, shipping free.`
+    : `total ${rupees(cart.total)}, shipping free.`;
+
   if (link) {
     return [
       "got your cart 🌙",
       orderLinesText(cart),
-      `total ${rupees(cart.total)}, shipping free.`,
+      totalBlock,
       droppedText(cart),
       `tap below to complete your order on our secure checkout:\n${link}`,
     ].filter(Boolean).join("\n\n");
@@ -212,7 +221,7 @@ export function buildOrderReply(cart: ValidatedCart, link?: string | null): stri
   return [
     "got your cart 🌙",
     orderLinesText(cart),
-    `total ${rupees(cart.total)}, shipping free.`,
+    totalBlock,
     droppedText(cart),
     "send your name, full address and pincode in one message (email optional)",
     "have a code? send it with your details.",

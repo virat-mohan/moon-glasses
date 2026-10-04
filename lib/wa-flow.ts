@@ -13,6 +13,7 @@ import { signCartToken } from "@/lib/cart-token";
 import { validateWaCart, buildOrderReply, buildPayReply, buildAskAgainReply, buildFallbackReply, buildCodeAppliedReply, buildCodeInvalidReply, buildFreeOrderReply, type ParsedWaOrder, type ValidatedCart, type WaOrderItem } from "@/lib/wa-order";
 import { resolveCouponDiscount } from "@/lib/coupons";
 import { resolveReferralDiscount } from "@/lib/referrals";
+import { calculateDiscount, describeDiscountRule, type DiscountRule } from "@/lib/discounts";
 import { computeTrustedOrderTotal } from "@/lib/order-pricing";
 import { sendWaPaidMessage } from "@/lib/wa-paid";
 import { ADDRESS_EXAMPLE, bareCodeCandidates, explicitCodes, parseAddressMessage, stripCodes } from "@/lib/wa-address";
@@ -94,6 +95,8 @@ export async function handleWaCartMessage(parsed: ParsedWaOrder, conversationId:
   const supabase = getSupabaseServerClient();
   const cart = await validate(parsed.items);
   let link: string | null = null;
+  let offer: { discount: number; ruleName?: string | null } | null = null;
+
   if (cart.lines.length) {
     const { data: prev } = await supabase.from("wa_cart_sessions").select("id, phone, status, attempts, expires_at").eq("phone", key).eq("status", "pending").maybeSingle();
     const { abandonId, session } = startSession(prev, parsed.phone);
@@ -105,10 +108,36 @@ export async function handleWaCartMessage(parsed: ParsedWaOrder, conversationId:
     });
     const itemsParam = cart.lines.map((l) => `${l.slug}:${l.qty}`).join(",");
     link = `${SITE}/cart?items=${itemsParam}`;
+
+    try {
+      const { data: ruleRow } = await supabase
+        .from("discount_rules")
+        .select("id, name, buy_quantity, discount_percent")
+        .eq("active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (ruleRow) {
+        const discountRule: DiscountRule = {
+          id: ruleRow.id,
+          name: ruleRow.name,
+          buyQuantity: ruleRow.buy_quantity,
+          discountPercent: ruleRow.discount_percent,
+        };
+        const discount = calculateDiscount(
+          cart.lines.map((l) => ({ price: l.price, quantity: l.qty })),
+          discountRule
+        );
+        if (discount > 0) {
+          offer = { discount, ruleName: describeDiscountRule(discountRule) };
+        }
+      }
+    } catch {}
   }
-  const sent = await reply(parsed.phone, buildOrderReply(cart, link), conversationId, "cart received");
-  await sendCustomerIssueAlert(`WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(cart.total)}`, [
-    `WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(cart.total)}`,
+  const sent = await reply(parsed.phone, buildOrderReply(cart, link, offer), conversationId, "cart received");
+  const finalTotalRupees = offer && offer.discount > 0 ? cart.total - offer.discount : cart.total;
+  await sendCustomerIssueAlert(`WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(finalTotalRupees)}`, [
+    `WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(finalTotalRupees)}`,
     sent ? "We sent the direct checkout link in chat." : "The chat reply was NOT delivered (see the other email).",
     ...(link ? [`Web fallback cart: <a href="${link}">${link}</a>`] : ["Nothing in the cart is available right now."]),
     ...(cart.dropped.length ? [`Dropped: ${cart.dropped.map((d) => `${d.name ?? d.retailerId} (${d.reason})`).join(", ")}`] : []),
