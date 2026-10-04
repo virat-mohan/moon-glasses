@@ -91,9 +91,11 @@ test("dedupe decision", () => {
 test("reply copy passes brand voice and carries total/link", () => {
   const cart = v([{ retailerId: "a", qty: 1 }, { retailerId: "zzz", qty: 1 }]);
   const directLinkReply = buildOrderReply(cart, "https://www.moon-glasses.store/cart/whatsapp?c=x");
+  const offerReply = buildOrderReply(cart, "https://www.moon-glasses.store/cart?items=a:1", { discount: 1499, ruleName: "Buy 3 Get 1 Free" });
   const texts = [
     buildOrderReply(cart),
     directLinkReply,
+    offerReply,
     buildPayReply({ cart, name: "Aarav", address: "12 Park Street, Salt Lake", pincode: "700091", payLink: "https://www.moon-glasses.store/pay/abc" }),
     buildAskAgainReply("Aarav\n12 Park Street\nKolkata 700091"),
     buildFallbackReply("https://www.moon-glasses.store/cart/whatsapp?c=x"),
@@ -102,7 +104,8 @@ test("reply copy passes brand voice and carries total/link", () => {
   assert.ok(texts[0].includes("₹2,499") && texts[0].includes("name, full address and pincode in one message (email optional)"));
   assert.ok(directLinkReply.includes("https://www.moon-glasses.store/cart/whatsapp?c=x"));
   assert.ok(!directLinkReply.includes("Your items are already added to your cart with free express delivery"));
-  assert.ok(texts[2].includes("https://www.moon-glasses.store/pay/abc") && texts[2].includes("wrong address? reply here before it ships."));
+  assert.ok(offerReply.includes("Buy 3 Get 1 Free, −₹1,499"));
+  assert.ok(texts[3].includes("https://www.moon-glasses.store/pay/abc") && texts[3].includes("wrong address? reply here before it ships."));
 });
 
 test("address parsing", () => {
