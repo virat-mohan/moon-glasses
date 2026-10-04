@@ -47,25 +47,12 @@ export async function getUpiPaymentConfig() {
 }
 
 /**
- * A raw UPI transfer carries no order reference we can read back, so each
- * pending UPI order is told apart by its exact amount: the rupee total plus a
- * 1–99 paise tag no other unpaid UPI order of the same total is using. The
- * bank's credit SMS (forwarded to /api/webhooks/bank-sms) is matched on it.
+/**
+ * Orders use the exact flat rupee total in paise (no random paise tags).
+ * Bank credit alerts match on the amount and payer name.
  */
 async function pickUniqueUpiAmountPaise(totalRupees: number): Promise<number> {
-  const base = totalRupees * 100;
-  const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-  const { data } = await getSupabaseServerClient()
-    .from("orders")
-    .select("upi_amount_paise")
-    .eq("payment_type", "upi_qr")
-    .neq("payment_status", "paid")
-    .gte("created_at", since)
-    .gte("upi_amount_paise", base)
-    .lt("upi_amount_paise", base + 100);
-  const taken = new Set((data ?? []).map((r) => r.upi_amount_paise as number));
-  const free = Array.from({ length: 99 }, (_, i) => base + i + 1).filter((p) => !taken.has(p));
-  return free.length ? free[Math.floor(Math.random() * free.length)] : base + 1 + Math.floor(Math.random() * 99);
+  return Math.round(totalRupees * 100);
 }
 
 export type UpiOrderPayload = {
