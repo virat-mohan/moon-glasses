@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActionTile } from "./ActionTile";
 
-const CANCELLABLE_SHIPMENT_STATUSES = new Set(["not_shipped", "processing"]);
+function isPrePickup(status: string | null | undefined): boolean {
+  if (!status) return true;
+  const s = status.toLowerCase().trim().replace(/[\s-]+/g, "_");
+  return !/in_transit|shipped|picked_up|out_for_delivery|delivered|rto/.test(s);
+}
 
 export function RefundActions({
   orderId,
@@ -34,7 +38,7 @@ export function RefundActions({
   const [error, setError] = useState<string | null>(null);
 
   const maxRefundable = total - refunded;
-  const canCancel = !cancelled && CANCELLABLE_SHIPMENT_STATUSES.has(shipmentStatus);
+  const canCancel = !cancelled && isPrePickup(shipmentStatus);
 
   async function refund() {
     if (maxRefundable <= 0) return;

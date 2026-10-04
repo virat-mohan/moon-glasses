@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
 import { buildUpiLink } from "@/lib/upi-links";
-import { PayClient } from "./PayClient";
 
 export const metadata: Metadata = { title: "Pay for your order · Moonglasses", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -46,5 +45,5 @@ export default async function PayPage({ params }: { params: Promise<{ orderId: s
     `/checkout/confirmed?order=${order.id}&upi=1&amount=${order.total}&upiId=${encodeURIComponent(config.upiId)}` +
     `&qr=${encodeURIComponent(config.qrImageUrl ?? "")}&link=${encodeURIComponent(upiLink)}`;
 
-  return <PayClient orderRef={order.id.slice(0, 8).toUpperCase()} amount={amount} upiId={config.upiId} upiLink={upiLink} confirmedHref={confirmedHref} />;
+  redirect(confirmedHref);
 }

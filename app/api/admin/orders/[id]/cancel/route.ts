@@ -3,7 +3,11 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { cancelShiprocketOrder } from "@/lib/shiprocket";
 import { refundRazorpayPayment } from "@/lib/razorpay";
 
-const CANCELLABLE_SHIPMENT_STATUSES = new Set(["not_shipped", "processing"]);
+function isPrePickup(status: string | null | undefined): boolean {
+  if (!status) return true;
+  const s = status.toLowerCase().trim().replace(/[\s-]+/g, "_");
+  return !/in_transit|shipped|picked_up|out_for_delivery|delivered|rto/.test(s);
+}
 
 /**
  * Pre-shipment cancellation only — full refund + restock, no Shiprocket
@@ -23,7 +27,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (order.status === "cancelled") {
       return NextResponse.json({ error: "This order is already cancelled." }, { status: 400 });
     }
-    if (!CANCELLABLE_SHIPMENT_STATUSES.has(order.shipment_status)) {
+    if (!isPrePickup(order.shipment_status)) {
       return NextResponse.json(
         {
           error:
