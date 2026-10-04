@@ -1,5 +1,6 @@
 import { getSetting } from "@/lib/settings";
 import { voiceGate } from "@/lib/brand-voice";
+import { sendMetaCloudSessionMessage } from "@/lib/whatsapp-cloud";
 
 function toMobile(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -222,9 +223,19 @@ export async function sendMsg91Template(
 export async function sendWhatsAppSessionMessage(phone: string, text: string) {
   const gate = voiceGate(text, "whatsapp", "WhatsApp session message");
   if (!gate.ok) return { sent: false as const, error: gate.reason };
+
+  const provider = await getSetting("WHATSAPP_PROVIDER");
+  if (provider === "meta_cloud") {
+    return sendMetaCloudSessionMessage(phone, text);
+  }
+
   const authKey = await getSetting("MSG91_AUTH_KEY");
   const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
   if (!authKey || !integratedNumber) {
+    const metaToken = await getSetting("META_WHATSAPP_ACCESS_TOKEN");
+    if (metaToken) {
+      return sendMetaCloudSessionMessage(phone, text);
+    }
     return { sent: false as const, error: "MSG91 Auth Key or WhatsApp number not configured" };
   }
 

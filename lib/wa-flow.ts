@@ -96,10 +96,10 @@ export async function handleWaCartMessage(parsed: ParsedWaOrder, conversationId:
     });
     link = `${SITE}/cart/whatsapp?c=${signCartToken(cart.lines.map((l) => ({ s: l.slug, q: l.qty })))}`;
   }
-  const sent = await reply(parsed.phone, buildOrderReply(cart), conversationId, "cart received");
+  const sent = await reply(parsed.phone, buildOrderReply(cart, link), conversationId, "cart received");
   await sendCustomerIssueAlert(`WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(cart.total)}`, [
     `WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(cart.total)}`,
-    sent ? "We asked for the delivery details in chat." : "The chat reply was NOT delivered (see the other email).",
+    sent ? "We sent the direct checkout link in chat." : "The chat reply was NOT delivered (see the other email).",
     ...(link ? [`Web fallback cart: <a href="${link}">${link}</a>`] : ["Nothing in the cart is available right now."]),
     ...(cart.dropped.length ? [`Dropped: ${cart.dropped.map((d) => `${d.name ?? d.retailerId} (${d.reason})`).join(", ")}`] : []),
   ]).catch(() => {});

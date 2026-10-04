@@ -110,3 +110,47 @@ export async function sendMetaCloudTemplate(
     return { sent: false as const };
   }
 }
+
+/**
+ * Sends a freeform text message in an active customer session (within 24 hours of customer inbound)
+ * via Meta WhatsApp Cloud API.
+ */
+export async function sendMetaCloudSessionMessage(phone: string, text: string) {
+  const creds = await getMetaCloudCredentials();
+  if (!creds) {
+    return { sent: false as const, error: "Meta WhatsApp credentials missing" };
+  }
+
+  try {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${creds.phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: toE164(phone),
+        type: "text",
+        text: {
+          preview_url: true,
+          body: text,
+        },
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || data?.error) {
+      console.error("Meta WhatsApp Cloud API session message failed", res.status, data?.error ?? data);
+      return { sent: false as const, error: data?.error?.message || `HTTP ${res.status}` };
+    }
+
+    const messageId = data?.messages?.[0]?.id as string | undefined;
+    return { sent: true as const, messageId };
+  } catch (err) {
+    console.error("Meta WhatsApp Cloud API session message failed", err);
+    return { sent: false as const, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
