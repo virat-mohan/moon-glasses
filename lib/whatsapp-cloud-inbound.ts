@@ -66,7 +66,10 @@ async function fetchAndStoreMedia(mediaId: string, messageId: string) {
   return { storageRef: `${STORAGE_REF_PREFIX}${WHATSAPP_MEDIA_BUCKET}/${path}`, base64: bytes.toString("base64"), mediaType };
 }
 
+const inFlightMessageIds = new Set<string>();
+
 async function alreadyProcessed(messageId: string) {
+  if (inFlightMessageIds.has(messageId)) return true;
   const supabase = getSupabaseServerClient();
   const { data } = await supabase
     .from("whatsapp_conversation_messages")
@@ -79,7 +82,10 @@ async function alreadyProcessed(messageId: string) {
 async function handleMessage(msg: CloudMessage, value: CloudChangeValue, signatureVerified: boolean) {
   // Meta retries any delivery it thinks failed — the same message must
   // never create a second inbox row or a second confirmation attempt.
+  if (inFlightMessageIds.has(msg.id)) return;
   if (await alreadyProcessed(msg.id)) return;
+  inFlightMessageIds.add(msg.id);
+  setTimeout(() => inFlightMessageIds.delete(msg.id), 60_000);
 
   const name = value.contacts?.find((c) => c.wa_id === msg.from)?.profile?.name ?? null;
   const media =
