@@ -251,7 +251,7 @@ export async function sendWhatsAppSessionMessage(phone: string, text: string) {
       body: JSON.stringify({
         integrated_number: integratedNumber,
         content_type: "text",
-        content: { type: "text", text: { body: text } },
+        text: text,
         recipient_number: toMobile(phone),
       }),
     });

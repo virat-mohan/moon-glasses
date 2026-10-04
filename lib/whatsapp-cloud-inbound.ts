@@ -1,10 +1,11 @@
 import crypto from "crypto";
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { getSetting } from "@/lib/settings";
+import { getSetting, setSetting } from "@/lib/settings";
 import { logInboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 import { processInboundPaymentScreenshot } from "@/lib/payment-auto-confirm";
 import { parseWhatsAppOrder, looksLikeOrderPayload } from "@/lib/wa-order";
 import { handleWaCartMessage, handleWaPendingText } from "@/lib/wa-flow";
+import { setLatestMetaPhoneNumberId } from "@/lib/whatsapp-cloud";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 export const WHATSAPP_MEDIA_BUCKET = "whatsapp-media";
@@ -31,6 +32,11 @@ type CloudMessage = {
 };
 
 type CloudChangeValue = {
+  messaging_product?: string;
+  metadata?: {
+    display_phone_number?: string;
+    phone_number_id?: string;
+  };
   contacts?: { wa_id?: string; profile?: { name?: string } }[];
   messages?: CloudMessage[];
 };
@@ -170,6 +176,24 @@ export async function handleWhatsAppCloudWebhook(body: { entry?: { changes?: { f
   for (const entry of body.entry ?? []) {
     for (const change of entry.changes ?? []) {
       if (change.field !== "messages" || !change.value?.messages) continue;
+
+      const metaPhoneNumberId = change.value.metadata?.phone_number_id;
+      if (metaPhoneNumberId) {
+        setLatestMetaPhoneNumberId(metaPhoneNumberId);
+        getSetting("META_WHATSAPP_PHONE_NUMBER_ID")
+          .then((current) => {
+            if (current !== metaPhoneNumberId) {
+              console.log(
+                `[WhatsApp Cloud] Auto-updating META_WHATSAPP_PHONE_NUMBER_ID from webhook: ${metaPhoneNumberId} (was: ${current})`
+              );
+              setSetting("META_WHATSAPP_PHONE_NUMBER_ID", metaPhoneNumberId).catch((err) => {
+                console.warn("Failed to auto-update META_WHATSAPP_PHONE_NUMBER_ID", err);
+              });
+            }
+          })
+          .catch(() => {});
+      }
+
       for (const msg of change.value.messages) {
         try {
           await handleMessage(msg, change.value, signatureVerified);
