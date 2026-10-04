@@ -78,12 +78,21 @@ async function priceWithCodes(items: WaOrderItem[], phone: string, coupon: strin
   return { subtotal: p.subtotal, discount: p.couponDiscountAmount + p.referralDiscountAmount, total: p.total };
 }
 
+const recentCartReplies = new Map<string, number>();
+
 /** A cart message arrived: validate, store the pending cart, ask for the address. */
 export async function handleWaCartMessage(parsed: ParsedWaOrder, conversationId: string | null) {
   if (!parsed.phone) return;
+  const key = phoneKey(parsed.phone);
+  const now = Date.now();
+  const lastReply = recentCartReplies.get(key) ?? 0;
+  if (now - lastReply < 4000) {
+    return;
+  }
+  recentCartReplies.set(key, now);
+
   const supabase = getSupabaseServerClient();
   const cart = await validate(parsed.items);
-  const key = phoneKey(parsed.phone);
   let link: string | null = null;
   if (cart.lines.length) {
     const { data: prev } = await supabase.from("wa_cart_sessions").select("id, phone, status, attempts, expires_at").eq("phone", key).eq("status", "pending").maybeSingle();
