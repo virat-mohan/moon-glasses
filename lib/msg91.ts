@@ -225,14 +225,19 @@ export async function sendWhatsAppSessionMessage(phone: string, text: string) {
   if (!gate.ok) return { sent: false as const, error: gate.reason };
 
   const provider = await getSetting("WHATSAPP_PROVIDER");
-  if (provider === "meta_cloud") {
-    return sendMetaCloudSessionMessage(phone, text);
+  const metaToken = await getSetting("META_WHATSAPP_ACCESS_TOKEN");
+
+  // Prioritize Meta Cloud API whenever configured, since official number (+91 93183 11657)
+  // is registered directly on Meta Cloud.
+  if (provider === "meta_cloud" || (metaToken && provider !== "msg91")) {
+    const metaRes = await sendMetaCloudSessionMessage(phone, text);
+    if (metaRes.sent) return metaRes;
+    console.warn("Meta Cloud session message send failed, trying MSG91 fallback...", metaRes.error);
   }
 
   const authKey = await getSetting("MSG91_AUTH_KEY");
   const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
   if (!authKey || !integratedNumber) {
-    const metaToken = await getSetting("META_WHATSAPP_ACCESS_TOKEN");
     if (metaToken) {
       return sendMetaCloudSessionMessage(phone, text);
     }
@@ -245,19 +250,27 @@ export async function sendWhatsAppSessionMessage(phone: string, text: string) {
       headers: { authkey: authKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         integrated_number: integratedNumber,
+        content_type: "text",
         content: { type: "text", text: { body: text } },
         recipient_number: toMobile(phone),
       }),
     });
     const data = await res.json().catch(() => null);
-    if (!res.ok) {
+    if (!res.ok || data?.hasError) {
       console.error("MSG91 session message send failed", res.status, data);
-      return { sent: false as const, error: data?.message ?? `HTTP ${res.status}` };
+      if (metaToken) {
+        console.log("MSG91 failed, falling back to Meta Cloud API session message...");
+        return sendMetaCloudSessionMessage(phone, text);
+      }
+      return { sent: false as const, error: data?.errors ?? data?.message ?? `HTTP ${res.status}` };
     }
     const messageId = data?.request_id ?? data?.data?.request_id ?? data?.message_id ?? null;
     return { sent: true as const, messageId: messageId ? String(messageId) : undefined };
   } catch (err) {
     console.error("MSG91 session message send failed", err);
+    if (metaToken) {
+      return sendMetaCloudSessionMessage(phone, text);
+    }
     return { sent: false as const, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
