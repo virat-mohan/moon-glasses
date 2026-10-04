@@ -1,213 +1,48 @@
-"use client";
+import type { Metadata } from "next";
+import CartClient from "./CartClient";
 
-import { Suspense, useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Minus, Plus, X } from "lucide-react";
-import { useCart } from "@/lib/cart";
-import { useDiscountRule } from "@/lib/useDiscountRule";
-import { calculateDiscount, describeDiscountRule } from "@/lib/discounts";
-import { parseCartDeepLink } from "@/lib/cart-deep-link";
-import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
-import { FooterEditorial } from "@/components/footer/FooterEditorial";
-import { CreatorTeaser } from "@/components/creator/CreatorTeaser";
-import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
-import { MAX_LINE_QUANTITY } from "@/lib/checkout-rules";
+const SITE_URL = "https://www.moon-glasses.store";
 
-/**
- * Lands a WhatsApp-catalog order (or any pre-built cart shared as a link)
- * straight into the real checkout flow — one-time on mount, then the
- * `items` param is stripped so refreshing/back-nav doesn't re-add it.
- * Split out because useSearchParams() requires a Suspense boundary.
- */
-function CartDeepLinkApplier() {
-  const { addItem, loaded } = useCart();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const appliedDeepLink = useRef(false);
+type PageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> | { [key: string]: string | string[] | undefined };
+};
 
-  useEffect(() => {
-    if (appliedDeepLink.current || !loaded) return;
-    const itemsParam = searchParams.get("items");
-    if (!itemsParam) return;
-    appliedDeepLink.current = true;
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const resolved = await searchParams;
+  const items = typeof resolved?.items === "string" ? resolved.items : "";
+  const ogImageUrl = items
+    ? `${SITE_URL}/api/og/cart?items=${encodeURIComponent(items)}&v=hd`
+    : `${SITE_URL}/api/og/cart?v=hd`;
 
-    for (const { chapter, image, quantity } of parseCartDeepLink(itemsParam)) {
-      addItem(chapter, image, quantity);
-    }
-    router.replace("/cart");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, loaded]);
-
-  return null;
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: "Your Cart — Moonglasses",
+    description: "Complete your Moonglasses order securely with Free Express Delivery across India.",
+    openGraph: {
+      type: "website",
+      siteName: "Moonglasses",
+      title: "Your Cart is Ready — Moonglasses",
+      description: "Complete your Moonglasses order securely with Free Express Delivery across India.",
+      url: `${SITE_URL}/cart${items ? `?items=${encodeURIComponent(items)}` : ""}`,
+      images: [
+        {
+          url: ogImageUrl,
+          width: 600,
+          height: 600,
+          alt: "Moonglasses Cart",
+          type: "image/png",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary",
+      title: "Your Cart is Ready — Moonglasses",
+      description: "Complete your Moonglasses order securely with Free Express Delivery across India.",
+      images: [ogImageUrl],
+    },
+  };
 }
 
 export default function CartPage() {
-  const { items, setQuantity, removeItem, subtotal } = useCart();
-  const discountRule = useDiscountRule();
-  const discount = calculateDiscount(items, discountRule);
-  const total = subtotal - discount;
-  const unitCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const [postBarterEnabled, setPostBarterEnabled] = useState(false);
-  useEffect(() => {
-    fetch("/api/checkout/config")
-      .then((r) => r.json())
-      .then((d) => setPostBarterEnabled(!!d.postBarterEnabled))
-      .catch(() => {});
-  }, []);
-
-  return (
-    <>
-      <Suspense fallback={null}>
-        <CartDeepLinkApplier />
-      </Suspense>
-      <main className="mx-auto w-full max-w-[900px] px-6 pt-32 pb-24 md:px-12 md:pt-40">
-        <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">Your Cart</p>
-        <h1 className="mt-2 font-display text-heading-xl uppercase text-ink md:text-display-m">
-          {items.length > 0 ? "Almost There." : "Empty, For Now."}
-        </h1>
-
-        {items.length === 0 ? (
-          <div className="mt-16 border-t border-divider py-24 text-center">
-            <p className="text-body text-secondary-text">
-              Nothing in your cart yet — every pair starts somewhere.
-            </p>
-            <Link
-              href="/"
-              className="mt-6 inline-block font-sans text-body-s font-bold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:text-[var(--moon-gold)]"
-            >
-              Browse The Series
-            </Link>
-          </div>
-        ) : (
-          <>
-            <div className="mt-12 divide-y divide-divider border-y border-divider">
-              {items.map((item) => (
-                <div key={item.slug} className="flex flex-wrap items-center gap-4 py-6 sm:flex-nowrap sm:gap-5">
-                  <Link
-                    href={`/chapter/${item.slug}`}
-                    className="relative h-28 w-28 shrink-0 overflow-hidden bg-[#F3EBDA] sm:h-36 sm:w-36"
-                  >
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      sizes="144px"
-                      className="object-contain p-1 contrast-[1.08] saturate-[1.1] mix-blend-multiply md:p-2"
-                    />
-                  </Link>
-
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/chapter/${item.slug}`}
-                      className="font-sans text-body-s uppercase tracking-[0.03em] text-ink hover:underline"
-                    >
-                      {item.name}
-                    </Link>
-                    <p className="mt-1 text-caption text-secondary-text">
-                      ₹{item.price.toLocaleString("en-IN")}
-                    </p>
-                  </div>
-
-                  <div className="flex w-full shrink-0 items-center justify-end gap-3 sm:ml-0 sm:w-auto">
-                    <div className="flex items-center gap-3 border border-divider px-3 py-1.5">
-                      <button
-                        aria-label="Decrease quantity"
-                        onClick={() => setQuantity(item.slug, item.quantity - 1)}
-                        className="text-ink"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-4 text-center text-body-s text-ink">{item.quantity}</span>
-                      <button
-                        aria-label="Increase quantity"
-                        onClick={() => setQuantity(item.slug, item.quantity + 1)}
-                        disabled={item.quantity >= MAX_LINE_QUANTITY}
-                        className="text-ink disabled:opacity-30"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-
-                    <button
-                      aria-label="Remove"
-                      onClick={() => removeItem(item.slug)}
-                      className="text-secondary-text transition-colors hover:text-ink"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  <p className="w-full text-right font-sans text-body-s text-ink sm:w-20">
-                    ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 flex items-center gap-4 border-b border-divider pb-6">
-              <div className="relative aspect-square w-16 flex-none overflow-hidden bg-[var(--moon-black)] sm:w-20">
-                <Image
-                  src="/images/brand/case-and-pouch.png"
-                  alt="Moonglasses branded case with microfiber cleaning cloth"
-                  fill
-                  sizes="80px"
-                  className="object-contain p-1.5"
-                />
-              </div>
-              <p className="flex-1 text-caption text-secondary-text">
-                Every pair ships in a branded Moonglasses case with a microfiber cleaning cloth —
-                included, no extra charge.
-              </p>
-            </div>
-
-            <div className="mt-8 flex items-center justify-between">
-              <p className="font-sans text-body text-ink">Subtotal</p>
-              <p className="font-sans text-body text-ink">₹{subtotal.toLocaleString("en-IN")}</p>
-            </div>
-
-            {discount > 0 && discountRule && (
-              <div className="mt-2 flex items-center justify-between">
-                <p className="font-sans text-body-s text-tan-gold">{describeDiscountRule(discountRule)}</p>
-                <p className="font-sans text-body-s text-tan-gold">
-                  −₹{discount.toLocaleString("en-IN")}
-                </p>
-              </div>
-            )}
-
-            <div className="mt-2 flex items-center justify-between border-t border-divider pt-3">
-              <p className="font-sans text-body text-ink">Total</p>
-              <p className="font-display text-heading-m text-ink">₹{total.toLocaleString("en-IN")}</p>
-            </div>
-            <p className="mt-2 text-caption text-secondary-text">
-              All prices include GST. Shipping is calculated at checkout.
-            </p>
-
-            <Link
-              href="/checkout"
-              className="mt-8 block w-full bg-[var(--moon-gold)] text-black hover:brightness-110 py-4 text-center font-sans text-body-s font-bold uppercase tracking-[0.1em] transition"
-            >
-              Proceed to Checkout
-            </Link>
-
-            {postBarterEnabled && unitCount === 1 && (
-              <p className="mt-3 text-center font-sans text-body-s font-bold text-ink">
-                Skip the payment — get it free with{" "}
-                <Link href="/checkout" className="underline underline-offset-4">
-                  <PayWithAPostMark />
-                </Link>
-                .
-              </p>
-            )}
-
-            {items.length > 1 && <CreatorTeaser className="mt-8" />}
-          </>
-        )}
-      </main>
-
-      <NewsletterBlock />
-      <FooterEditorial />
-    </>
-  );
+  return <CartClient />;
 }

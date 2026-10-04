@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/abandon-sweep",
-      "schedule": "0 5 * * *"
+      "schedule": "*/10 * * * *"
     },
     {
       "path": "/api/cron/ad-agent",
