@@ -101,7 +101,7 @@ test("reply copy passes brand voice and carries total/link", () => {
     buildFallbackReply("https://www.moon-glasses.store/cart/whatsapp?c=x"),
   ];
   for (const t of texts) assert.equal(hasBlock(checkVoice(t, "whatsapp")), false, t);
-  assert.ok(texts[0].includes("₹2,499") && texts[0].includes("name, full address and pincode in one message (email optional)"));
+  assert.ok(texts[0].includes("₹2,499") && texts[0].includes("delivery details in chat"));
   assert.ok(directLinkReply.includes("https://www.moon-glasses.store/cart/whatsapp?c=x"));
   assert.ok(!directLinkReply.includes("Your items are already added to your cart with free express delivery"));
   assert.ok(offerReply.includes("Buy 3 Get 1 Free, −₹1,499"));
