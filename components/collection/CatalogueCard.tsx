@@ -21,7 +21,7 @@ export const PRODUCT_SHOT_CLASS = "object-contain p-[5%] contrast-[1.08] saturat
  * One photo per pair, model first. Touch: each tap switches model/product.
  * Mouse: hover shows the product, click opens the product page.
  */
-export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = "100vw", swipeFlips = true }: CatalogueItem & { sizes?: string; swipeFlips?: boolean }) {
+export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = "100vw", swipeFlips = true, arrows = true }: CatalogueItem & { sizes?: string; swipeFlips?: boolean; arrows?: boolean }) {
   const router = useRouter();
   const [showModel, setShowModel] = useState(startModel);
   const [hasModel, setHasModel] = useState(true);
@@ -63,7 +63,7 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
           else setShowModel((m) => !m);
         }}
         aria-label={`${chapter.name} — ${model ? "showing it worn" : "showing the product"}`}
-        className="relative block touch-pan-y aspect-[4/5] w-full cursor-pointer overflow-hidden"
+        className="relative block aspect-[4/5] w-full cursor-pointer overflow-hidden"
         style={{ backgroundColor: model ? "var(--moon-black)" : PRODUCT_BG }}
       >
         <Image
@@ -86,7 +86,7 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
             style={{ opacity: model ? 1 : 0 }}
           />
         )}
-        {hasModel && (
+        {hasModel && arrows && (
           <>
             <span aria-hidden className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[22px] leading-none text-white/90 [text-shadow:0_0_6px_rgba(0,0,0,0.55)] [@media(hover:hover)]:hidden">‹</span>
             <span aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[22px] leading-none text-white/90 [text-shadow:0_0_6px_rgba(0,0,0,0.55)] [@media(hover:hover)]:hidden">›</span>

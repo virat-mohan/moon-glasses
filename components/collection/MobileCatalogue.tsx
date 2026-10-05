@@ -18,8 +18,22 @@ export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
     setIndex(Math.round(el.scrollLeft / (slide.offsetWidth + 24)));
   }
 
+  function go(dir: 1 | -1) {
+    const el = trackRef.current;
+    const slide = el?.firstElementChild as HTMLElement | null;
+    if (el && slide) el.scrollBy({ left: dir * (slide.offsetWidth + 24), behavior: "smooth" });
+  }
+  const arrowClass =
+    "absolute top-[40%] z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[26px] leading-none text-white";
+
   return (
-    <div>
+    <div className="relative">
+      {index > 0 && (
+        <button type="button" aria-label="Previous pair" onClick={() => go(-1)} className={`${arrowClass} left-1`}>‹</button>
+      )}
+      {index < items.length - 1 && (
+        <button type="button" aria-label="Next pair" onClick={() => go(1)} className={`${arrowClass} right-1`}>›</button>
+      )}
       <div
         ref={trackRef}
         onScroll={onScroll}
@@ -28,7 +42,7 @@ export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
       >
         {items.map((item, i) => (
           <div key={item.chapter.slug} className="w-full flex-none snap-center">
-            <CatalogueCard {...item} startModel={i % 2 === 0} swipeFlips={false} />
+            <CatalogueCard {...item} startModel={i % 2 === 0} swipeFlips={false} arrows={false} />
           </div>
         ))}
       </div>
