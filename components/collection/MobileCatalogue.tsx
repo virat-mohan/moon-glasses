@@ -21,7 +21,7 @@ export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
   function go(dir: 1 | -1) {
     const el = trackRef.current;
     const slide = el?.firstElementChild as HTMLElement | null;
-    if (el && slide) el.scrollBy({ left: dir * (slide.offsetWidth + 24), behavior: "smooth" });
+    if (el && slide) el.scrollBy({ left: dir * (slide.offsetWidth + 24), behavior: "instant" });
   }
   const arrowClass =
     "absolute top-[40%] z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/45 text-[26px] leading-none text-white";
