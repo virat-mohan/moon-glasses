@@ -65,15 +65,26 @@ function MobileGridTile({ chapter, stockLabel, startModel = false }: CatalogueIt
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
   const modelImage = chapter.modelImage ?? `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;
   const showModel = flipped && hasModel;
+  const startX = useRef<number | null>(null);
   const soldOut = stockLabel === "out-of-stock";
 
   return (
     <div>
       <button
         type="button"
+        onTouchStart={(e) => { startX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          if (startX.current === null) return;
+          const dx = e.changedTouches[0].clientX - startX.current;
+          startX.current = null;
+          if (Math.abs(dx) > 25) {
+            e.preventDefault(); // swipe: show the other photo, and don't also count as a tap
+            setFlipped((f) => !f);
+          }
+        }}
         onClick={() => setFlipped((f) => !f)}
         aria-label={`${chapter.name}: ${showModel ? "showing it worn" : "showing the product"}`}
-        className="relative block aspect-square w-full overflow-hidden"
+        className="relative block aspect-square w-full touch-pan-y overflow-hidden"
         style={{ backgroundColor: showModel ? "var(--moon-black)" : PRODUCT_BG }}
       >
         <Image
@@ -96,6 +107,12 @@ function MobileGridTile({ chapter, stockLabel, startModel = false }: CatalogueIt
             className="object-cover object-[50%_22%] transition-opacity duration-300"
             style={{ opacity: showModel ? 1 : 0 }}
           />
+        )}
+        {hasModel && (
+          <>
+            <span aria-hidden className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-[24px] leading-none text-white/95 [text-shadow:0_0_6px_rgba(0,0,0,0.6)]">‹</span>
+            <span aria-hidden className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[24px] leading-none text-white/95 [text-shadow:0_0_6px_rgba(0,0,0,0.6)]">›</span>
+          </>
         )}
         {stockLabel && (
           <span className="absolute left-2 top-2 bg-black px-1.5 py-0.5 text-[10px] uppercase tracking-[0.05em] text-white">
