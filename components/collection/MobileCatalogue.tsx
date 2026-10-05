@@ -26,14 +26,14 @@ export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
         className="-mx-6 flex snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ scrollPaddingInline: "1.5rem", gap: "1.5rem" }}
       >
-        {items.map((item) => (
+        {items.map((item, i) => (
           <div key={item.chapter.slug} className="w-full flex-none snap-center">
-            <CatalogueCard {...item} />
+            <CatalogueCard {...item} startModel={i % 2 === 0} swipeFlips={false} />
           </div>
         ))}
       </div>
       <p className="mt-3 text-center font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
-        {Math.min(index + 1, items.length)} / {items.length} · Swipe for more · Tap to flip
+        {Math.min(index + 1, items.length)} / {items.length} · Swipe for the next pair · Tap to flip
       </p>
     </div>
   );
@@ -48,7 +48,7 @@ export function MobileCatalogueGrid({ items }: { items: CatalogueItem[] }) {
   return (
     <div>
       <p className="mb-3 font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
-        {items.length} pairs · Swipe or tap a photo to switch model / product · Tap the name for its page
+        More pairs · Tap or swipe a photo to switch model / product · Tap the name for its page
       </p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-6">
         {items.map((item, i) => (

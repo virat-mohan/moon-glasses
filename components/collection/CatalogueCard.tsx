@@ -21,7 +21,7 @@ export const PRODUCT_SHOT_CLASS = "object-contain p-[5%] contrast-[1.08] saturat
  * One photo per pair, model first. Touch: each tap switches model/product.
  * Mouse: hover shows the product, click opens the product page.
  */
-export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = "100vw" }: CatalogueItem & { sizes?: string }) {
+export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = "100vw", swipeFlips = true }: CatalogueItem & { sizes?: string; swipeFlips?: boolean }) {
   const router = useRouter();
   const [showModel, setShowModel] = useState(startModel);
   const [hasModel, setHasModel] = useState(true);
@@ -51,7 +51,7 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
           swiped.current = false;
         }}
         onPointerUp={(e) => {
-          if (e.pointerType === "mouse" || startX.current === null || !hasModel) return;
+          if (!swipeFlips || e.pointerType === "mouse" || startX.current === null || !hasModel) return;
           if (Math.abs(e.clientX - startX.current) > 30) {
             swiped.current = true;
             setShowModel((m) => !m);
