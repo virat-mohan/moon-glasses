@@ -256,7 +256,7 @@ export async function sendWhatsAppSessionMessage(phone: string, text: string) {
       }),
     });
     const data = await res.json().catch(() => null);
-    if (!res.ok || data?.hasError) {
+    if (!res.ok || data?.hasError || data?.status === "error" || data?.type === "error") {
       console.error("MSG91 session message send failed", res.status, data);
       if (metaToken) {
         console.log("MSG91 failed, falling back to Meta Cloud API session message...");

@@ -188,7 +188,8 @@ export function syntheticOrderMessageId(phone: string, items: WaOrderItem[], now
 
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const SITE = "https://www.moon-glasses.store";
-export const orderLinesText = (cart: ValidatedCart) => cart.lines.map((l) => `${l.qty}× ${l.name}  ${rupees(l.price * l.qty)}`).join("\n");
+export const orderLinesText = (cart: ValidatedCart) =>
+  cart.lines.map((l) => `${l.qty}× ${l.name}  ${rupees(l.price * l.qty)}\npreview: ${SITE}/chapter/${l.slug}`).join("\n\n");
 
 const droppedText = (cart: ValidatedCart) =>
   cart.dropped.length
@@ -223,14 +224,15 @@ export function buildOrderReply(cart: ValidatedCart, link?: string | null, offer
     orderLinesText(cart),
     totalBlock,
     droppedText(cart),
-    "send your name, full address and pincode in one message (email optional)",
+    "kindly share delivery details in chat (Name, Address, Pincode, Email)",
     "have a code? send it with your details.",
   ].filter(Boolean).join("\n\n");
 }
 
-/** Reply once the order exists: summary + ONE tap-to-pay link. */
+/** Reply once the order exists: summary + ONE tap-to-pay link + dynamic QR code. */
 export function buildPayReply(input: { cart: ValidatedCart; name: string; address: string; pincode: string; payLink: string; money?: Money }): string {
   const short = input.address.length > 60 ? `${input.address.slice(0, 57)}...` : input.address;
+  const qrLink = input.payLink.replace("/pay/", "/api/qr/") + ".png";
   return [
     "order placed 🌙",
     orderLinesText(input.cart),
@@ -238,7 +240,8 @@ export function buildPayReply(input: { cart: ValidatedCart; name: string; addres
       ? `${discountLine(input.money)}total ${rupees(input.money.total)}, shipping free.`
       : `total ${rupees(input.money?.total ?? input.cart.total)}, shipping free.`,
     `delivering to ${input.name}, ${short}, ${input.pincode}`,
-    `pay by UPI in one tap, the amount is filled in for you: ${input.payLink}`,
+    `pay by UPI in one tap: ${input.payLink}`,
+    `or scan dynamic UPI QR code: ${qrLink}`,
     "wrong address? reply here before it ships.",
   ].join("\n\n");
 }
