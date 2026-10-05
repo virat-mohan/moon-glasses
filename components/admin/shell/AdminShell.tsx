@@ -13,8 +13,10 @@ import { CommandPalette } from "./CommandPalette";
 import { TableCards } from "./TableCards";
 
 const SECTION_ICONS: Record<string, LucideIcon> = {
-  Store, Marketing: Megaphone, Logistics: Truck, Content: PenLine,
-  Customers: Users, Community: HeartHandshake, Finance: Wallet, "Less Common": Boxes,
+  "Command Centre": Store, Brand: Boxes, Catalogue: Boxes,
+  Commerce: Store, Growth: Megaphone, "Inventory Master": Boxes,
+  Finance: Wallet, Operations: Truck, "Team & Partners": Users,
+  Reports: Boxes, Settings: Boxes,
 };
 const TAB_ICONS: Record<string, LucideIcon> = {
   "/admin/orders": ShoppingBag, "/admin/customers": Users, "/admin/logistics": Truck, "/admin/pnl": IndianRupee,
