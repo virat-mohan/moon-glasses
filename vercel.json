@@ -1,24 +1,12 @@
 {
   "crons": [
     {
-      "path": "/api/cron/abandon-sweep",
-      "schedule": "*/10 * * * *"
-    },
-    {
       "path": "/api/cron/ad-agent",
       "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/cron/winback",
-      "schedule": "0 7 * * *"
-    },
-    {
       "path": "/api/cron/sales-signal-briefs",
       "schedule": "0 8 * * 1"
-    },
-    {
-      "path": "/api/cron/ops-digest",
-      "schedule": "0 4 * * *"
     },
     {
       "path": "/api/cron/publish-queue",
@@ -27,10 +15,6 @@
     {
       "path": "/api/cron/track-sweep",
       "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/barter-charge-sweep",
-      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/instagram-token-refresh",
