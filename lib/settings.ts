@@ -88,6 +88,7 @@ export const SETTINGS_KEYS = [
   "AUTO_RESHARE_TAGS",
   "AUTO_RESHARE_SEEDED_AT",
   "TAGGED_READ_ERROR",
+  "IG_DRIP_ENABLED",
 ] as const;
 
 export type SettingKey = (typeof SETTINGS_KEYS)[number];

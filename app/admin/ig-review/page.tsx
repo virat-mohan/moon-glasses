@@ -6,6 +6,7 @@ type Finding = { level: string; rule: string; match: string; fix: string };
 type Item = {
   id: string; position: number; name: string; price: number; collection: string; url: string; caption: string;
   slides: string[]; story: string; feed_at: string; story_at: string; status: "review" | "approved" | "held";
+  posted_at: string | null; error: string | null; estimate: string | null;
   flags: string[]; voice: { ok: boolean; findings: Finding[] }; edited: boolean;
 };
 
@@ -18,6 +19,7 @@ const STATUS: Record<Item["status"], string> = { review: "In review", approved: 
 export default function IgReviewPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [slots, setSlots] = useState("");
+  const [dripOn, setDripOn] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -26,7 +28,7 @@ export default function IgReviewPage() {
   const [filter, setFilter] = useState<"all" | Item["status"]>("all");
 
   const load = useCallback(() => {
-    fetch("/api/admin/ig-review").then((r) => r.json()).then((d) => { setItems(d.items ?? []); setSlots(d.slots ?? ""); setDbError(d.dbError ?? null); })
+    fetch("/api/admin/ig-review").then((r) => r.json()).then((d) => { setItems(d.items ?? []); setSlots(d.slots ?? ""); setDripOn(!!d.dripOn); setDbError(d.dbError ?? null); })
       .catch(() => setMsg("Could not load the queue")).finally(() => setLoading(false));
   }, []);
   useEffect(load, [load]);
@@ -42,6 +44,21 @@ export default function IgReviewPage() {
     } catch (e) { setMsg(e instanceof Error ? e.message : "Could not save"); } finally { setBusy(null); }
   }
 
+  async function postNext() {
+    if (!window.confirm("Post the first approved product to @moonglassesonline now? This is a real post.")) return;
+    setBusy("post-next"); setMsg(null);
+    try {
+      const d = await (await fetch("/api/admin/ig-review/post-next", { method: "POST" })).json();
+      setMsg(d.action === "feed" ? `Posted ${d.id}. Its story follows in about 15 minutes.` : `Nothing posted: ${d.reason ?? d.error ?? d.action}`);
+      load();
+    } catch { setMsg("Could not post"); } finally { setBusy(null); }
+  }
+  async function clearError(id: string) {
+    setBusy(id);
+    await fetch("/api/admin/ig-review/clear-error", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    setBusy(null); load();
+  }
+
   const counts = useMemo(() => ({ review: items.filter((i) => i.status === "review").length, approved: items.filter((i) => i.status === "approved").length, held: items.filter((i) => i.status === "held").length }), [items]);
   const shown = items.filter((i) => filter === "all" || i.status === filter);
   const approvable = items.filter((i) => i.status === "review" && i.voice.ok).map((i) => i.id);
@@ -53,7 +70,8 @@ export default function IgReviewPage() {
       <p className="mt-2 max-w-[60ch] text-[16px] text-[var(--adm-dim)]">
         One product at a time on @moonglassesonline: a two-slide carousel and a story with a link sticker. I review everything here first. Nothing is posted from this page.
       </p>
-      <p className="mt-2 text-[15px] text-[var(--adm-dim)]">Proposed times (IST): {slots}.</p>
+      <p className="mt-2 text-[15px] text-[var(--adm-dim)]">Schedule: {slots}. Automatic posting is {dripOn ? "on" : "off"} (setting IG_DRIP_ENABLED).</p>
+      <div className="mt-3"><button className={`${BTN} bg-[var(--adm-solid)] text-[var(--adm-on-solid)]`} disabled={!!busy || !!dbError || counts.approved === 0} onClick={postNext}>{busy === "post-next" ? "Posting" : "Post next now"}</button></div>
 
       {dbError && <p className="mt-4 rounded-lg border border-[var(--adm-hair)] bg-[var(--adm-surface)] p-3 text-[15px]">Decisions can not be saved yet: the review table is not set up. You can still read everything below.</p>}
       {msg && <p className="mt-4 text-[15px] text-[var(--adm-danger)]" role="alert">{msg}</p>}
@@ -92,7 +110,10 @@ export default function IgReviewPage() {
                   <img src={it.story} alt={`${it.name}, story`} loading="lazy" className="aspect-[9/16] w-full rounded-lg object-cover" />
                 </div>
                 <div>
-                  <p className="text-[14px] text-[var(--adm-dim)]">Feed {when(it.feed_at)} · story {when(it.story_at)}</p>
+                  <p className="text-[14px] text-[var(--adm-dim)]">
+                    {it.posted_at ? `Posted ${when(it.posted_at)}` : it.status === "approved" ? (it.estimate ? `Estimated ${when(it.estimate)}` : "Goes out as soon as posting starts") : "Not scheduled until approved"} · story 15 min after
+                  </p>
+                  {it.error && <p className="mt-1 text-[14px] text-[var(--adm-danger)]" role="alert">Stopped: {it.error} <button className="underline" onClick={() => clearError(it.id)}>Clear error</button></p>}
                   <label className="mt-2 block text-[14px] text-[var(--adm-dim)]" htmlFor={`c-${it.id}`}>Caption{it.edited ? " (edited)" : ""}</label>
                   <textarea id={`c-${it.id}`} value={draft ?? it.caption} onChange={(e) => setEdit((x) => ({ ...x, [it.id]: e.target.value }))} rows={9}
                     className="mt-1 w-full rounded-lg border border-[var(--adm-hair)] bg-white/60 p-3 text-[16px] leading-relaxed" />
