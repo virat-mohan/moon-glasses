@@ -4,33 +4,6 @@
  "slots_ist": "08:00, 14:00, 20:00; story 15 min after the post",
  "items": [
   {
-   "id": "moon-rectangle-black-purple",
-   "position": 1,
-   "name": "Blackout Rectangle — Black Purple",
-   "model": "Blackout Rectangle",
-   "colour": "Black Purple",
-   "price": 1999,
-   "collection": "Limited Series",
-   "url": "https://moon-glasses.store/chapter/moon-rectangle-black-purple",
-   "caption": "Blackout rectangle, black purple.\n\nAcetate frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-rectangle-black-purple\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 243,
-   "slides": [
-    "/ig-review/moon-rectangle-black-purple/slide1.jpg",
-    "/ig-review/moon-rectangle-black-purple/slide2.jpg"
-   ],
-   "story": "/ig-review/moon-rectangle-black-purple/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-rectangle-black-purple",
-   "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-07T08:00:00+05:30",
-   "story_at": "2026-10-07T08:15:00+05:30",
-   "status": "review",
-   "voice": {
-    "ok": true,
-    "findings": []
-   },
-   "flags": []
-  },
-  {
    "id": "moon-octagon-silver-light-brown",
    "position": 2,
    "name": "Eclipse Octagon — Silver Light Brown",
@@ -58,52 +31,25 @@
    "flags": []
   },
   {
-   "id": "moon-octagon-gold-grey",
-   "position": 3,
-   "name": "Eclipse Octagon — Gold Grey",
-   "model": "Eclipse Octagon",
-   "colour": "Gold Grey",
-   "price": 2499,
+   "id": "moon-rectangle-black-purple",
+   "position": 1,
+   "name": "Blackout Rectangle — Black Purple",
+   "model": "Blackout Rectangle",
+   "colour": "Black Purple",
+   "price": 1999,
    "collection": "Limited Series",
-   "url": "https://moon-glasses.store/chapter/moon-octagon-gold-grey",
-   "caption": "Eclipse octagon, gold grey.\n\nMetal frame. From the limited edit, a small run, no noise. ₹2,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-octagon-gold-grey\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 230,
+   "url": "https://moon-glasses.store/chapter/moon-rectangle-black-purple",
+   "caption": "Blackout rectangle, black purple.\n\nAcetate frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-rectangle-black-purple\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 243,
    "slides": [
-    "/ig-review/moon-octagon-gold-grey/slide1.jpg",
-    "/ig-review/moon-octagon-gold-grey/slide2.jpg"
+    "/ig-review/moon-rectangle-black-purple/slide1.jpg",
+    "/ig-review/moon-rectangle-black-purple/slide2.jpg"
    ],
-   "story": "/ig-review/moon-octagon-gold-grey/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-octagon-gold-grey",
+   "story": "/ig-review/moon-rectangle-black-purple/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-rectangle-black-purple",
    "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-07T20:00:00+05:30",
-   "story_at": "2026-10-07T20:15:00+05:30",
-   "status": "review",
-   "voice": {
-    "ok": true,
-    "findings": []
-   },
-   "flags": []
-  },
-  {
-   "id": "moon-octagon-black-blue",
-   "position": 4,
-   "name": "Eclipse Octagon — Black Blue",
-   "model": "Eclipse Octagon",
-   "colour": "Black Blue",
-   "price": 2499,
-   "collection": "Limited Series",
-   "url": "https://moon-glasses.store/chapter/moon-octagon-black-blue",
-   "caption": "Eclipse octagon, black blue.\n\nMetal frame. From the limited edit, a small run, no noise. ₹2,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-octagon-black-blue\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 232,
-   "slides": [
-    "/ig-review/moon-octagon-black-blue/slide1.jpg",
-    "/ig-review/moon-octagon-black-blue/slide2.jpg"
-   ],
-   "story": "/ig-review/moon-octagon-black-blue/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-octagon-black-blue",
-   "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-08T08:00:00+05:30",
-   "story_at": "2026-10-08T08:15:00+05:30",
+   "feed_at": "2026-10-07T08:00:00+05:30",
+   "story_at": "2026-10-07T08:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -139,25 +85,25 @@
    "flags": []
   },
   {
-   "id": "moon-rectangle-black-green",
-   "position": 6,
-   "name": "Blackout Rectangle — Black Green",
-   "model": "Blackout Rectangle",
-   "colour": "Black Green",
-   "price": 1999,
+   "id": "moon-octagon-gold-grey",
+   "position": 3,
+   "name": "Eclipse Octagon — Gold Grey",
+   "model": "Eclipse Octagon",
+   "colour": "Gold Grey",
+   "price": 2499,
    "collection": "Limited Series",
-   "url": "https://moon-glasses.store/chapter/moon-rectangle-black-green",
-   "caption": "Blackout rectangle, black green.\n\nAcetate frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-rectangle-black-green\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 241,
+   "url": "https://moon-glasses.store/chapter/moon-octagon-gold-grey",
+   "caption": "Eclipse octagon, gold grey.\n\nMetal frame. From the limited edit, a small run, no noise. ₹2,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-octagon-gold-grey\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 230,
    "slides": [
-    "/ig-review/moon-rectangle-black-green/slide1.jpg",
-    "/ig-review/moon-rectangle-black-green/slide2.jpg"
+    "/ig-review/moon-octagon-gold-grey/slide1.jpg",
+    "/ig-review/moon-octagon-gold-grey/slide2.jpg"
    ],
-   "story": "/ig-review/moon-rectangle-black-green/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-rectangle-black-green",
+   "story": "/ig-review/moon-octagon-gold-grey/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-octagon-gold-grey",
    "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-08T20:00:00+05:30",
-   "story_at": "2026-10-08T20:15:00+05:30",
+   "feed_at": "2026-10-07T20:00:00+05:30",
+   "story_at": "2026-10-07T20:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -195,6 +141,33 @@
    ]
   },
   {
+   "id": "moon-octagon-black-blue",
+   "position": 4,
+   "name": "Eclipse Octagon — Black Blue",
+   "model": "Eclipse Octagon",
+   "colour": "Black Blue",
+   "price": 2499,
+   "collection": "Limited Series",
+   "url": "https://moon-glasses.store/chapter/moon-octagon-black-blue",
+   "caption": "Eclipse octagon, black blue.\n\nMetal frame. From the limited edit, a small run, no noise. ₹2,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-octagon-black-blue\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 232,
+   "slides": [
+    "/ig-review/moon-octagon-black-blue/slide1.jpg",
+    "/ig-review/moon-octagon-black-blue/slide2.jpg"
+   ],
+   "story": "/ig-review/moon-octagon-black-blue/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-octagon-black-blue",
+   "story_sticker_label": "Make it yours",
+   "feed_at": "2026-10-08T08:00:00+05:30",
+   "story_at": "2026-10-08T08:15:00+05:30",
+   "status": "review",
+   "voice": {
+    "ok": true,
+    "findings": []
+   },
+   "flags": []
+  },
+  {
    "id": "moon-ryder-silver-blue",
    "position": 8,
    "name": "Glitch Oval — Silver Blue",
@@ -214,6 +187,60 @@
    "story_sticker_label": "Make it yours",
    "feed_at": "2026-10-09T14:00:00+05:30",
    "story_at": "2026-10-09T14:15:00+05:30",
+   "status": "review",
+   "voice": {
+    "ok": true,
+    "findings": []
+   },
+   "flags": []
+  },
+  {
+   "id": "moon-rectangle-black-green",
+   "position": 6,
+   "name": "Blackout Rectangle — Black Green",
+   "model": "Blackout Rectangle",
+   "colour": "Black Green",
+   "price": 1999,
+   "collection": "Limited Series",
+   "url": "https://moon-glasses.store/chapter/moon-rectangle-black-green",
+   "caption": "Blackout rectangle, black green.\n\nAcetate frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-rectangle-black-green\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 241,
+   "slides": [
+    "/ig-review/moon-rectangle-black-green/slide1.jpg",
+    "/ig-review/moon-rectangle-black-green/slide2.jpg"
+   ],
+   "story": "/ig-review/moon-rectangle-black-green/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-rectangle-black-green",
+   "story_sticker_label": "Make it yours",
+   "feed_at": "2026-10-08T20:00:00+05:30",
+   "story_at": "2026-10-08T20:15:00+05:30",
+   "status": "review",
+   "voice": {
+    "ok": true,
+    "findings": []
+   },
+   "flags": []
+  },
+  {
+   "id": "moon-lenon-brown-pink-gold",
+   "position": 10,
+   "name": "Vinyl Round — Brown Pink Gold",
+   "model": "Vinyl Round",
+   "colour": "Brown Pink Gold",
+   "price": 1999,
+   "collection": "Limited Series",
+   "url": "https://moon-glasses.store/chapter/moon-lenon-brown-pink-gold",
+   "caption": "Vinyl round, brown pink gold.\n\nMetal frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-lenon-brown-pink-gold\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 236,
+   "slides": [
+    "/ig-review/moon-lenon-brown-pink-gold/slide1.jpg",
+    "/ig-review/moon-lenon-brown-pink-gold/slide2.jpg"
+   ],
+   "story": "/ig-review/moon-lenon-brown-pink-gold/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-lenon-brown-pink-gold",
+   "story_sticker_label": "Make it yours",
+   "feed_at": "2026-10-10T08:00:00+05:30",
+   "story_at": "2026-10-10T08:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -249,25 +276,25 @@
    "flags": []
   },
   {
-   "id": "moon-lenon-brown-pink-gold",
-   "position": 10,
-   "name": "Vinyl Round — Brown Pink Gold",
-   "model": "Vinyl Round",
-   "colour": "Brown Pink Gold",
-   "price": 1999,
-   "collection": "Limited Series",
-   "url": "https://moon-glasses.store/chapter/moon-lenon-brown-pink-gold",
-   "caption": "Vinyl round, brown pink gold.\n\nMetal frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-lenon-brown-pink-gold\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 236,
+   "id": "moon-wayfarer-brown-with-brown",
+   "position": 13,
+   "name": "Encore Wayfarer — Brown",
+   "model": "Encore Wayfarer",
+   "colour": "Brown",
+   "price": 1499,
+   "collection": "Collection",
+   "url": "https://moon-glasses.store/chapter/moon-wayfarer-brown-with-brown",
+   "caption": "Encore wayfarer, brown.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-wayfarer-brown-with-brown\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 210,
    "slides": [
-    "/ig-review/moon-lenon-brown-pink-gold/slide1.jpg",
-    "/ig-review/moon-lenon-brown-pink-gold/slide2.jpg"
+    "/ig-review/moon-wayfarer-brown-with-brown/slide1.jpg",
+    "/ig-review/moon-wayfarer-brown-with-brown/slide2.jpg"
    ],
-   "story": "/ig-review/moon-lenon-brown-pink-gold/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-lenon-brown-pink-gold",
+   "story": "/ig-review/moon-wayfarer-brown-with-brown/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-wayfarer-brown-with-brown",
    "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-10T08:00:00+05:30",
-   "story_at": "2026-10-10T08:15:00+05:30",
+   "feed_at": "2026-10-11T08:00:00+05:30",
+   "story_at": "2026-10-11T08:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -305,60 +332,6 @@
    ]
   },
   {
-   "id": "moon-lenon-red-black",
-   "position": 12,
-   "name": "Vinyl Round — Red Black",
-   "model": "Vinyl Round",
-   "colour": "Red Black",
-   "price": 1999,
-   "collection": "Limited Series",
-   "url": "https://moon-glasses.store/chapter/moon-lenon-red-black",
-   "caption": "Vinyl round, red black.\n\nMetal frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-lenon-red-black\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 224,
-   "slides": [
-    "/ig-review/moon-lenon-red-black/slide1.jpg",
-    "/ig-review/moon-lenon-red-black/slide2.jpg"
-   ],
-   "story": "/ig-review/moon-lenon-red-black/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-lenon-red-black",
-   "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-10T20:00:00+05:30",
-   "story_at": "2026-10-10T20:15:00+05:30",
-   "status": "review",
-   "voice": {
-    "ok": true,
-    "findings": []
-   },
-   "flags": []
-  },
-  {
-   "id": "moon-wayfarer-brown-with-brown",
-   "position": 13,
-   "name": "Encore Wayfarer — Brown",
-   "model": "Encore Wayfarer",
-   "colour": "Brown",
-   "price": 1499,
-   "collection": "Collection",
-   "url": "https://moon-glasses.store/chapter/moon-wayfarer-brown-with-brown",
-   "caption": "Encore wayfarer, brown.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-wayfarer-brown-with-brown\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 210,
-   "slides": [
-    "/ig-review/moon-wayfarer-brown-with-brown/slide1.jpg",
-    "/ig-review/moon-wayfarer-brown-with-brown/slide2.jpg"
-   ],
-   "story": "/ig-review/moon-wayfarer-brown-with-brown/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-wayfarer-brown-with-brown",
-   "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-11T08:00:00+05:30",
-   "story_at": "2026-10-11T08:15:00+05:30",
-   "status": "review",
-   "voice": {
-    "ok": true,
-    "findings": []
-   },
-   "flags": []
-  },
-  {
    "id": "moon-wayfarer-blue-with-candy-blue",
    "position": 14,
    "name": "Encore Wayfarer — Blue Candy Blue",
@@ -386,25 +359,25 @@
    "flags": []
   },
   {
-   "id": "moon-wayfarer-blue-with-grey-graded",
-   "position": 15,
-   "name": "Encore Wayfarer — Blue Grey Graded",
-   "model": "Encore Wayfarer",
-   "colour": "Blue Grey Graded",
-   "price": 1499,
-   "collection": "Collection",
-   "url": "https://moon-glasses.store/chapter/moon-wayfarer-blue-with-grey-graded",
-   "caption": "Encore wayfarer, blue grey graded.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-wayfarer-blue-with-grey-graded\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 226,
+   "id": "moon-lenon-red-black",
+   "position": 12,
+   "name": "Vinyl Round — Red Black",
+   "model": "Vinyl Round",
+   "colour": "Red Black",
+   "price": 1999,
+   "collection": "Limited Series",
+   "url": "https://moon-glasses.store/chapter/moon-lenon-red-black",
+   "caption": "Vinyl round, red black.\n\nMetal frame. From the limited edit, a small run, no noise. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-lenon-red-black\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 224,
    "slides": [
-    "/ig-review/moon-wayfarer-blue-with-grey-graded/slide1.jpg",
-    "/ig-review/moon-wayfarer-blue-with-grey-graded/slide2.jpg"
+    "/ig-review/moon-lenon-red-black/slide1.jpg",
+    "/ig-review/moon-lenon-red-black/slide2.jpg"
    ],
-   "story": "/ig-review/moon-wayfarer-blue-with-grey-graded/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-wayfarer-blue-with-grey-graded",
+   "story": "/ig-review/moon-lenon-red-black/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-lenon-red-black",
    "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-11T20:00:00+05:30",
-   "story_at": "2026-10-11T20:15:00+05:30",
+   "feed_at": "2026-10-10T20:00:00+05:30",
+   "story_at": "2026-10-10T20:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -440,25 +413,25 @@
    "flags": []
   },
   {
-   "id": "moon-round-demi-brown-blue-graded",
-   "position": 17,
-   "name": "Halo Round — Demi-brown Blue Graded",
-   "model": "Halo Round",
-   "colour": "Demi-brown Blue Graded",
+   "id": "moon-wayfarer-blue-with-grey-graded",
+   "position": 15,
+   "name": "Encore Wayfarer — Blue Grey Graded",
+   "model": "Encore Wayfarer",
+   "colour": "Blue Grey Graded",
    "price": 1499,
    "collection": "Collection",
-   "url": "https://moon-glasses.store/chapter/moon-round-demi-brown-blue-graded",
-   "caption": "Halo round, demi-brown blue graded.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-round-demi-brown-blue-graded\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 225,
+   "url": "https://moon-glasses.store/chapter/moon-wayfarer-blue-with-grey-graded",
+   "caption": "Encore wayfarer, blue grey graded.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-wayfarer-blue-with-grey-graded\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 226,
    "slides": [
-    "/ig-review/moon-round-demi-brown-blue-graded/slide1.jpg",
-    "/ig-review/moon-round-demi-brown-blue-graded/slide2.jpg"
+    "/ig-review/moon-wayfarer-blue-with-grey-graded/slide1.jpg",
+    "/ig-review/moon-wayfarer-blue-with-grey-graded/slide2.jpg"
    ],
-   "story": "/ig-review/moon-round-demi-brown-blue-graded/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-round-demi-brown-blue-graded",
+   "story": "/ig-review/moon-wayfarer-blue-with-grey-graded/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-wayfarer-blue-with-grey-graded",
    "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-12T14:00:00+05:30",
-   "story_at": "2026-10-12T14:15:00+05:30",
+   "feed_at": "2026-10-11T20:00:00+05:30",
+   "story_at": "2026-10-11T20:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -494,25 +467,25 @@
    "flags": []
   },
   {
-   "id": "moon-round-grey-purple",
-   "position": 19,
-   "name": "Luna Round — Grey Purple",
-   "model": "Luna Round",
-   "colour": "Grey Purple",
+   "id": "moon-round-demi-brown-blue-graded",
+   "position": 17,
+   "name": "Halo Round — Demi-brown Blue Graded",
+   "model": "Halo Round",
+   "colour": "Demi-brown Blue Graded",
    "price": 1499,
    "collection": "Collection",
-   "url": "https://moon-glasses.store/chapter/moon-round-grey-purple",
-   "caption": "Luna round, grey purple.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-round-grey-purple\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 203,
+   "url": "https://moon-glasses.store/chapter/moon-round-demi-brown-blue-graded",
+   "caption": "Halo round, demi-brown blue graded.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-round-demi-brown-blue-graded\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 225,
    "slides": [
-    "/ig-review/moon-round-grey-purple/slide1.jpg",
-    "/ig-review/moon-round-grey-purple/slide2.jpg"
+    "/ig-review/moon-round-demi-brown-blue-graded/slide1.jpg",
+    "/ig-review/moon-round-demi-brown-blue-graded/slide2.jpg"
    ],
-   "story": "/ig-review/moon-round-grey-purple/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-round-grey-purple",
+   "story": "/ig-review/moon-round-demi-brown-blue-graded/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-round-demi-brown-blue-graded",
    "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-13T08:00:00+05:30",
-   "story_at": "2026-10-13T08:15:00+05:30",
+   "feed_at": "2026-10-12T14:00:00+05:30",
+   "story_at": "2026-10-12T14:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -548,52 +521,25 @@
    "flags": []
   },
   {
-   "id": "moon-rectangle-black-yellow",
-   "position": 21,
-   "name": "Neon Rectangle — Black Yellow",
-   "model": "Neon Rectangle",
-   "colour": "Black Yellow",
+   "id": "moon-round-grey-purple",
+   "position": 19,
+   "name": "Luna Round — Grey Purple",
+   "model": "Luna Round",
+   "colour": "Grey Purple",
    "price": 1499,
    "collection": "Collection",
-   "url": "https://moon-glasses.store/chapter/moon-rectangle-black-yellow",
-   "caption": "Neon rectangle, black yellow.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-rectangle-black-yellow\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 213,
+   "url": "https://moon-glasses.store/chapter/moon-round-grey-purple",
+   "caption": "Luna round, grey purple.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-round-grey-purple\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 203,
    "slides": [
-    "/ig-review/moon-rectangle-black-yellow/slide1.jpg",
-    "/ig-review/moon-rectangle-black-yellow/slide2.jpg"
+    "/ig-review/moon-round-grey-purple/slide1.jpg",
+    "/ig-review/moon-round-grey-purple/slide2.jpg"
    ],
-   "story": "/ig-review/moon-rectangle-black-yellow/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-rectangle-black-yellow",
+   "story": "/ig-review/moon-round-grey-purple/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-round-grey-purple",
    "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-13T20:00:00+05:30",
-   "story_at": "2026-10-13T20:15:00+05:30",
-   "status": "review",
-   "voice": {
-    "ok": true,
-    "findings": []
-   },
-   "flags": []
-  },
-  {
-   "id": "moon-striker-silver-orange",
-   "position": 22,
-   "name": "Voltage Aviator — Silver Orange",
-   "model": "Voltage Aviator",
-   "colour": "Silver Orange",
-   "price": 1999,
-   "collection": "Collection",
-   "url": "https://moon-glasses.store/chapter/moon-striker-silver-orange",
-   "caption": "Voltage aviator, silver orange.\n\nMetal frame. From the main edit. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-striker-silver-orange\n\n#MoonGlasses #LightTintsGoodVibe",
-   "caption_chars": 212,
-   "slides": [
-    "/ig-review/moon-striker-silver-orange/slide1.jpg",
-    "/ig-review/moon-striker-silver-orange/slide2.jpg"
-   ],
-   "story": "/ig-review/moon-striker-silver-orange/story.jpg",
-   "story_link": "https://moon-glasses.store/chapter/moon-striker-silver-orange",
-   "story_sticker_label": "Make it yours",
-   "feed_at": "2026-10-14T08:00:00+05:30",
-   "story_at": "2026-10-14T08:15:00+05:30",
+   "feed_at": "2026-10-13T08:00:00+05:30",
+   "story_at": "2026-10-13T08:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
@@ -629,6 +575,33 @@
    "flags": []
   },
   {
+   "id": "moon-rectangle-black-yellow",
+   "position": 21,
+   "name": "Neon Rectangle — Black Yellow",
+   "model": "Neon Rectangle",
+   "colour": "Black Yellow",
+   "price": 1499,
+   "collection": "Collection",
+   "url": "https://moon-glasses.store/chapter/moon-rectangle-black-yellow",
+   "caption": "Neon rectangle, black yellow.\n\nAcetate frame. From the main edit. ₹1,499, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-rectangle-black-yellow\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 213,
+   "slides": [
+    "/ig-review/moon-rectangle-black-yellow/slide1.jpg",
+    "/ig-review/moon-rectangle-black-yellow/slide2.jpg"
+   ],
+   "story": "/ig-review/moon-rectangle-black-yellow/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-rectangle-black-yellow",
+   "story_sticker_label": "Make it yours",
+   "feed_at": "2026-10-13T20:00:00+05:30",
+   "story_at": "2026-10-13T20:15:00+05:30",
+   "status": "review",
+   "voice": {
+    "ok": true,
+    "findings": []
+   },
+   "flags": []
+  },
+  {
    "id": "moon-striker-silver-blue",
    "position": 24,
    "name": "Voltage Aviator — Silver Blue",
@@ -648,6 +621,33 @@
    "story_sticker_label": "Make it yours",
    "feed_at": "2026-10-14T20:00:00+05:30",
    "story_at": "2026-10-14T20:15:00+05:30",
+   "status": "review",
+   "voice": {
+    "ok": true,
+    "findings": []
+   },
+   "flags": []
+  },
+  {
+   "id": "moon-striker-silver-orange",
+   "position": 22,
+   "name": "Voltage Aviator — Silver Orange",
+   "model": "Voltage Aviator",
+   "colour": "Silver Orange",
+   "price": 1999,
+   "collection": "Collection",
+   "url": "https://moon-glasses.store/chapter/moon-striker-silver-orange",
+   "caption": "Voltage aviator, silver orange.\n\nMetal frame. From the main edit. ₹1,999, GST included. Free shipping across India.\n\nhttps://moon-glasses.store/chapter/moon-striker-silver-orange\n\n#MoonGlasses #LightTintsGoodVibe",
+   "caption_chars": 212,
+   "slides": [
+    "/ig-review/moon-striker-silver-orange/slide1.jpg",
+    "/ig-review/moon-striker-silver-orange/slide2.jpg"
+   ],
+   "story": "/ig-review/moon-striker-silver-orange/story.jpg",
+   "story_link": "https://moon-glasses.store/chapter/moon-striker-silver-orange",
+   "story_sticker_label": "Make it yours",
+   "feed_at": "2026-10-14T08:00:00+05:30",
+   "story_at": "2026-10-14T08:15:00+05:30",
    "status": "review",
    "voice": {
     "ok": true,
