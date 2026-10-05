@@ -25,9 +25,16 @@
  *    caption limits, LEARN_MORE ad button, no weekly mix yet, sender stays
  *    orders@moon-glasses.store, "Ted Smith" alone blocked.
  *
- * Pure module (no imports), so it runs under `node --test`, in the server and in
- * client components (approval screens).
+ * Authority: this module is a CONSUMER/ADAPTER of the structured Brand Foundation
+ * in @retail-os/brand-config (see lib/brand-foundation.ts), which is the
+ * machine-readable authority. `brandVoicePrompt()` reads every brand VALUE it
+ * interpolates from the COMMITTED Foundation via getMoonVoiceModel() (which is also
+ * the hard gate) — not from BRAND_VOICE. BRAND_VOICE below remains the detailed
+ * in-repo data the Foundation is built from (and the source checkVoice uses).
+ * checkVoice/voiceGate are unchanged.
  */
+
+import { getMoonVoiceModel } from "./brand-foundation.ts";
 
 export type VoiceKind = "email" | "whatsapp" | "social" | "ad" | "site" | "ai";
 export type VoiceLevel = "block" | "warn";
@@ -383,27 +390,30 @@ const KIND_LABEL: Record<VoiceKind, string> = {
 
 /** The brand book as the instruction every AI generation includes. */
 export function brandVoicePrompt(kind?: VoiceKind): string {
-  const v = BRAND_VOICE;
-  const p = v.facts.prices;
+  // Source of truth: the COMMITTED Brand Foundation. getMoonVoiceModel() is the
+  // hard gate (throws if not committed) AND returns every brand VALUE this prompt
+  // interpolates, read from the Foundation — not from BRAND_VOICE.
+  const m = getMoonVoiceModel();
+  const p = m.prices;
   return [
-    `You write for ${v.brand} (${v.siteUrl}, Instagram ${v.instagramHandle}). Source: the MOON GLASSES Voice Guide and Brand Voice Guide. Never write from memory or invent the brand.`,
-    `The vibe: ${v.oneLineVibe} Test: ${v.northStarTest} Posture: ${v.posture}`,
-    `Tone: ${v.attributes.join("; ")}. ${v.easiestWay}`,
-    `Sliders: ${v.sliders.map((s) => `${s.slider}: lean ${s.lean} Avoid ${s.avoid}`).join(" | ")}`,
-    `Founding principle: ${v.foundingPrinciple}`,
-    `Do:\n${v.do.map((d) => `- ${d}`).join("\n")}`,
-    `Never:\n${v.dont.map((d) => `- ${d}`).join("\n")}`,
-    `Core words: ${v.keywords.core.join(", ")}. Mood words (max ${v.maxMoodWordsPerPiece} per piece): ${v.keywords.mood.join(", ")}. Sound/ritual words: ${v.keywords.sound.join(", ")}. Belonging words (gentle, invite only): ${v.keywords.belonging.join(", ")}.`,
-    `Label replacements: ${Object.entries(v.labels).map(([k, alts]) => `instead of "${k}" say ${alts.map((a) => `"${a}"`).join(" or ")}`).join("; ")}.`,
-    `Examples: ${v.sampleCopy.heroHeadlines.map((h) => `"${h}"`).join(" ")} "${v.sampleCopy.heroSubline}" "${v.sampleCopy.footer}"`,
-    `Facts (only these): prices GST-inclusive, the Collection ₹${p.collectionPlastic.toLocaleString("en-IN")} plastic / ₹${p.collectionMetal.toLocaleString("en-IN")} metal, the Limited Series ₹${p.limitedPlastic.toLocaleString("en-IN")} plastic / ₹${p.limitedMetal.toLocaleString("en-IN")} metal. ${v.facts.shipping} Never write out a WhatsApp number (support links come from the site). Offer: Pay With A Post™ (do not state its numbers unless given). Never mention Gift First, follower thresholds or "we ship first".`,
-    `Frame names: only our own model names (${v.ownModelNames.join(", ")}). Never write supplier model names (${v.supplierModelNames.join(", ")}) or the supplier's name.`,
-    `Visuals: ${v.photoStyle} Colours ${v.colours.black} black, ${v.colours.gold} gold accent, lens tints ${v.colours.lensBlue} / ${v.colours.lensPink} / ${v.colours.lensGreen} / ${v.colours.lensPeach}. Type: ${v.fonts.primary} and ${v.fonts.secondary}, editorial italic ${v.fonts.editorialItalic}.`,
-    `Name: write "${v.brand}" in running copy (the logo is ${v.logoName}). Tagline: "${v.tagline}". We are two founders. Hero/button labels: "${v.heroCta}", never "Shop".`,
+    `You write for ${m.brand} (${m.siteUrl}, Instagram ${m.instagramHandle}). Source: the MOON GLASSES Voice Guide and Brand Voice Guide. Never write from memory or invent the brand.`,
+    `The vibe: ${m.oneLineVibe} Test: ${m.northStarTest} Posture: ${m.posture}`,
+    `Tone: ${m.attributes.join("; ")}. ${m.easiestWay}`,
+    `Sliders: ${m.sliders.map((s) => `${s.slider}: lean ${s.lean} Avoid ${s.avoid}`).join(" | ")}`,
+    `Founding principle: ${m.foundingPrinciple}`,
+    `Do:\n${m.do.map((d) => `- ${d}`).join("\n")}`,
+    `Never:\n${m.dont.map((d) => `- ${d}`).join("\n")}`,
+    `Core words: ${m.keywords.core.join(", ")}. Mood words (max ${m.maxMoodWordsPerPiece} per piece): ${m.keywords.mood.join(", ")}. Sound/ritual words: ${m.keywords.sound.join(", ")}. Belonging words (gentle, invite only): ${m.keywords.belonging.join(", ")}.`,
+    `Label replacements: ${Object.entries(m.labels).map(([k, alts]) => `instead of "${k}" say ${alts.map((a) => `"${a}"`).join(" or ")}`).join("; ")}.`,
+    `Examples: ${m.sampleCopy.heroHeadlines.map((h) => `"${h}"`).join(" ")} "${m.sampleCopy.heroSubline}" "${m.sampleCopy.footer}"`,
+    `Facts (only these): prices GST-inclusive, the Collection ₹${p.collectionPlastic.toLocaleString("en-IN")} plastic / ₹${p.collectionMetal.toLocaleString("en-IN")} metal, the Limited Series ₹${p.limitedPlastic.toLocaleString("en-IN")} plastic / ₹${p.limitedMetal.toLocaleString("en-IN")} metal. ${m.shipping} Never write out a WhatsApp number (support links come from the site). Offer: Pay With A Post™ (do not state its numbers unless given). Never mention Gift First, follower thresholds or "we ship first".`,
+    `Frame names: only our own model names (${m.ownModelNames.join(", ")}). Never write supplier model names (${m.supplierModelNames.join(", ")}) or the supplier's name.`,
+    `Visuals: ${m.photoStyle} Colours ${m.colours.black} black, ${m.colours.gold} gold accent, lens tints ${m.colours.lensBlue} / ${m.colours.lensPink} / ${m.colours.lensGreen} / ${m.colours.lensPeach}. Type: ${m.fonts.primary} and ${m.fonts.secondary}, editorial italic ${m.fonts.editorialItalic}.`,
+    `Name: write "${m.brand}" in running copy (the logo is ${m.logoName}). Tagline: "${m.tagline}". We are two founders. Hero/button labels: "${m.heroCta}", never "Shop".`,
     `The weekly mix is not live yet: never promise a weekly or Friday mix or playlist.`,
-    kind === "social" ? `Captions: end with ${v.hashtags.join(" ")}. Post captions at most ${v.captionMax.post} characters, reels at most ${v.captionMax.reel}.` : "",
-    kind === "email" ? `Emails sign off:\n${v.emailSignOff}` : "",
-    kind === "ad" ? `Meta ad button: ${v.adCtaDefault}.` : "",
+    kind === "social" ? `Captions: end with ${m.hashtags.join(" ")}. Post captions at most ${m.captionMax.post} characters, reels at most ${m.captionMax.reel}.` : "",
+    kind === "email" ? `Emails sign off:\n${m.emailSignOff}` : "",
+    kind === "ad" ? `Meta ad button: ${m.adCtaDefault}.` : "",
     kind ? `You are writing: ${KIND_LABEL[kind]}.` : "",
   ]
     .filter(Boolean)
