@@ -1,6 +1,6 @@
 import { getSetting } from "@/lib/settings";
 import { voiceGate } from "@/lib/brand-voice";
-import { sendMetaCloudSessionMessage } from "@/lib/whatsapp-cloud";
+import { sendMetaCloudSessionMessage, sendMetaCloudSessionImage, sendMetaCloudInteractiveCta } from "@/lib/whatsapp-cloud";
 
 function toMobile(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -290,27 +290,81 @@ export async function sendOtpViaMsg91(phone: string, code: string) {
 export async function sendWhatsAppSessionImage(phone: string, imageUrl: string, caption: string) {
   const gate = voiceGate(caption, "whatsapp", "WhatsApp session image caption");
   if (!gate.ok) return { sent: false as const, error: gate.reason };
+
+  const provider = await getSetting("WHATSAPP_PROVIDER");
+  const metaToken = await getSetting("META_WHATSAPP_ACCESS_TOKEN");
+
+  // Prioritize Meta Cloud API whenever configured, since official number (+91 93183 11657)
+  // is registered directly on Meta Cloud.
+  if (provider === "meta_cloud" || (metaToken && provider !== "msg91")) {
+    const metaRes = await sendMetaCloudSessionImage(phone, imageUrl, caption);
+    if (metaRes.sent) return metaRes;
+    console.warn("Meta Cloud session image send failed, trying MSG91 fallback...", metaRes.error);
+  }
+
   const authKey = await getSetting("MSG91_AUTH_KEY");
   const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
-  if (!authKey || !integratedNumber) return { sent: false as const };
-  try {
-    const res = await fetch("https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/", {
-      method: "POST",
-      headers: { authkey: authKey, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        integrated_number: integratedNumber,
-        content_type: "image",
-        recipient_number: toMobile(phone),
-        attachment_url: imageUrl,
-        caption,
-        content: { type: "image", image: { link: imageUrl, caption } },
-      }),
-    });
-    const data = await res.json().catch(() => null);
-    if (res.ok && !data?.hasError) return { sent: true as const };
-    console.error("MSG91 session image failed, sending link instead", res.status, data);
-  } catch (err) {
-    console.error("MSG91 session image failed", err);
+  if (authKey && integratedNumber) {
+    try {
+      const res = await fetch("https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/", {
+        method: "POST",
+        headers: { authkey: authKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          integrated_number: integratedNumber,
+          content_type: "image",
+          recipient_number: toMobile(phone),
+          attachment_url: imageUrl,
+          caption,
+          content: { type: "image", image: { link: imageUrl, caption } },
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && !data?.hasError) {
+        const messageId = data?.request_id ?? data?.data?.request_id ?? data?.message_id ?? null;
+        return { sent: true as const, messageId: messageId ? String(messageId) : undefined };
+      }
+      console.error("MSG91 session image failed, falling back to text", res.status, data);
+    } catch (err) {
+      console.error("MSG91 session image failed", err);
+    }
   }
-  return sendWhatsAppSessionMessage(phone, `${caption}\n\nYour post image: ${imageUrl}`);
+
+  if (metaToken && provider === "msg91") {
+    const metaRes = await sendMetaCloudSessionImage(phone, imageUrl, caption);
+    if (metaRes.sent) return metaRes;
+  }
+
+  return sendWhatsAppSessionMessage(phone, `${caption}\n\n${imageUrl}`);
+}
+
+/**
+ * Sends a native Interactive CTA message with a clickable button and optional header image.
+ * Uses Meta Cloud API when available, falling back to session image or plain text.
+ */
+export async function sendWhatsAppInteractiveCta(
+  phone: string,
+  bodyText: string,
+  buttonText: string,
+  buttonUrl: string,
+  headerImageUrl?: string
+) {
+  const gate = voiceGate(bodyText, "whatsapp", "WhatsApp interactive CTA body");
+  if (!gate.ok) return { sent: false as const, error: gate.reason };
+
+  const provider = await getSetting("WHATSAPP_PROVIDER");
+  const metaToken = await getSetting("META_WHATSAPP_ACCESS_TOKEN");
+
+  // Prioritize Meta Cloud API for rich interactive CTA buttons
+  if (provider === "meta_cloud" || (metaToken && provider !== "msg91")) {
+    const metaRes = await sendMetaCloudInteractiveCta(phone, bodyText, buttonText, buttonUrl, headerImageUrl);
+    if (metaRes.sent) return metaRes;
+    console.warn("Meta Cloud interactive CTA failed, trying fallback...", metaRes.error);
+  }
+
+  // Fallback: send image with caption containing the button link
+  const fallbackCaption = `${bodyText}\n\n👉 *${buttonText}*: ${buttonUrl}`;
+  if (headerImageUrl) {
+    return sendWhatsAppSessionImage(phone, headerImageUrl, fallbackCaption);
+  }
+  return sendWhatsAppSessionMessage(phone, fallbackCaption);
 }

@@ -1,8 +1,9 @@
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getAllChapters } from "@/lib/chapters-dynamic";
+import { chapters as staticChapters, chapterImageSrc } from "@/lib/chapters";
 import { liveCatalogue } from "@/lib/catalogue";
 import { getInventoryMap } from "@/lib/inventory";
-import { sendWhatsAppSessionMessage } from "@/lib/msg91";
+import { sendWhatsAppSessionMessage, sendWhatsAppSessionImage, sendWhatsAppInteractiveCta } from "@/lib/msg91";
 import { logOutboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 import { sendCustomerIssueAlert } from "@/lib/email";
 import { isOrderingBlocked } from "@/lib/launch";
@@ -36,6 +37,30 @@ async function reply(phone: string, text: string, conversationId: string | null,
       `Reason: ${"error" in res ? res.error : "unknown"}`,
       "Please send this text by hand:",
       text.replace(/\n/g, "<br/>"),
+    ]).catch(() => {});
+  }
+  return res.sent;
+}
+
+/** Sends a session image reply with caption, logs it, and falls back to text if needed. */
+async function replyImage(phone: string, imageUrl: string, caption: string, conversationId: string | null, subject: string) {
+  const res = await sendWhatsAppSessionImage(phone, imageUrl, caption).catch((e) => ({ sent: false as const, error: String(e) }));
+  if (conversationId) {
+    await logOutboundWhatsAppMessage({
+      conversationId,
+      body: `${caption}\n[Image: ${imageUrl}]`,
+      providerMessageId: res.sent && "messageId" in res ? res.messageId : null,
+      status: res.sent ? "sent" : "failed",
+    }).catch(() => {});
+  }
+  if (!res.sent) {
+    await sendCustomerIssueAlert("WhatsApp image reply not delivered", [
+      `WhatsApp image reply not delivered (${subject})`,
+      `Customer phone: ${phone}`,
+      `Image URL: ${imageUrl}`,
+      `Reason: ${"error" in res ? res.error : "unknown"}`,
+      "Please send this text by hand:",
+      caption.replace(/\n/g, "<br/>"),
     ]).catch(() => {});
   }
   return res.sent;
@@ -134,11 +159,35 @@ export async function handleWaCartMessage(parsed: ParsedWaOrder, conversationId:
       }
     } catch {}
   }
-  const sent = await reply(parsed.phone, buildOrderReply(cart, link, offer), conversationId, "cart received");
+
+  // 100% In-Chat Checkout: Ask for delivery details directly in chat
+  const replyText = buildOrderReply(cart, null, offer);
+
+  let previewImageUrl: string | null = null;
+  if (cart.lines.length > 0) {
+    try {
+      const primarySlug = cart.lines[0].slug;
+      const allChapters = await getAllChapters().catch(() => staticChapters);
+      const chapter = allChapters.find((c) => c.slug === primarySlug);
+      if (chapter) {
+        const rawImg = chapter.sideImage || chapter.primary || "front.jpg";
+        previewImageUrl = `${SITE}${chapterImageSrc(chapter.folder, rawImg)}`;
+      }
+    } catch {}
+  }
+
+  let sent = false;
+  if (previewImageUrl) {
+    sent = await replyImage(parsed.phone, previewImageUrl, replyText, conversationId, "cart received with preview");
+  }
+  if (!sent) {
+    sent = await reply(parsed.phone, replyText, conversationId, "cart received");
+  }
+
   const finalTotalRupees = offer && offer.discount > 0 ? cart.total - offer.discount : cart.total;
   await sendCustomerIssueAlert(`WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(finalTotalRupees)}`, [
     `WhatsApp cart: ${firstName(parsed.name)}, ${cart.lines.reduce((s, l) => s + l.qty, 0)} pairs, ${rupees(finalTotalRupees)}`,
-    sent ? "We sent the direct checkout link in chat." : "The chat reply was NOT delivered (see the other email).",
+    sent ? "We asked for delivery details in chat with product preview." : "The chat reply was NOT delivered (see the other email).",
     ...(link ? [`Web fallback cart: <a href="${link}">${link}</a>`] : ["Nothing in the cart is available right now."]),
     ...(cart.dropped.length ? [`Dropped: ${cart.dropped.map((d) => `${d.name ?? d.retailerId} (${d.reason})`).join(", ")}`] : []),
   ]).catch(() => {});
@@ -250,13 +299,25 @@ export async function handleWaPendingText(input: { phone: string; text: string; 
       (isFree
         ? buildFreeOrderReply({ cart, name: parsed.name, address: parsed.address, pincode: parsed.pincode })
         : buildPayReply({ cart, name: parsed.name, address: parsed.address, pincode: parsed.pincode, payLink: `${SITE}/pay/${orderId}`, money }));
-    // A free order was confirmed inside createUpiOrder before it was tagged; send the paid note now (deduped).
-    const sent = await reply(input.phone, text, input.conversationId, isFree ? "free order" : "pay link");
+    let sent = false;
+    if (!isFree) {
+      const qrImageUrl = `${SITE}/api/qr/${orderId}.png`;
+      const payUrl = `${SITE}/pay/${orderId}`;
+      const buttonText = `Pay ${rupees(result.total)} Now`;
+      const ctaRes = await sendWhatsAppInteractiveCta(input.phone, text, buttonText, payUrl, qrImageUrl).catch(() => ({ sent: false as const }));
+      sent = ctaRes.sent;
+      if (!sent) {
+        sent = await replyImage(input.phone, qrImageUrl, text, input.conversationId, "qr pay link");
+      }
+    }
+    if (!sent) {
+      sent = await reply(input.phone, text, input.conversationId, isFree ? "free order" : "pay link");
+    }
     if (isFree) await sendWaPaidMessage({ id: orderId, customer_phone: key, order_source: "whatsapp" }).catch(() => {});
     await sendCustomerIssueAlert(`WhatsApp order: ${firstName(parsed.name)}, ${units} pairs, ${rupees(result.total)}`, [
       `WhatsApp order: ${firstName(parsed.name)}, ${units} pairs, ${rupees(result.total)}`,
-      sent ? (isFree ? "Free order confirmed, no pay link needed." : "Pay link sent in chat.") : "The reply was NOT delivered (see the other email).",
-      ...(isFree ? [] : [`Pay link: ${SITE}/pay/${orderId}`]),
+      sent ? (isFree ? "Free order confirmed, no pay link needed." : "QR pay link sent in chat.") : "The reply was NOT delivered (see the other email).",
+      ...(isFree ? [] : [`Pay link: ${SITE}/pay/${orderId}`, `QR Code: ${SITE}/api/qr/${orderId}.png`]),
     ], orderId).catch(() => {});
   } catch (err) {
     console.error("WhatsApp order creation failed", err);
