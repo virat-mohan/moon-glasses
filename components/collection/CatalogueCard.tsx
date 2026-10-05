@@ -26,6 +26,8 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
   const [showModel, setShowModel] = useState(startModel);
   const [hasModel, setHasModel] = useState(true);
   const pointerRef = useRef("touch");
+  const startX = useRef<number | null>(null);
+  const swiped = useRef(false);
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
   const modelImage = chapter.modelImage ?? `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;
   const model = hasModel && showModel;
@@ -45,13 +47,23 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
         }}
         onPointerDown={(e) => {
           pointerRef.current = e.pointerType;
+          startX.current = e.clientX;
+          swiped.current = false;
+        }}
+        onPointerUp={(e) => {
+          if (e.pointerType === "mouse" || startX.current === null || !hasModel) return;
+          if (Math.abs(e.clientX - startX.current) > 30) {
+            swiped.current = true;
+            setShowModel((m) => !m);
+          }
         }}
         onClick={() => {
+          if (swiped.current) { swiped.current = false; return; }
           if (pointerRef.current === "mouse" || !hasModel) router.push(href);
           else setShowModel((m) => !m);
         }}
         aria-label={`${chapter.name} — ${model ? "showing it worn" : "showing the product"}`}
-        className="relative block aspect-[4/5] w-full cursor-pointer overflow-hidden"
+        className="relative block touch-pan-y aspect-[4/5] w-full cursor-pointer overflow-hidden"
         style={{ backgroundColor: model ? "var(--moon-black)" : PRODUCT_BG }}
       >
         <Image
@@ -73,6 +85,12 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
             className="object-cover object-[50%_18%] transition-opacity duration-300"
             style={{ opacity: model ? 1 : 0 }}
           />
+        )}
+        {hasModel && (
+          <>
+            <span aria-hidden className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[22px] leading-none text-white/90 [text-shadow:0_0_6px_rgba(0,0,0,0.55)] [@media(hover:hover)]:hidden">‹</span>
+            <span aria-hidden className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[22px] leading-none text-white/90 [text-shadow:0_0_6px_rgba(0,0,0,0.55)] [@media(hover:hover)]:hidden">›</span>
+          </>
         )}
         {stockLabel && (
           <span className="absolute left-3 top-3 border border-white/40 bg-black px-2 py-1 text-micro uppercase tracking-[0.05em] text-white">
@@ -103,7 +121,7 @@ export function CatalogueGrid({ items, columnsClassName = "md:grid-cols-3 lg:gri
     <div>
       <p className="mb-4 font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">
         <span className="hidden [@media(hover:hover)]:inline">{alternate ? "Hover to switch between model and product. Click the product name for its page." : "Hover. Flip. Deep Dive."}</span>
-        <span className="hidden [@media(hover:none)]:inline">{alternate ? "Tap a photo to switch between model and product. Tap the product name for its page." : "Tap To Flip"}</span>
+        <span className="hidden [@media(hover:none)]:inline">{alternate ? "Swipe or tap a photo to switch between model and product. Tap the product name for its page." : "Tap To Flip"}</span>
       </p>
       <div className={`grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12 ${columnsClassName}`}>
         {items.map((item, i) => (
