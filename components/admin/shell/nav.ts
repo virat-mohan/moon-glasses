@@ -23,6 +23,7 @@ export const NAV_SECTIONS: AdminNavSection[] = [
       { href: "/admin/analytics", label: "Website Analytics" },
       { href: "/admin/ad-briefs", label: "Ad Brief Generator" },
       { href: "/admin/content-calendar", label: "Content Calendar" },
+      { href: "/admin/ig-review", label: "Instagram Review Queue" },
       { href: "/admin/reports", label: "Growth Reports" },
       { href: "/admin/abandoned-carts", label: "Abandoned Carts" },
       { href: "/admin/post-barter", label: "Pay With A Post" },
