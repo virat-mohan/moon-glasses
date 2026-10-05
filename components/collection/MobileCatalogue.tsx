@@ -48,19 +48,19 @@ export function MobileCatalogueGrid({ items }: { items: CatalogueItem[] }) {
   return (
     <div>
       <p className="mb-3 font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
-        {items.length} pairs · Tap to flip
+        {items.length} pairs · Tap a photo to switch model / product · Tap the name for its page
       </p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-6">
-        {items.map((item) => (
-          <MobileGridTile key={item.chapter.slug} {...item} />
+        {items.map((item, i) => (
+          <MobileGridTile key={item.chapter.slug} {...item} startModel={i % 2 === 0} />
         ))}
       </div>
     </div>
   );
 }
 
-function MobileGridTile({ chapter, stockLabel }: CatalogueItem) {
-  const [flipped, setFlipped] = useState(false);
+function MobileGridTile({ chapter, stockLabel, startModel = false }: CatalogueItem) {
+  const [flipped, setFlipped] = useState(startModel);
   const [hasModel, setHasModel] = useState(true);
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
   const modelImage = chapter.modelImage ?? `/images/chapters/${encodeURIComponent(chapter.folder)}/lifestyle.jpg`;

@@ -9,7 +9,7 @@ import { chapterImageSrc, shortProductName } from "@/lib/chapters";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import type { StockLabel } from "@/lib/inventory";
 
-export type CatalogueItem = { chapter: Chapter; stockLabel: StockLabel };
+export type CatalogueItem = { chapter: Chapter; stockLabel: StockLabel; startModel?: boolean };
 
 // Soft champagne-gold so pale/silver frames don't vanish into white. Some
 // product photos have a baked-in white background, so the shot is multiplied
@@ -21,9 +21,9 @@ export const PRODUCT_SHOT_CLASS = "object-contain p-[5%] contrast-[1.08] saturat
  * One photo per pair, model first. Touch: each tap switches model/product.
  * Mouse: hover shows the product, click opens the product page.
  */
-export function CatalogueCard({ chapter, stockLabel, sizes = "100vw" }: CatalogueItem & { sizes?: string }) {
+export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = "100vw" }: CatalogueItem & { sizes?: string }) {
   const router = useRouter();
-  const [showModel, setShowModel] = useState(true);
+  const [showModel, setShowModel] = useState(startModel);
   const [hasModel, setHasModel] = useState(true);
   const pointerRef = useRef("touch");
   const productImage = chapterImageSrc(chapter.folder, chapter.sideImage);
@@ -38,10 +38,10 @@ export function CatalogueCard({ chapter, stockLabel, sizes = "100vw" }: Catalogu
         type="button"
         onPointerEnter={(e) => {
           pointerRef.current = e.pointerType;
-          if (e.pointerType === "mouse") setShowModel(false);
+          if (e.pointerType === "mouse") setShowModel(!startModel);
         }}
         onPointerLeave={(e) => {
-          if (e.pointerType === "mouse") setShowModel(true);
+          if (e.pointerType === "mouse") setShowModel(startModel);
         }}
         onPointerDown={(e) => {
           pointerRef.current = e.pointerType;
@@ -98,16 +98,16 @@ export function CatalogueCard({ chapter, stockLabel, sizes = "100vw" }: Catalogu
   );
 }
 
-export function CatalogueGrid({ items, columnsClassName = "md:grid-cols-3 lg:grid-cols-4" }: { items: CatalogueItem[]; columnsClassName?: string }) {
+export function CatalogueGrid({ items, columnsClassName = "md:grid-cols-3 lg:grid-cols-4", alternate = false }: { items: CatalogueItem[]; columnsClassName?: string; alternate?: boolean }) {
   return (
     <div>
       <p className="mb-4 font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">
-        <span className="hidden [@media(hover:hover)]:inline">Hover. Flip. Deep Dive.</span>
-        <span className="hidden [@media(hover:none)]:inline">Tap To Flip</span>
+        <span className="hidden [@media(hover:hover)]:inline">{alternate ? "Hover to switch between model and product. Click the product name for its page." : "Hover. Flip. Deep Dive."}</span>
+        <span className="hidden [@media(hover:none)]:inline">{alternate ? "Tap a photo to switch between model and product. Tap the product name for its page." : "Tap To Flip"}</span>
       </p>
       <div className={`grid grid-cols-2 gap-x-4 gap-y-10 md:gap-x-6 md:gap-y-12 ${columnsClassName}`}>
-        {items.map((item) => (
-          <CatalogueCard key={item.chapter.slug} {...item} sizes="(min-width: 1024px) 25vw, 50vw" />
+        {items.map((item, i) => (
+          <CatalogueCard key={item.chapter.slug} {...item} startModel={alternate ? i % 2 === 0 : item.startModel} sizes="(min-width: 1024px) 25vw, 50vw" />
         ))}
       </div>
     </div>
