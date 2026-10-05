@@ -21,23 +21,27 @@ export async function computePnl(monthKey: string) {
   let discountsGiven = 0;
   let refunds = 0;
   let shippingCollected = 0;
-  // Pay-With-A-Post orders count as real revenue at full retail value — no
-  // currency actually changed hands, but the offsetting cost is booked below
-  // as a "Pay With A Post (Marketing CAC)" expense line of the same amount,
-  // so net profit nets out correctly while grossSales still shows the real
-  // top-line number instead of silently hiding these orders from it.
-  let barterValue = 0;
+  // Pay With A Post costs 1% of the item value of orders that were bought
+  // with a reference code a Pay With A Post order generated. The free-pair
+  // (barter) order itself moves no money, so it is left out of sales; its
+  // product cost still lands in COGS below. Nothing else is booked as a
+  // Pay With A Post cost.
+  const PWAP_FEE_RATE = 0.01;
+  let pwapDrivenValue = 0;
+  const { data: codeRows } = await supabase.from("orders").select("barter_coupon_code").not("barter_coupon_code", "is", null);
+  const pwapCodes = new Set((codeRows ?? []).map((r) => String(r.barter_coupon_code).toUpperCase()));
 
   const { data: orders } = await supabase
     .from("orders")
     .select(
-      "id, subtotal, discount_amount, referral_discount_amount, loyalty_discount_amount, coupon_discount_amount, shipping_charge, refunded_amount, status, is_post_barter"
+      "id, subtotal, discount_amount, referral_discount_amount, loyalty_discount_amount, coupon_discount_amount, shipping_charge, refunded_amount, status, is_post_barter, coupon_code_used"
     ).eq("is_test", false)
     .gte("created_at", rangeStart)
     .lt("created_at", rangeEnd)
     .neq("status", "cancelled");
 
   for (const o of orders ?? []) {
+    if (o.is_post_barter) continue;
     grossSales += o.subtotal ?? 0;
     discountsGiven +=
       (o.discount_amount ?? 0) +
@@ -46,7 +50,7 @@ export async function computePnl(monthKey: string) {
       (o.coupon_discount_amount ?? 0);
     refunds += o.refunded_amount ?? 0;
     shippingCollected += o.shipping_charge ?? 0;
-    if (o.is_post_barter) barterValue += o.subtotal ?? 0;
+    if (o.coupon_code_used && pwapCodes.has(String(o.coupon_code_used).toUpperCase())) pwapDrivenValue += o.subtotal ?? 0;
   }
 
   // COGS is per product from product_costing (actual vendor cost once known,
@@ -106,11 +110,9 @@ export async function computePnl(monthKey: string) {
     byCategory.set("WhatsApp Messaging (auto)", (byCategory.get("WhatsApp Messaging (auto)") ?? 0) + whatsappSpend);
   }
 
-  if (barterValue > 0) {
-    byCategory.set(
-      "Pay With A Post (Marketing CAC, auto)",
-      (byCategory.get("Pay With A Post (Marketing CAC, auto)") ?? 0) + barterValue
-    );
+  const pwapFee = Math.round(pwapDrivenValue * PWAP_FEE_RATE);
+  if (pwapFee > 0) {
+    byCategory.set("Pay With A Post (1% of orders on its codes, auto)", (byCategory.get("Pay With A Post (1% of orders on its codes, auto)") ?? 0) + pwapFee);
   }
 
   const expensesByCategory = Array.from(byCategory.entries()).map(([category, amount]) => ({ category, amount }));
