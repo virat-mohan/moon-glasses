@@ -362,28 +362,6 @@ export function OrdersBoard({ rows, now }: { rows: AdminOrderRow[]; now?: number
         <button type="submit" form="labels-form" className="ord-btn ord-btn--push">
           Print selected labels (2 per A4)
         </button>
-        <button
-          type="button"
-          className="ord-btn"
-          style={{ borderColor: "#dc2626", color: "#dc2626" }}
-          onClick={async () => {
-            if (!window.confirm("Are you sure you want to remove all test orders placed under Prince / Test? Real customer orders will NOT be touched.")) return;
-            try {
-              const res = await fetch("/api/admin/orders/purge-test", { method: "POST" });
-              const data = await res.json();
-              if (data.ok) {
-                alert(`Successfully removed ${data.count} test order(s).`);
-                window.location.reload();
-              } else {
-                alert(data.error || "Failed to purge test orders");
-              }
-            } catch {
-              alert("Error purging test orders");
-            }
-          }}
-        >
-          Purge Test Orders
-        </button>
       </div>
       <form id="labels-form" action="/api/admin/orders/print-labels" method="GET" target="_blank" />
       <p className="ord-muted ord-count">
