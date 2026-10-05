@@ -34,3 +34,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Could not update order" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    const supabase = getSupabaseServerClient();
+
+    const { data: order } = await supabase.from("orders").select("id, customer_name").eq("id", id).maybeSingle();
+    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+
+    await supabase.from("whatsapp_messages").delete().eq("order_id", id);
+    await supabase.from("shipping_labels").delete().eq("order_id", id);
+    await supabase.from("shipments").delete().eq("order_id", id);
+    await supabase.from("order_side_effects").delete().eq("order_id", id);
+    await supabase.from("order_history").delete().eq("order_id", id);
+    await supabase.from("order_items").delete().eq("order_id", id);
+
+    const { error } = await supabase.from("orders").delete().eq("id", id);
+    if (error) throw error;
+
+    return NextResponse.json({ ok: true, deletedId: id });
+  } catch (err) {
+    console.error("Failed to delete order", err);
+    return NextResponse.json({ error: "Could not delete order" }, { status: 500 });
+  }
+}

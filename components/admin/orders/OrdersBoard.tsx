@@ -262,6 +262,30 @@ export function OrderDetail({ o }: { o: AdminOrderRow }) {
           </div>
         </div>
       </details>
+
+      <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid var(--ord-divider, #eee)", display: "flex", justifyContent: "flex-end" }}>
+        <button
+          type="button"
+          className="ord-btn"
+          style={{ color: "#dc2626", borderColor: "#dc2626" }}
+          onClick={async () => {
+            if (!window.confirm(`Are you sure you want to permanently delete order #${shortId(o.id)} (${o.customer_name})?`)) return;
+            try {
+              const res = await fetch(`/api/admin/orders/${o.id}`, { method: "DELETE" });
+              if (res.ok) {
+                window.location.reload();
+              } else {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || "Failed to delete order");
+              }
+            } catch {
+              alert("Error deleting order");
+            }
+          }}
+        >
+          Delete this order
+        </button>
+      </div>
     </div>
   );
 }
