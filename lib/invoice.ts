@@ -1,6 +1,7 @@
 import { getBrandProfile } from "@/lib/brand";
 import { getSetting } from "@/lib/settings";
 import { getOrCreateReferralCode } from "@/lib/referrals";
+import { invoiceDiscountLines, orderEarnsGoodVibes } from "@/lib/invoice-discounts";
 import { GST_RATE, SUNGLASSES_HSN, exGst, getGstin, gstIncluded } from "@/lib/gst";
 
 type InvoiceOrder = {
@@ -14,8 +15,13 @@ type InvoiceOrder = {
   delivery_pincode?: string | null;
   subtotal: number;
   discount_amount: number;
+  coupon_code_used?: string | null;
+  coupon_discount_amount?: number | string | null;
+  referral_discount_amount?: number | null;
+  loyalty_discount_amount?: number | null;
   shipping_charge?: number;
   total: number;
+  is_post_barter?: boolean | null;
   payment_type?: string;
   cod_advance_amount?: number;
   balance_due?: number;
@@ -145,7 +151,9 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
                   <td style="padding:20px 24px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                       ${row("Subtotal", `₹${order.subtotal.toLocaleString("en-IN")}`)}
-                      ${order.discount_amount > 0 ? row("Discount", `−₹${order.discount_amount.toLocaleString("en-IN")}`, { color: GOLD }) : ""}
+                      ${invoiceDiscountLines(order)
+                        .map((d) => row(d.label, `−₹${d.amount.toLocaleString("en-IN")}`, { color: GOLD }))
+                        .join("")}
                       ${order.shipping_charge ? row("Shipping", `₹${order.shipping_charge.toLocaleString("en-IN")}`) : ""}
                     </table>
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;border-top:1px solid ${BORDER};">
@@ -168,11 +176,15 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
             </td>
           </tr>
 
-          <tr>
+          ${
+            orderEarnsGoodVibes(order)
+              ? `<tr>
             <td style="padding:24px 40px 0 40px;text-align:center;">
               <p style="margin:0;font-size:14px;color:#e5e5e5;">You earned <strong style="color:${GOLD};">${milesEarned} Moonglasses Good Vibes</strong> on this order.</p>
             </td>
-          </tr>
+          </tr>`
+              : ""
+          }
 
           <tr>
             <td style="padding:24px 40px 0 40px;">
