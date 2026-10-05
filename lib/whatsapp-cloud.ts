@@ -174,3 +174,131 @@ export async function sendMetaCloudSessionMessage(phone: string, text: string, e
   }
 }
 
+/**
+ * Sends a freeform image message in an active customer session via Meta WhatsApp Cloud API.
+ */
+export async function sendMetaCloudSessionImage(
+  phone: string,
+  imageUrl: string,
+  caption?: string,
+  explicitPhoneNumberId?: string
+) {
+  const creds = await getMetaCloudCredentials(explicitPhoneNumberId);
+  if (!creds) {
+    return { sent: false as const, error: "Meta WhatsApp credentials missing" };
+  }
+
+  try {
+    const toPhone = toE164(phone);
+    console.log(`[Meta Cloud WhatsApp] Sending session image to ${toPhone} via phone_number_id=${creds.phoneNumberId}`);
+
+    const res = await fetch(`https://graph.facebook.com/v21.0/${creds.phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: toPhone,
+        type: "image",
+        image: {
+          link: imageUrl,
+          ...(caption ? { caption } : {}),
+        },
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || data?.error) {
+      console.error(`Meta WhatsApp Cloud API session image failed (status ${res.status}):`, data?.error ?? data);
+      return { sent: false as const, error: data?.error?.message || `HTTP ${res.status}` };
+    }
+
+    const messageId = data?.messages?.[0]?.id as string | undefined;
+    console.log(`[Meta Cloud WhatsApp] Session image successfully delivered! messageId: ${messageId}`);
+    return { sent: true as const, messageId };
+  } catch (err) {
+    console.error("Meta WhatsApp Cloud API session image failed", err);
+    return { sent: false as const, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
+ * Sends an interactive CTA URL message with an optional Header Image and a native Clickable Button
+ * (e.g. "Pay ₹1,499 Now") inside the customer's active 24h session window.
+ */
+export async function sendMetaCloudInteractiveCta(
+  phone: string,
+  bodyText: string,
+  buttonText: string,
+  buttonUrl: string,
+  headerImageUrl?: string,
+  explicitPhoneNumberId?: string
+) {
+  const creds = await getMetaCloudCredentials(explicitPhoneNumberId);
+  if (!creds) {
+    return { sent: false as const, error: "Meta WhatsApp credentials missing" };
+  }
+
+  try {
+    const toPhone = toE164(phone);
+    console.log(`[Meta Cloud WhatsApp] Sending interactive CTA to ${toPhone} via phone_number_id=${creds.phoneNumberId}`);
+
+    const interactiveObj: Record<string, unknown> = {
+      type: "cta_url",
+      body: {
+        text: bodyText,
+      },
+      action: {
+        name: "cta_url",
+        parameters: {
+          display_text: buttonText.slice(0, 20),
+          url: buttonUrl,
+        },
+      },
+      footer: {
+        text: "Moonglasses · Free Express Delivery",
+      },
+    };
+
+    if (headerImageUrl) {
+      interactiveObj.header = {
+        type: "image",
+        image: {
+          link: headerImageUrl,
+        },
+      };
+    }
+
+    const res = await fetch(`https://graph.facebook.com/v21.0/${creds.phoneNumberId}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: toPhone,
+        type: "interactive",
+        interactive: interactiveObj,
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || data?.error) {
+      console.error(`Meta WhatsApp Cloud API interactive message failed (status ${res.status}):`, data?.error ?? data);
+      return { sent: false as const, error: data?.error?.message || `HTTP ${res.status}` };
+    }
+
+    const messageId = data?.messages?.[0]?.id as string | undefined;
+    console.log(`[Meta Cloud WhatsApp] Interactive CTA successfully delivered! messageId: ${messageId}`);
+    return { sent: true as const, messageId };
+  } catch (err) {
+    console.error("Meta WhatsApp Cloud API interactive CTA failed", err);
+    return { sent: false as const, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
