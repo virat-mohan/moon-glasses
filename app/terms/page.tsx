@@ -27,7 +27,7 @@ export default function TermsPage() {
           <section>
             <h2 className="font-display text-heading-s uppercase text-ink">Products &amp; Pricing</h2>
             <p className="mt-3">
-              Prices shown on the site are in Indian Rupees and inclusive of applicable GST, unless stated
+              Prices shown on the site are in Indian Rupees and inclusive of applicable taxes and shipping, unless stated
               otherwise. We reserve the right to change prices, correct pricing errors, or discontinue a
               product at any time. Product photos are as accurate as possible, but slight variation in
               colour or finish may occur.

@@ -201,6 +201,7 @@ export default function CartClient({
               <p className="font-sans text-body text-ink">Total</p>
               <p className="font-display text-heading-m text-ink">₹{total.toLocaleString("en-IN")}</p>
             </div>
+            <p className="mt-1 text-right text-micro text-secondary-text">Inclusive of taxes and shipping</p>
             <p className="mt-2 text-caption text-secondary-text">
               All prices include GST. Shipping is calculated at checkout.
             </p>

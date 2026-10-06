@@ -720,7 +720,7 @@ export default function CheckoutPage() {
       <div className="flex items-center justify-between pt-3 font-display text-heading-s text-ink">
         <span>
           Total
-          <span className="ml-2 font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">incl. GST</span>
+          <span className="ml-2 font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">incl. taxes &amp; shipping</span>
         </span>
         <span>{paymentType === "post_barter" ? "To Be Paid With A Post" : `₹${total.toLocaleString("en-IN")}`}</span>
       </div>

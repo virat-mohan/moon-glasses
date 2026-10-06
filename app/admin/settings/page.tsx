@@ -103,6 +103,12 @@ const GROUPS: { label: string; fields: Field[] }[] = [
     ],
   },
   {
+    label: "Storefront",
+    fields: [
+      { key: "LIMITED_FIRST_SLUG", label: "Limited Edition Drop: first pair (product slug)", hint: "This pair is shown first in the Limited Edition Drop on the homepage and /limited-series, model photo first. Use the product's slug (the end of its product-page address, e.g. moon-aviator-black-light-brown). Leave empty for the normal order." },
+    ],
+  },
+  {
     label: "Pay With A Post",
     fields: [
       { key: "POST_BARTER_MIN_FOLLOWERS", label: "Gift First Follower Threshold", hint: "Instagram accounts at or above this follower count qualify for Gift First (ship now, post after) instead of Post First. Defaults to 5,000 if unset." },

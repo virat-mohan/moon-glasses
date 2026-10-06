@@ -8,6 +8,7 @@ import type { Chapter } from "@/types/chapter";
 import { chapterImageSrc, shortProductName } from "@/lib/chapters";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import type { StockLabel } from "@/lib/inventory";
+import { PRICE_NOTE_SHORT } from "@/lib/price-copy";
 
 export type CatalogueItem = { chapter: Chapter; stockLabel: StockLabel; startModel?: boolean };
 
@@ -100,17 +101,25 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
       </button>
 
       <div className="flex items-end justify-between gap-3 px-1 pt-3">
-        <Link href={href} className="min-w-0 hover:[&>p:first-child]:text-ink">
-          <p className="font-sans text-caption uppercase leading-snug tracking-[0.05em] text-secondary-text transition-colors">
-            {shortProductName(chapter.name)}
-          </p>
-          <p className="font-sans text-body text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
-        </Link>
-        {!soldOut && (
-          <div className="shrink-0 whitespace-nowrap">
-            <BuyNowButton chapter={chapter} image={productImage} destination="cart" />
-          </div>
-        )}
+        <div className="min-w-0">
+          {/* The name is a real, visibly underlined link to the product page. */}
+          <Link href={href} className="block">
+            <p className="font-sans text-caption uppercase leading-snug tracking-[0.05em] text-ink underline underline-offset-4 decoration-ink/50 transition-colors hover:decoration-ink">
+              {shortProductName(chapter.name)}
+            </p>
+          </Link>
+          <p className="mt-0.5 font-sans text-body text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
+          <p className="font-sans text-micro text-secondary-text">{PRICE_NOTE_SHORT}</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end whitespace-nowrap">
+          <Link
+            href={href}
+            className="inline-flex min-h-[44px] items-center font-sans text-caption text-secondary-text underline underline-offset-4 transition-colors hover:text-ink"
+          >
+            View product
+          </Link>
+          {!soldOut && <BuyNowButton chapter={chapter} image={productImage} destination="cart" />}
+        </div>
       </div>
     </div>
   );

@@ -55,6 +55,7 @@ export function ChapterCard({
           </div>
           <p className="mt-1 font-sans text-body-s text-ink sm:mt-0">
             ₹{chapter.price.toLocaleString("en-IN")}
+            <span className="block text-micro font-normal text-secondary-text">incl. taxes &amp; shipping</span>
           </p>
         </div>
       </Link>

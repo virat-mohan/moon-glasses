@@ -11,8 +11,8 @@ import { Product360Viewer } from "@/components/chapter/Product360Viewer";
 import { MobileProductGallery } from "@/components/chapter/MobileProductGallery";
 import { CatalogueGrid } from "@/components/collection/CatalogueCard";
 import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
-import { AddToCartButton } from "@/components/chapter/AddToCartButton";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
+import { PRICE_NOTE } from "@/lib/price-copy";
 import { ViewContentTracker } from "@/components/tracking/ViewContentTracker";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
@@ -144,6 +144,28 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
     ],
   };
 
+  // "Get it" sits right under the photo (phone) / under the price (desktop). One button, no add-to-cart.
+  const getIt = (
+    <>
+      <BuyNowButton
+        chapter={chapter}
+        image={chapterImageSrc(chapter.folder, chapter.primary)}
+        disabled={stockLabel === "out-of-stock"}
+        variant="primary"
+      />
+      {postBarterEnabled && stockLabel !== "out-of-stock" && (
+        <p className="mt-3 font-sans text-body-s font-bold text-ink">
+          Skip the payment — get it with{" "}
+          <Link href="/pay-with-a-post" className="underline underline-offset-4">
+            <PayWithAPostMark />
+          </Link>{" "}
+          instead.
+        </p>
+      )}
+      {stockLabel === "out-of-stock" && <RestockNotifyForm chapterSlug={chapter.slug} />}
+    </>
+  );
+
   return (
     <>
       <script
@@ -171,6 +193,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
               modelImage={chapter.modelImage}
               name={chapter.name}
             />
+            <div className="mt-4">{getIt}</div>
           </div>
           <div className="hidden md:block">
             <Product360Viewer folder={chapter.folder} images={chapter.images} modelImage={chapter.modelImage} name={chapter.name} />
@@ -179,12 +202,13 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
           <div className="md:pt-4">
             <h1 className="font-display text-heading-xl uppercase text-ink">{shortProductName(chapter.name)}</h1>
             <p className="mt-3 font-sans text-body-l text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
-            <p className="font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">Inclusive of all taxes</p>
+            <p className="font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">{PRICE_NOTE}</p>
             {reviewSummary && (
               <a href="#reviews" className="mt-2 inline-block font-sans text-caption text-secondary-text">
                 <span className="text-tan-gold">★</span> {reviewSummary.average} ({reviewSummary.count})
               </a>
             )}
+            <div className="mt-5 hidden max-w-md md:block">{getIt}</div>
             <DiscountPromoBanner className="mt-4" />
 
             <p className="mt-6 max-w-md font-sans text-body text-secondary-text">{chapter.story}</p>
@@ -206,31 +230,6 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
                 {stockLabel === "out-of-stock" ? "Sold Out" : "Selling Fast"}
               </p>
             )}
-
-            <div className="mt-8 grid grid-cols-2 gap-3 [&>button]:py-3.5 md:mt-10 md:flex md:flex-wrap md:gap-4 md:[&>button]:min-w-[200px] md:[&>button]:py-2.5">
-              <AddToCartButton
-                chapter={chapter}
-                image={chapterImageSrc(chapter.folder, chapter.primary)}
-                disabled={stockLabel === "out-of-stock"}
-              />
-              <BuyNowButton
-                chapter={chapter}
-                image={chapterImageSrc(chapter.folder, chapter.primary)}
-                disabled={stockLabel === "out-of-stock"}
-              />
-            </div>
-
-            {postBarterEnabled && stockLabel !== "out-of-stock" && (
-              <p className="mt-3 font-sans text-body-s font-bold text-ink">
-                Skip the payment — get it with{" "}
-                <Link href="/#pay-with-a-post" className="underline underline-offset-4">
-                  <PayWithAPostMark />
-                </Link>{" "}
-                instead.
-              </p>
-            )}
-
-            {stockLabel === "out-of-stock" && <RestockNotifyForm chapterSlug={chapter.slug} />}
 
             <div className="mt-10 border-t border-divider pt-6">
               <p className="font-display text-body-s uppercase tracking-[0.05em] text-ink">

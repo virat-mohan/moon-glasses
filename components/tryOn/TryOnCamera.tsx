@@ -292,7 +292,7 @@ export function TryOnCamera({ products }: { products: Chapter[] }) {
 
       <div className="mt-6 flex items-center gap-4">
         <p className="font-sans text-body-s text-white">{shortProductName(selected.name)}</p>
-        <p className="font-sans text-body-s text-white/70">₹{selected.price.toLocaleString("en-IN")}</p>
+        <p className="font-sans text-body-s text-white/70">₹{selected.price.toLocaleString("en-IN")} <span className="text-micro text-white/50">· incl. taxes &amp; shipping</span></p>
       </div>
       <div className="mt-3">
         <BuyNowButton

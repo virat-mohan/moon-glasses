@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CatalogueCard, PRODUCT_BG, PRODUCT_SHOT_CLASS, type CatalogueItem } from "@/components/collection/CatalogueCard";
 import { chapterImageSrc, shortProductName } from "@/lib/chapters";
+import { PRICE_NOTE_SHORT } from "@/lib/price-copy";
 
 /** Mobile-only catalogue: one big photo per product, tap to switch model/product, swipe for the next pair. */
 export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
@@ -62,11 +63,11 @@ export function MobileCatalogueGrid({ items }: { items: CatalogueItem[] }) {
   return (
     <div>
       <p className="mb-3 font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
-        More pairs · Tap or swipe a photo to switch model / product · Tap the name for its page
+        More pairs · Tap or swipe a photo to switch product / model · Tap the underlined name for its page
       </p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-6">
-        {items.map((item, i) => (
-          <MobileGridTile key={item.chapter.slug} {...item} startModel={i % 2 === 0} />
+        {items.map((item) => (
+          <MobileGridTile key={item.chapter.slug} {...item} startModel={false} />
         ))}
       </div>
     </div>
@@ -135,10 +136,11 @@ function MobileGridTile({ chapter, stockLabel, startModel = false }: CatalogueIt
         )}
       </button>
       <Link href={`/chapter/${chapter.slug}`} className="block px-0.5 pt-2">
-        <p className="font-sans text-micro uppercase leading-snug tracking-[0.05em] text-secondary-text underline-offset-4 hover:underline">
+        <p className="font-sans text-micro uppercase leading-snug tracking-[0.05em] text-ink underline underline-offset-4 decoration-ink/50">
           {shortProductName(chapter.name)}
         </p>
-        <p className="font-sans text-caption text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
+        <p className="mt-0.5 font-sans text-caption text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
+        <p className="font-sans text-micro text-secondary-text">{PRICE_NOTE_SHORT}</p>
       </Link>
     </div>
   );

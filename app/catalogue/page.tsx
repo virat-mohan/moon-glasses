@@ -24,7 +24,7 @@ export default async function CataloguePage() {
         <p className="text-caption uppercase tracking-[0.15em] text-secondary-text">Catalogue</p>
         <h1 className="mt-2 font-display text-heading-xl uppercase text-ink">Every pair that&apos;s live</h1>
         <p className="mt-3 text-body-s text-secondary-text">
-          {items.length} pairs, with the model wearing each one. Prices include GST and shipping is free.
+          {items.length} pairs, with the model wearing each one. All prices are inclusive of taxes and shipping.
         </p>
         <p className="mt-2 text-caption text-secondary-text">
           Product feed for WhatsApp Business, Facebook and Instagram:{" "}

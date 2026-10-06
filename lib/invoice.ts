@@ -209,7 +209,7 @@ export async function renderInvoiceHtml(order: InvoiceOrder, items: InvoiceItem[
             <td style="padding:28px 40px 36px 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${BORDER};">
                 <tr><td style="padding-top:18px;font-size:11px;color:#6a6a6a;line-height:1.7;text-align:center;">
-                  All prices are inclusive of GST.<br />
+                  All prices are inclusive of taxes and shipping.<br />
                   Moonglasses${gstin ? ` · GSTIN ${gstin}` : ""}<br />
                   Delhi, India
                 </td></tr>

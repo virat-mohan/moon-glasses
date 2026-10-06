@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { CatalogueGrid } from "@/components/collection/CatalogueCard";
+import { CollectionExplorer } from "@/components/collection/CollectionExplorer";
+import { groupByStyle } from "@/lib/chapters";
+import { getSetting } from "@/lib/settings";
+import { pinFirst } from "@/lib/catalogue";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
 import { FooterEditorial } from "@/components/footer/FooterEditorial";
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
@@ -15,7 +18,11 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function LimitedSeriesPage() {
-  const [limitedSeries, inventory] = await Promise.all([getLimitedSeriesChapters(), getInventoryMap()]);
+  const [limitedSeries, inventory, firstSlug] = await Promise.all([
+    getLimitedSeriesChapters(),
+    getInventoryMap(),
+    getSetting("LIMITED_FIRST_SLUG"),
+  ]);
 
   return (
     <>
@@ -24,7 +31,7 @@ export default async function LimitedSeriesPage() {
         <h1 className="mt-2 font-display text-display-m uppercase text-ink">Limited Series.</h1>
         <p className="mt-3 max-w-lg font-sans text-body-s text-secondary-text">
           A separate line from the core collection — deliberately short runs, never restocked. ₹1,999
-          acetate, ₹2,499 metal. When a colourway sells out here, it doesn&apos;t come back.
+          acetate, ₹2,499 metal, inclusive of taxes and shipping. When a colourway sells out here, it doesn&apos;t come back.
         </p>
 
         {limitedSeries.length === 0 ? (
@@ -37,18 +44,21 @@ export default async function LimitedSeriesPage() {
           </div>
         ) : (
           <div className="mt-10">
-            <CatalogueGrid
-              items={limitedSeries.map((chapter) => ({
-                chapter,
-                stockLabel: stockLabelFor(inventory[chapter.slug]),
-              }))}
+            <CollectionExplorer
+              items={pinFirst(
+                groupByStyle(limitedSeries).map((chapter) => ({
+                  chapter,
+                  stockLabel: stockLabelFor(inventory[chapter.slug]),
+                })),
+                firstSlug
+              )}
             />
           </div>
         )}
 
         <p className="mt-10 border-t border-divider pt-6 font-sans text-micro uppercase tracking-[0.05em] text-secondary-text">
           Plastic ₹{LIMITED_SERIES_PRICING.Plastic.toLocaleString("en-IN")} · Metal ₹
-          {LIMITED_SERIES_PRICING.Metal.toLocaleString("en-IN")} · No restocks
+          {LIMITED_SERIES_PRICING.Metal.toLocaleString("en-IN")} · Inclusive of taxes and shipping · No restocks
         </p>
       </main>
 

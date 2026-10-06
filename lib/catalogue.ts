@@ -48,3 +48,12 @@ export function liveCatalogue(chapters: (Chapter & { collection?: string })[]): 
     })
     .sort((a, b) => a.collectionLabel.localeCompare(b.collectionLabel) || a.group.localeCompare(b.group) || a.colour.localeCompare(b.colour));
 }
+
+/** Moves the pair with this slug to the front (rest keep their order). Unknown or empty slug: unchanged. */
+export function pinFirst<T extends { slug?: string; chapter?: { slug: string } }>(items: T[], slug: string | null | undefined): T[] {
+  const key = (slug ?? "").trim();
+  if (!key) return items;
+  const at = items.findIndex((i) => (i.slug ?? i.chapter?.slug) === key);
+  if (at <= 0) return items;
+  return [items[at], ...items.slice(0, at), ...items.slice(at + 1)];
+}

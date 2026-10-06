@@ -30,7 +30,7 @@ function ChapterChip({ chapter }: { chapter: Chapter }) {
         />
       </div>
       <p className="mt-2 text-caption uppercase tracking-[0.03em] text-ink">{chapter.name}</p>
-      <p className="text-caption text-secondary-text">₹{chapter.price.toLocaleString("en-IN")}</p>
+      <p className="text-caption text-secondary-text">₹{chapter.price.toLocaleString("en-IN")} <span className="text-micro">· incl. taxes &amp; shipping</span></p>
     </Link>
   );
 }

@@ -16,6 +16,8 @@ import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { getExplorerPosts } from "@/lib/community";
 import { computeWebsiteAnalytics } from "@/lib/website-analytics";
 import { getStoreRating } from "@/lib/reviews";
+import { getSetting } from "@/lib/settings";
+import { pinFirst } from "@/lib/catalogue";
 import { REVIEW_COPY } from "@/lib/review-core";
 import { chapters, groupByStyle, styleRimLens } from "@/lib/chapters";
 
@@ -52,7 +54,7 @@ async function getCurrentVibe<T extends { slug: string }>(collection: T[]): Prom
 function buildPillars(shapeCount: number, colourwayCount: number) {
   return [
     { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
-    { title: "Plastic Or Metal", copy: "The Collection from ₹1,499, the Limited Series from ₹1,999." },
+    { title: "Plastic Or Metal", copy: "The Collection from ₹1,499, the Limited Series from ₹1,999. Inclusive of taxes and shipping." },
     { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
     {
       title: "Core Collection",
@@ -84,7 +86,9 @@ export default async function Home() {
     chapter,
     stockLabel: stockLabelFor(inventory[chapter.slug]),
   });
-  const limitedItems = limitedChapters.map(toItem);
+  // Sorted into shape groups so the Limited Edition Drop can be filtered like The Collection.
+  const limitedFirst = await getSetting("LIMITED_FIRST_SLUG");
+  const limitedItems = pinFirst(groupByStyle(limitedChapters).map(toItem), limitedFirst);
 
   const vibeItems = (await getCurrentVibe([...collection, ...limitedChapters])).map(toItem);
   const collectionItems = collection.map(toItem);
@@ -104,21 +108,7 @@ export default async function Home() {
               Once its gone, its gone
             </p>
             <h2 className="mb-8 font-display text-display-m uppercase text-ink md:mb-10">Limited Edition Drop</h2>
-            <div className="md:hidden">
-              <MobileCatalogue items={limitedItems} />
-            </div>
-            <div className="hidden md:block">
-              <CatalogueGrid
-                items={limitedItems}
-                columnsClassName={
-                  limitedItems.length === 5
-                    ? "md:grid-cols-3 lg:grid-cols-5"
-                    : limitedItems.length === 3
-                      ? "md:grid-cols-3"
-                      : "md:grid-cols-3 lg:grid-cols-4"
-                }
-              />
-            </div>
+            <CollectionExplorer items={limitedItems} />
           </section>
         )}
 
