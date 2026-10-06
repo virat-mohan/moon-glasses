@@ -115,6 +115,7 @@ const GROUPS: { label: string; fields: Field[] }[] = [
     label: "Finance",
     fields: [
       { key: "COGS_PER_UNIT_RUPEES", label: "Cost Per Unit (₹)", hint: "What you pay the vendor per pair, used to compute COGS on the P&L page. Defaults to ₹250 if unset." },
+      { key: "GOOGLE_REVIEW_URL", label: "Google Review Link", hint: "Where \"share it on Google\" sends customers after they review on our site. Unverified: please confirm this is Moonglasses' own Google profile. Defaults to the link already in the code if unset." },
       { key: "LOW_STOCK_THRESHOLD_UNITS", label: "Low-Stock Alert Threshold (units)", hint: "Sends an email to the team the moment a Chapter's stock dips to or under this number. Defaults to 10 if unset." },
     ],
   },

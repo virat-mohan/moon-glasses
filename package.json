@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test lib/retail-os-brand.test.ts lib/brand-voice.test.ts lib/checkout-rules.test.ts lib/whatsapp-help.test.ts lib/order-alert.test.ts lib/contact-spam.test.ts lib/whatsapp-window.test.ts lib/test-order.test.ts lib/pwap-dedupe.test.ts lib/tagged-reshare-select.test.ts lib/grid-post.test.ts lib/wa-order.test.ts lib/admin-orders.test.ts lib/invoice-discounts.test.ts lib/analytics-helpers.test.ts lib/ig-drip.test.ts"
+    "test": "node --experimental-strip-types --test lib/retail-os-brand.test.ts lib/brand-voice.test.ts lib/checkout-rules.test.ts lib/whatsapp-help.test.ts lib/order-alert.test.ts lib/contact-spam.test.ts lib/whatsapp-window.test.ts lib/test-order.test.ts lib/pwap-dedupe.test.ts lib/tagged-reshare-select.test.ts lib/grid-post.test.ts lib/wa-order.test.ts lib/admin-orders.test.ts lib/invoice-discounts.test.ts lib/analytics-helpers.test.ts lib/ig-drip.test.ts lib/review-core.test.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",

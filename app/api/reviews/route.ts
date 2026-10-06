@@ -1,49 +1,30 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase";
+import { clientIp, submitOrderReviews } from "@/lib/review-submit";
+import { cleanText, makeLimiter, MAX_NAME_CHARS, MAX_REVIEW_CHARS, parseRating } from "@/lib/review-core";
+
+export const dynamic = "force-dynamic";
+const limited = makeLimiter(8, 10 * 60 * 1000);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const orderId = String(body?.orderId ?? "").trim();
-  const chapterSlug = String(body?.chapterSlug ?? "").trim();
-  const customerName = String(body?.customerName ?? "").trim();
-  const rating = Number(body?.rating);
-  const reviewText = body?.reviewText ? String(body.reviewText).trim().slice(0, 2000) : null;
+  // Honeypot: a real person never fills the hidden field. Pretend it worked.
+  if (typeof body?.website === "string" && body.website.trim() !== "") return NextResponse.json({ ok: true, saved: 0 });
+  if (limited(clientIp(request))) return NextResponse.json({ error: "Too many tries, please wait a few minutes" }, { status: 429 });
 
-  if (!orderId || !chapterSlug || !customerName || !Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return NextResponse.json({ error: "Missing or invalid review details" }, { status: 400 });
-  }
+  const orderId = String(body?.orderId ?? "").trim();
+  const rawEntries: unknown[] = Array.isArray(body?.entries) ? body.entries.slice(0, 20) : [];
+  const entries = rawEntries.flatMap((e) => {
+    const o = e as { chapterSlug?: unknown; rating?: unknown; text?: unknown };
+    const rating = parseRating(o?.rating);
+    const chapterSlug = typeof o?.chapterSlug === "string" ? o.chapterSlug.trim().slice(0, 120) : "";
+    return rating && chapterSlug ? [{ chapterSlug, rating, text: cleanText(o.text, MAX_REVIEW_CHARS) }] : [];
+  });
+  if (!UUID.test(orderId) || entries.length === 0) return NextResponse.json({ error: "Please pick a star rating" }, { status: 400 });
 
   try {
-    const supabase = getSupabaseServerClient();
-
-    // Confirm this chapter was actually part of this order — the review
-    // page only ever offers items from the order it belongs to, but the
-    // API itself shouldn't trust that without checking, since the order id
-    // in the URL is a capability link anyone with it could hit directly.
-    const { data: item } = await supabase
-      .from("order_items")
-      .select("chapter_slug")
-      .eq("order_id", orderId)
-      .eq("chapter_slug", chapterSlug)
-      .maybeSingle();
-    if (!item) {
-      return NextResponse.json({ error: "That item isn't part of this order" }, { status: 400 });
-    }
-
-    const { error } = await supabase.from("reviews").upsert(
-      {
-        order_id: orderId,
-        chapter_slug: chapterSlug,
-        customer_name: customerName,
-        rating,
-        review_text: reviewText,
-        approved: false,
-      },
-      { onConflict: "order_id,chapter_slug" }
-    );
-    if (error) throw error;
-
-    return NextResponse.json({ ok: true });
+    const r = await submitOrderReviews({ orderId, name: cleanText(body?.name, MAX_NAME_CHARS), entries });
+    return NextResponse.json(r.body, { status: r.status });
   } catch (err) {
     console.error("Failed to save review", err);
     return NextResponse.json({ error: "Could not save your review" }, { status: 500 });

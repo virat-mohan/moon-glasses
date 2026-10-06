@@ -15,6 +15,8 @@ import { getCoreCollectionChapters, getLimitedSeriesChapters } from "@/lib/chapt
 import { getInventoryMap, stockLabelFor } from "@/lib/inventory";
 import { getExplorerPosts } from "@/lib/community";
 import { computeWebsiteAnalytics } from "@/lib/website-analytics";
+import { getStoreRating } from "@/lib/reviews";
+import { REVIEW_COPY } from "@/lib/review-core";
 import { chapters, groupByStyle, styleRimLens } from "@/lib/chapters";
 
 function chapterName(slug: string) {
@@ -60,6 +62,7 @@ function buildPillars(shapeCount: number, colourwayCount: number) {
 }
 
 export default async function Home() {
+  const storeRating = await getStoreRating();
   const [coreChapters, postBarterEnabled, launchSoon] = await Promise.all([
     getCoreCollectionChapters(),
     isPostBarterEnabled(),
@@ -206,6 +209,11 @@ export default async function Home() {
         </section>
       </main>
 
+      {storeRating && (
+        <p className="mx-auto w-full max-w-[1440px] px-6 py-10 text-center font-sans text-base text-ink md:px-12">
+          <span className="text-tan-gold">★</span> {REVIEW_COPY.homeStrip(storeRating.average.toFixed(1), storeRating.count)}
+        </p>
+      )}
       <NewsletterBlock />
       <FooterEditorial />
     </>

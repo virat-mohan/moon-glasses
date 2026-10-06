@@ -135,7 +135,7 @@ async function templateDefs(): Promise<TemplateDef[]> {
       name: "review_request",
       category: "MARKETING",
       body: "Hi {{1}}, hope you're loving your {{2}}. Got a minute to tell others what you think? {{3}} Thank you!",
-      example: ["Anun", "Wayfarer, Black Green", "https://g.page/r/CbvWdBDo1oxlEBM/review"],
+      example: ["Anun", "Wayfarer, Black Green", `${site}/review/0a1b2c3d-example`],
     },
     {
       settingKey: "MSG91_REFERRAL_INVITE_TEMPLATE_ID",

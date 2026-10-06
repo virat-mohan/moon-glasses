@@ -1,3 +1,4 @@
+import { REVIEW_COPY } from "@/lib/review-core";
 import { isTestOrder, testSubject } from "@/lib/test-order";
 import { getSetting } from "@/lib/settings";
 import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
@@ -429,7 +430,28 @@ export async function sendReferralInviteEmail(
   return sendEmail(toEmail, `${referrerName ?? "A friend"} gave you ₹${discountRupees} off ${brand.brandName}`, html);
 }
 
-/** Sent once, when an order's shipment status transitions to delivered — see the courier-status webhook. */
+function reviewEmailHtml(brand: { brandName: string; siteUrl: string }, orderId: string, intro: string, button: string) {
+  const site = brand.siteUrl.replace(/\/$/, "");
+  const logoUrl = `${site}/images/brand/moon-glasses-logo.png`;
+  // Everyone goes to our own page first; Google is offered there, to every rating alike.
+  const reviewUrl = `${site}/review/${orderId}`;
+  const returnUrl = `${site}/return/${orderId}`;
+  return `
+    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
+      <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
+        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
+      </div>
+      <p style="font-size:16px;line-height:1.6;">${intro}</p>
+      <a href="${reviewUrl}" style="display:inline-block;margin-top:16px;padding:14px 24px;background:#101820;color:#f0eee4;text-decoration:none;letter-spacing:0.03em;font-size:15px;">${button}</a>
+      <p style="margin-top:20px;font-size:13px;color:#666;">
+        ${REVIEW_COPY.returnLine} <a href="${returnUrl}" style="color:#101820;">${REVIEW_COPY.returnLink}</a>.
+      </p>
+      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
+    </div>
+  `;
+}
+
+/** Sent once, when an order's shipment status transitions to delivered, see the courier-status webhook. */
 export async function sendReviewRequestEmail(
   toEmail: string,
   customerName: string | null,
@@ -437,29 +459,20 @@ export async function sendReviewRequestEmail(
   chapterNames: string[]
 ) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
-  const googleReviewUrl = "https://g.page/r/CbvWdBDo1oxlEBM/review";
-  const returnUrl = `${brand.siteUrl.replace(/\/$/, "")}/return/${orderId}`;
-  const itemsLine = chapterNames.join(", ");
+  const html = reviewEmailHtml(brand, orderId, REVIEW_COPY.requestBody(customerName ?? "there", chapterNames.join(", ")), REVIEW_COPY.requestButton);
+  return sendEmail(toEmail, REVIEW_COPY.requestSubject, html);
+}
 
-  const html = `
-    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
-      <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
-      </div>
-      <p style="font-size:16px;">Hi ${customerName ?? "there"},</p>
-      <p style="font-size:14px;color:#444;line-height:1.6;">
-        Your ${itemsLine} should have arrived by now — how is it? A quick review helps others
-        pick their pair, and takes under a minute.
-      </p>
-      <a href="${googleReviewUrl}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">Leave a Review</a>
-      <p style="margin-top:20px;font-size:13px;color:#666;">
-        Something wrong with it? <a href="${returnUrl}" style="color:#101820;">Request a return</a>.
-      </p>
-      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
-    </div>
-  `;
-  return sendEmail(toEmail, `How's your ${brand.brandName}?`, html);
+/** One gentle reminder, 5 days after delivery, only if there is no review or return yet. See lib/review-reminder.ts. */
+export async function sendReviewReminderEmail(
+  toEmail: string,
+  customerName: string | null,
+  orderId: string,
+  chapterNames: string[]
+) {
+  const brand = await getBrandProfile();
+  const html = reviewEmailHtml(brand, orderId, REVIEW_COPY.reminderBody(customerName ?? "there", chapterNames.join(", ")), REVIEW_COPY.requestButton);
+  return sendEmail(toEmail, REVIEW_COPY.reminderSubject, html);
 }
 
 /** Retention nudge for a customer who hasn't ordered in a while — see the win-back cron. */

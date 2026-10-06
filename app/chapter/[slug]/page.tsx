@@ -23,6 +23,7 @@ import { RestockNotifyForm } from "@/components/chapter/RestockNotifyForm";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { isPostBarterEnabled } from "@/lib/post-barter";
 import { getApprovedReviews, getReviewSummary } from "@/lib/reviews";
+import { buildReviewJsonLd, REVIEW_COPY } from "@/lib/review-core";
 import type { Chapter } from "@/types/chapter";
 
 export function generateStaticParams() {
@@ -126,15 +127,8 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
           ? "https://schema.org/OutOfStock"
           : "https://schema.org/InStock",
     },
-    ...(reviewSummary
-      ? {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: reviewSummary.average,
-            reviewCount: reviewSummary.count,
-          },
-        }
-      : {}),
+    // Only ever built from real, approved reviews; absent when there are none.
+    ...(buildReviewJsonLd(reviews) ?? {}),
   };
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
@@ -282,7 +276,16 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
                   {r.review_text && (
                     <p className="mt-2 font-sans text-body-s text-ink">{r.review_text}</p>
                   )}
-                  <p className="mt-2 text-caption text-secondary-text">{r.customer_name}</p>
+                  <p className="mt-2 text-caption text-secondary-text">
+                    {r.customer_name}
+                    {r.verified && <span className="ml-2 text-ink">· {REVIEW_COPY.verifiedTag}</span>}
+                  </p>
+                  {r.admin_reply && (
+                    <div className="mt-3 border-l-2 border-divider pl-3">
+                      <p className="text-caption uppercase tracking-[0.05em] text-secondary-text">{REVIEW_COPY.replyLabel}</p>
+                      <p className="mt-1 font-sans text-body-s text-ink">{r.admin_reply}</p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

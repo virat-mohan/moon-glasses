@@ -21,6 +21,7 @@ const columns = [
     links: [
       { label: "Shipping", href: "/shipping-policy" },
       { label: "Returns", href: "/refund-policy" },
+      { label: "Share feedback", href: "/feedback" },
     ],
   },
   {

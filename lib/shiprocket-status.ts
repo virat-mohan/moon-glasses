@@ -204,7 +204,7 @@ export async function applyShipmentStatusUpdate(input: {
       // WhatsApp-first: a phone number gets this via WhatsApp only; email is
       // the fallback, used only when there's no phone (or WhatsApp failed).
       const whatsappSent = existing.customer_phone
-        ? await sendReviewRequestWhatsApp(existing.customer_phone, existing.customer_name, itemsLine)
+        ? await sendReviewRequestWhatsApp(existing.customer_phone, existing.customer_name, itemsLine, existing.id)
         : false;
       const emailSent =
         !whatsappSent && existing.customer_email

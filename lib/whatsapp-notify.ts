@@ -1,3 +1,4 @@
+import { getBrandProfile } from "@/lib/brand";
 import { getSetting } from "@/lib/settings";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendMsg91Template } from "@/lib/msg91";
@@ -204,13 +205,14 @@ export async function sendBuyNow10WhatsApp(
 
 /**
  * Sends a post-delivery review-request nudge via MSG91 — template takes
- * three variables: customer name, item summary, and (by design, always the
- * same constant) the Google review link. Set MSG91_REVIEW_REQUEST_TEMPLATE_ID
+ * three variables: customer name, item summary, and our own /review/<orderId> page link. Set MSG91_REVIEW_REQUEST_TEMPLATE_ID
  * in /admin/settings to the approved template's name.
  */
-export async function sendReviewRequestWhatsApp(phone: string, name: string | null, itemsLine: string) {
+export async function sendReviewRequestWhatsApp(phone: string, name: string | null, itemsLine: string, orderId: string) {
   const msg91TemplateName = await getSetting("MSG91_REVIEW_REQUEST_TEMPLATE_ID");
-  const variables = [name ?? "there", itemsLine, "https://g.page/r/CbvWdBDo1oxlEBM/review"];
+  // Our own review page first; it offers Google to everyone afterwards.
+  const brand = await getBrandProfile();
+  const variables = [name ?? "there", itemsLine, `${brand.siteUrl.replace(/\/$/, "")}/review/${orderId}`];
   return sendTemplateByName(phone, "review_request", msg91TemplateName, variables, {});
 }
 
