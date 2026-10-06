@@ -26,6 +26,47 @@ const INPUT = "w-full border border-ink/30 bg-surface px-3 py-2 text-body-s text
 const BUTTON =
   "border border-ink px-4 py-2 font-sans text-caption font-bold uppercase tracking-[0.05em] text-ink hover:bg-ink hover:text-cream disabled:opacity-50";
 
+type Shopping = {
+  eligible: boolean;
+  reason?: string;
+  catalogue: { name?: string; productCount?: number; lastUpload?: string; lastUploadItems?: number; lastUploadErrors?: number } | null;
+};
+
+function ShoppingCard() {
+  const [d, setD] = useState<Shopping | null>(null);
+  useEffect(() => {
+    fetch("/api/admin/instagram/shopping").then((r) => r.json()).then(setD).catch(() => setD(null));
+  }, []);
+  return (
+    <section className="mt-6 border border-ink/30 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-sans text-body-m font-bold uppercase tracking-[0.03em] text-ink">Instagram Shopping</h2>
+        {d && (d.eligible ? <span className="text-caption text-tan-gold">● Product tagging on</span> : <span className="text-caption text-secondary-text">○ Not eligible yet</span>)}
+      </div>
+      {!d && <p className="mt-3 text-body-s text-secondary-text">Loading…</p>}
+      {d?.catalogue && (
+        <p className="mt-3 text-body-s text-ink">
+          {d.catalogue.name ?? "Catalogue"} · {d.catalogue.productCount ?? "?"} products
+          {d.catalogue.lastUpload && (
+            <span className="text-secondary-text">
+              {" "}· last feed upload {new Date(d.catalogue.lastUpload).toLocaleString("en-IN")} ({d.catalogue.lastUploadItems ?? "?"} items, {d.catalogue.lastUploadErrors ?? 0} errors)
+            </span>
+          )}
+        </p>
+      )}
+      {d && !d.eligible && (
+        <div className="mt-3 space-y-1 text-caption text-secondary-text">
+          {d.reason && <p>{d.reason}</p>}
+          <p>1 Meta Commerce Manager → your commerce account → Settings/Sales channels → Instagram → connect @moonglassesonline and pick the &apos;Moonglasses Catalogue&apos;.</p>
+          <p>2 Submit for Meta review (usually 1–3 days).</p>
+          <p>3 In the Instagram app: Settings → Business tools → Instagram Shopping → choose the catalogue.</p>
+          <p>Tagging switches on by itself once Meta approves. Stories can&apos;t carry product tags through the API; those stay manual in the app.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function SocialPage() {
   const params = useSearchParams();
   const [status, setStatus] = useState<Status | null>(null);
@@ -185,6 +226,8 @@ function SocialPage() {
           </form>
         )}
       </section>
+
+      <ShoppingCard />
 
       {status && (
         <section className="mt-6 border border-ink/30 p-5">

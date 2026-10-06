@@ -39,10 +39,15 @@ export async function postBriefToInstagram(briefId: string, taggedUsernames?: st
     if (images.length < required) {
       throw new Error(`Generate or attach all ${required} carousel images before posting`);
     }
-    ({ postId } = await postToInstagramCarouselFeed(images, caption, taggedUsernames));
+    // Each slide's chapter is the product; single-chapter carousels tag the first slide only.
+    const slugs: string[] = (brief.chapter_slugs ?? []).filter(Boolean);
+    const productSlugs = slugs.length ? slugs : brief.chapter_slug ? [brief.chapter_slug] : [];
+    ({ postId } = await postToInstagramCarouselFeed(images, caption, taggedUsernames, { productSlugs }));
   } else {
     if (!brief.image_url) throw new Error("Generate or attach an image before posting");
-    ({ postId } = await postToInstagramFeed(resolveImageUrl(brief.image_url, brand.siteUrl), caption, taggedUsernames));
+    ({ postId } = await postToInstagramFeed(resolveImageUrl(brief.image_url, brand.siteUrl), caption, taggedUsernames, {
+      productSlugs: brief.chapter_slug ? [brief.chapter_slug] : [],
+    }));
   }
 
   const { error } = await supabase

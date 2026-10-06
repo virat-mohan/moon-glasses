@@ -1,6 +1,8 @@
 import { getSetting } from "@/lib/settings";
 import { getInstagramConnection } from "@/lib/instagram-connection";
 import { voiceGate } from "@/lib/brand-voice";
+import { planTagging, logTagFallback } from "@/lib/instagram-shopping";
+import { buildProductTags, buildReelProductTags, decideTagFallback, mapCarouselProducts } from "@/lib/instagram-shopping-core";
 
 /** Brand book lock: a "block" in the caption stops the publish (thrown, like every other publish failure here). */
 function assertCaptionOnBrand(caption: string, where: string, format: "post" | "reel" = "post") {
@@ -52,6 +54,21 @@ async function igPost(auth: PublishAuth, path: string, body: Record<string, unkn
 }
 
 /**
+ * Creates a media container with optional product_tags. Tagging must never break a post: if Instagram
+ * rejects the call while tags are attached, retry the same call once WITHOUT them.
+ */
+async function createContainerSafely(auth: PublishAuth, body: Record<string, unknown>, productTags?: unknown[]) {
+  const hadTags = !!productTags && productTags.length > 0;
+  try {
+    return await igPost(auth, `${auth.igUserId}/media`, hadTags ? { ...body, product_tags: productTags } : body);
+  } catch (err) {
+    if (decideTagFallback(hadTags, false) === "throw") throw err;
+    logTagFallback(err instanceof Error ? err.message : String(err));
+    return await igPost(auth, `${auth.igUserId}/media`, body);
+  }
+}
+
+/**
  * Meta fetches and processes image_url asynchronously after a media
  * container is created — publishing (or referencing it as a carousel child)
  * before it reports FINISHED fails with "Media ID is not available"
@@ -93,16 +110,23 @@ function buildUserTags(usernames?: string[]) {
   return usernames.map((username) => ({ username: username.replace(/^@/, ""), x: 0.5, y: 0.5 }));
 }
 
-export async function postToInstagramFeed(imageUrl: string, caption: string, taggedUsernames?: string[]) {
+export async function postToInstagramFeed(
+  imageUrl: string,
+  caption: string,
+  taggedUsernames?: string[],
+  opts: { productSlugs?: string[] } = {}
+) {
   assertCaptionOnBrand(caption, "Instagram feed post");
   const auth = await getPublishAuth();
   const { igUserId } = auth;
 
-  const created = await igPost(auth, `${igUserId}/media`, {
-    image_url: imageUrl,
-    caption,
-    user_tags: buildUserTags(taggedUsernames),
-  });
+  const plan = await planTagging(opts.productSlugs ?? []);
+  const ids = plan.decision === "tag" ? (plan.ids.filter(Boolean) as string[]) : [];
+  const created = await createContainerSafely(
+    auth,
+    { image_url: imageUrl, caption, user_tags: buildUserTags(taggedUsernames) },
+    ids.length ? buildProductTags(ids) : undefined
+  );
   await waitForMediaReady(auth, created.id);
   const published = await igPost(auth, `${igUserId}/media_publish`, { creation_id: created.id });
 
@@ -121,20 +145,30 @@ export async function postToInstagramCarouselFeed(
   imageUrls: string[],
   caption: string,
   taggedUsernames?: string[],
-  opts: { collaborators?: string[]; tagFirstSlideOnly?: boolean } = {}
+  // productSlugs: slide i gets product i when counts match, else the first product on slide 1.
+  opts: { collaborators?: string[]; tagFirstSlideOnly?: boolean; productSlugs?: (string | undefined)[] } = {}
 ) {
   assertCaptionOnBrand(caption, "Instagram carousel post");
   const auth = await getPublishAuth();
   const { igUserId } = auth;
   if (imageUrls.length < 2) throw new Error("A carousel post needs at least 2 images");
 
+  const slugs = opts.productSlugs ?? [];
+  const plan = await planTagging(slugs);
+  const perSlide = plan.decision === "tag" ? mapCarouselProducts(imageUrls.length, plan.ids) : [];
+
   const childIds: string[] = [];
   for (const [i, imageUrl] of imageUrls.entries()) {
-    const item = await igPost(auth, `${igUserId}/media`, {
-      image_url: imageUrl,
-      is_carousel_item: true,
-      user_tags: opts.tagFirstSlideOnly && i > 0 ? undefined : buildUserTags(taggedUsernames),
-    });
+    const slideIds = perSlide[i];
+    const item = await createContainerSafely(
+      auth,
+      {
+        image_url: imageUrl,
+        is_carousel_item: true,
+        user_tags: opts.tagFirstSlideOnly && i > 0 ? undefined : buildUserTags(taggedUsernames),
+      },
+      slideIds?.length ? buildProductTags(slideIds) : undefined
+    );
     await waitForMediaReady(auth, item.id);
     childIds.push(item.id);
   }
@@ -415,6 +449,8 @@ export async function postToInstagramStory(imageUrl: string) {
  * /admin/ad-briefs, where the admin needs to actually see why a post failed
  * rather than have it silently no-op.
  */
+// NOTE: the Graph API has no product sticker for Stories, so stories are never product-tagged here.
+// Story product tags stay manual in the Instagram app.
 export async function postImageToInstagramStory(imageUrl: string, linkUrl?: string) {
   const auth = await getPublishAuth();
   const created = await igPost(auth, `${auth.igUserId}/media`, {
@@ -440,16 +476,22 @@ export async function postVideoToInstagramStory(videoUrl: string) {
 }
 
 /** Publishes a Reel from a public video URL (MP4/MOV, 3s–15min). Video processing is slower than images, so this waits longer. */
-export async function postReelToInstagram(videoUrl: string, caption: string, coverUrl?: string) {
+export async function postReelToInstagram(videoUrl: string, caption: string, coverUrl?: string, opts: { productSlugs?: string[] } = {}) {
   assertCaptionOnBrand(caption, "Instagram reel", "reel");
   const auth = await getPublishAuth();
-  const created = await igPost(auth, `${auth.igUserId}/media`, {
-    media_type: "REELS",
-    video_url: videoUrl,
-    caption,
-    share_to_feed: true,
-    ...(coverUrl ? { cover_url: coverUrl } : {}),
-  });
+  const plan = await planTagging(opts.productSlugs ?? []);
+  const ids = plan.decision === "tag" ? (plan.ids.filter(Boolean) as string[]) : [];
+  const created = await createContainerSafely(
+    auth,
+    {
+      media_type: "REELS",
+      video_url: videoUrl,
+      caption,
+      share_to_feed: true,
+      ...(coverUrl ? { cover_url: coverUrl } : {}),
+    },
+    ids.length ? buildReelProductTags(ids) : undefined
+  );
   await waitForMediaReady(auth, created.id, 5 * 60_000);
   const published = await igPost(auth, `${auth.igUserId}/media_publish`, { creation_id: created.id });
   return { postId: published.id as string };

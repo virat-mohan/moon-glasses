@@ -58,6 +58,13 @@ type Asset = { id: string; url: string; label: string | null; tags: string[] };
 
 export default function AdBriefsPage() {
   const [briefs, setBriefs] = useState<Brief[]>([]);
+  const [shoppingOn, setShoppingOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/admin/instagram/shopping")
+      .then((r) => r.json())
+      .then((d) => setShoppingOn(!!d.eligible))
+      .catch(() => setShoppingOn(false));
+  }, []);
   const [loading, setLoading] = useState(true);
   const [chapterSlug, setChapterSlug] = useState(chapters[0]?.slug ?? "");
   const [isGeneric, setIsGeneric] = useState(false);
@@ -866,6 +873,16 @@ export default function AdBriefsPage() {
                   </button>
                 </div>
               </div>
+              {(brief.chapter_slug || (brief.chapter_slugs && brief.chapter_slugs.length > 0)) && (
+                <p className="mt-1 text-micro text-secondary-text">
+                  {shoppingOn
+                    ? `Will be tagged: ${(brief.chapter_slugs && brief.chapter_slugs.length > 0 ? brief.chapter_slugs : [brief.chapter_slug as string])
+                        .map((s) => chapters.find((c) => c.slug === s)?.name ?? s)
+                        .join(" · ")}`
+                    : "Tagging off: Instagram Shopping isn't connected yet"}
+                  . Stories can't carry product tags through the API; add those in the app.
+                </p>
+              )}
 
               <div className="mt-4 grid gap-6 md:grid-cols-[280px_1fr]">
                 <div>
