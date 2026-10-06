@@ -33,16 +33,22 @@ export default async function PayWithAPostTermsPage() {
         <div className="mt-8 border-2 border-[var(--moon-gold)] p-5 font-sans text-body-s text-ink">
           <p className="font-bold uppercase tracking-[0.05em]">In short</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Order with Pay With A Post. You pay nothing.</li>
-            <li>Post your photo with your code.</li>
+            <li>Pick a pair and choose Pay With A Post at checkout. You pay nothing.</li>
+            <li>We make your own code and post the moment you order. There&apos;s nothing to enter.</li>
             <li>
-              When <strong>{r.salesToShip}</strong> people buy with your code, your pair ships free.
+              Post it. When <strong>{r.salesToShip}</strong> people buy with your code, your pair ships free.
             </li>
             <li>
               Every <strong>{r.salesPerFreeCode}</strong> more sales = a free code for another pair (worth up to{" "}
               {rupees(r.freeCodeValueRupees)}, valid {r.freeCodeValidDays} days).
             </li>
           </ul>
+          <Link
+            href="/?utm_source=pwap#shop"
+            className="mt-5 flex min-h-[48px] w-full items-center justify-center bg-[var(--moon-gold)] px-8 py-3.5 font-sans text-body-s font-bold uppercase tracking-[0.1em] text-black transition hover:brightness-110 sm:inline-flex sm:w-auto"
+          >
+            Order now
+          </Link>
         </div>
 
         <div className="mt-10 space-y-8 font-sans text-body-s leading-relaxed text-ink">
