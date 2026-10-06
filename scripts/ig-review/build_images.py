@@ -56,3 +56,11 @@ for o in ps:
     centered(dr, f"{colour}  ·  ₹{o['price']:,}  ·  free shipping".upper() if colour else f"₹{o['price']:,}", ImageFont.truetype(SANS, 28), 1760, MUTED)
     st.save(os.path.join(d, "story.jpg"), quality=88, optimize=True, progressive=True)
     print("ok", o["slug"])
+
+# Standard: every post and story carries the Moon Glasses logo top-left.
+sys.path.insert(0, os.path.dirname(__file__))
+from stamp_logo import stamp_folder
+for o in ps:
+    d = os.path.join(OUT, o["slug"])
+    if os.path.exists(os.path.join(d, ".logo")): os.remove(os.path.join(d, ".logo"))  # images were just rebuilt unstamped
+    stamp_folder(d)
