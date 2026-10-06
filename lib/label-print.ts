@@ -61,12 +61,15 @@ function drawDuplicatedPage(outDoc: PDFDocument, embedded: PDFEmbeddedPage) {
  * call (the normal ship-time case) returns a one-page PDF with two copies
  * of that one label.
  */
-export async function buildDuplicatedLabelSheet(shipmentIds: string[]): Promise<Uint8Array> {
+export async function buildDuplicatedLabelSheet(
+  shipmentIds: string[],
+  knownLabelUrl?: string | null
+): Promise<Uint8Array> {
   if (shipmentIds.length === 0) {
     throw new Error("No Shiprocket shipment ids given");
   }
 
-  const batchLabelUrl = await generateShiprocketLabelsBatch(shipmentIds);
+  const batchLabelUrl = knownLabelUrl || (await generateShiprocketLabelsBatch(shipmentIds));
   if (!batchLabelUrl) {
     throw new Error("Shiprocket did not return a label for the given shipment(s)");
   }
@@ -88,9 +91,13 @@ export async function buildDuplicatedLabelSheet(shipmentIds: string[]): Promise<
 }
 
 /** Builds and uploads a single shipment's duplicated (2-copy) label sheet, returning its public URL — for attaching to the ship-time warehouse email. */
-export async function buildAndUploadDuplicatedLabel(shipmentId: string, orderId: string): Promise<string | null> {
+export async function buildAndUploadDuplicatedLabel(
+  shipmentId: string,
+  orderId: string,
+  knownLabelUrl?: string | null
+): Promise<string | null> {
   try {
-    const bytes = await buildDuplicatedLabelSheet([shipmentId]);
+    const bytes = await buildDuplicatedLabelSheet([shipmentId], knownLabelUrl);
     const supabase = getSupabaseServerClient();
     const path = `labels/${orderId}-${Date.now()}.pdf`;
     const { error } = await supabase.storage
