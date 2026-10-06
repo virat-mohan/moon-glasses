@@ -11,6 +11,7 @@ import { Product360Viewer } from "@/components/chapter/Product360Viewer";
 import { MobileProductGallery } from "@/components/chapter/MobileProductGallery";
 import { CatalogueGrid } from "@/components/collection/CatalogueCard";
 import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
+import { AddToCartButton } from "@/components/chapter/AddToCartButton";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import { PRICE_NOTE } from "@/lib/price-copy";
 import { ViewContentTracker } from "@/components/tracking/ViewContentTracker";
@@ -144,15 +145,22 @@ export default async function ChapterPage({ params }: { params: Promise<{ slug: 
     ],
   };
 
-  // "Get it" sits right under the photo (phone) / under the price (desktop). One button, no add-to-cart.
+  // "Get it" and "Add to Cart" sit right under the photo (phone) / under the price (desktop).
   const getIt = (
     <>
-      <BuyNowButton
-        chapter={chapter}
-        image={chapterImageSrc(chapter.folder, chapter.primary)}
-        disabled={stockLabel === "out-of-stock"}
-        variant="primary"
-      />
+      <div className="grid grid-cols-2 gap-3 md:flex md:flex-wrap [&>a]:min-h-[52px] [&>a]:w-full [&>button]:min-h-[52px] [&>button]:py-3.5 md:[&>a]:w-auto md:[&>button]:min-w-[200px]">
+        <BuyNowButton
+          chapter={chapter}
+          image={chapterImageSrc(chapter.folder, chapter.primary)}
+          disabled={stockLabel === "out-of-stock"}
+          variant="primary"
+        />
+        <AddToCartButton
+          chapter={chapter}
+          image={chapterImageSrc(chapter.folder, chapter.primary)}
+          disabled={stockLabel === "out-of-stock"}
+        />
+      </div>
       {postBarterEnabled && stockLabel !== "out-of-stock" && (
         <p className="mt-3 font-sans text-body-s font-bold text-ink">
           Skip the payment — get it with{" "}
