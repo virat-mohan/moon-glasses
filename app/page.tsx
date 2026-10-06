@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MobileCatalogue } from "@/components/collection/MobileCatalogue";
+import { MobileCatalogue, MobileCatalogueGrid } from "@/components/collection/MobileCatalogue";
 import { CatalogueGrid } from "@/components/collection/CatalogueCard";
 import { CollectionExplorer } from "@/components/collection/CollectionExplorer";
 import { NewsletterBlock } from "@/components/newsletter/NewsletterBlock";
@@ -92,6 +92,8 @@ export default async function Home() {
 
   const vibeItems = (await getCurrentVibe([...collection, ...limitedChapters])).map(toItem);
   const collectionItems = collection.map(toItem);
+  // Every live pair for the "All Pairs" list: the Collection first, then the Limited Edition Drop.
+  const allItems = [...collectionItems, ...limitedItems];
 
   return (
     <>
@@ -108,7 +110,7 @@ export default async function Home() {
               Once its gone, its gone
             </p>
             <h2 className="mb-8 font-display text-display-m uppercase text-ink md:mb-10">Limited Edition Drop</h2>
-            <CollectionExplorer items={limitedItems} />
+            <CollectionExplorer items={limitedItems} modelFirst />
           </section>
         )}
 
@@ -139,6 +141,21 @@ export default async function Home() {
             <CollectionExplorer items={collectionItems} />
           </div>
         </section>
+
+        {allItems.length > 0 && (
+          <section id="all-pairs" className="scroll-mt-20 border-t border-divider pb-16 pt-12 md:pb-24">
+            <h2 className="font-display text-display-m uppercase text-ink">All Pairs</h2>
+            <p className="mt-3 max-w-md font-sans text-body-s text-secondary-text">
+              Every pair, the Collection and the Limited Edition Drop. Tap a photo to see it worn.
+            </p>
+            <div className="mt-8 md:hidden">
+              <MobileCatalogueGrid items={allItems} />
+            </div>
+            <div className="mt-10 hidden md:block">
+              <CatalogueGrid items={allItems.map((i) => ({ ...i, startModel: false }))} columnsClassName="md:grid-cols-4" />
+            </div>
+          </section>
+        )}
 
         {(postBarterEnabled || launchSoon) && <PayWithAPostBanner launchSoon={launchSoon} />}
 

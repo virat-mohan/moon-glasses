@@ -45,6 +45,7 @@ export default async function LimitedSeriesPage() {
         ) : (
           <div className="mt-10">
             <CollectionExplorer
+              modelFirst
               items={pinFirst(
                 groupByStyle(limitedSeries).map((chapter) => ({
                   chapter,

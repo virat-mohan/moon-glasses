@@ -24,7 +24,7 @@ const MIN_PAIRS_PER_STYLE_CHIP = 1;
  * style+rim. Each step resets the ones after it. Clicking an already-active
  * chip clears it (and everything after it) rather than doing nothing.
  */
-export function CollectionExplorer({ items }: { items: Item[] }) {
+export function CollectionExplorer({ items, modelFirst = false }: { items: Item[]; modelFirst?: boolean }) {
   const [style, setStyle] = useState<string | null>(null);
   const [rim, setRim] = useState<string | null>(null);
   const [lens, setLens] = useState<string | null>(null);
@@ -166,7 +166,7 @@ export function CollectionExplorer({ items }: { items: Item[] }) {
       ) : (
         <>
           <div className="mt-6 md:hidden">
-            <MobileCatalogue key={`${style}-${rim}-${lens}`} items={filteredItems.slice(0, 6)} />
+            <MobileCatalogue key={`${style}-${rim}-${lens}`} items={filteredItems.slice(0, 6)} modelFirst={modelFirst} />
             {filteredItems.length > 6 && (
               <div className="mt-10">
                 <MobileCatalogueGrid items={filteredItems.slice(6)} />

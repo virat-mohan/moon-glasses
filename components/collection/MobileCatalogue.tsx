@@ -7,8 +7,11 @@ import { CatalogueCard, PRODUCT_BG, PRODUCT_SHOT_CLASS, type CatalogueItem } fro
 import { chapterImageSrc, shortProductName } from "@/lib/chapters";
 import { PRICE_NOTE_SHORT } from "@/lib/price-copy";
 
-/** Mobile-only catalogue: one big photo per product, tap to switch model/product, swipe for the next pair. */
-export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
+/**
+ * Mobile-only catalogue: one big photo per product, tap to switch model/product, swipe for the next pair.
+ * `modelFirst`: every card opens on the model (Limited Edition Drop); otherwise they alternate.
+ */
+export function MobileCatalogue({ items, modelFirst = false }: { items: CatalogueItem[]; modelFirst?: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
@@ -43,7 +46,7 @@ export function MobileCatalogue({ items }: { items: CatalogueItem[] }) {
       >
         {items.map((item, i) => (
           <div key={item.chapter.slug} className="w-full flex-none snap-center">
-            <CatalogueCard {...item} startModel={i % 2 === 0} swipeFlips={false} arrows={false} />
+            <CatalogueCard {...item} startModel={modelFirst || i % 2 === 0} swipeFlips={false} arrows={false} />
           </div>
         ))}
       </div>
