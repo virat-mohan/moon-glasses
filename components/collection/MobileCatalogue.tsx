@@ -66,7 +66,7 @@ export function MobileCatalogueGrid({ items }: { items: CatalogueItem[] }) {
   return (
     <div>
       <p className="mb-3 font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
-        More pairs · Tap or swipe a photo to switch product / model · Tap the underlined name for its page
+        All pairs · Tap or swipe a photo to switch product / model · Tap the underlined name for its page
       </p>
       <div className="grid grid-cols-2 gap-x-3 gap-y-6">
         {items.map((item) => (

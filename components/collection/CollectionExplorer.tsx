@@ -167,9 +167,10 @@ export function CollectionExplorer({ items, modelFirst = false }: { items: Item[
         <>
           <div className="mt-6 md:hidden">
             <MobileCatalogue key={`${style}-${rim}-${lens}`} items={filteredItems.slice(0, 6)} modelFirst={modelFirst} />
-            {filteredItems.length > 6 && (
+            {/* All of this section's pairs, product first, right under the model swipe. */}
+            {filteredItems.length > 1 && (
               <div className="mt-10">
-                <MobileCatalogueGrid items={filteredItems.slice(6)} />
+                <MobileCatalogueGrid items={filteredItems} />
               </div>
             )}
           </div>
