@@ -1,6 +1,6 @@
 """Stamps the Moon Glasses logo top-left on every Instagram image (standard for all posts and stories).
-Product-on-paper images get the gold logo directly; photos get it on a soft paper plate so it stays readable.
-Stories start lower (230px) to clear Instagram's own profile bar. Idempotent: a <slug>/.logo marker stops a folder being stamped twice. Re-run build_images.py (which calls
+The logo is placed on a transparent background (no plate); photos get a soft shadow so it stays readable.
+Stories sit 110px down, just clear of the edge. Idempotent: a <slug>/.logo marker stops a folder being stamped twice. Re-run build_images.py (which calls
 stamp()) to regenerate from sources. Usage: python3 scripts/ig-review/stamp_logo.py [slug ...]  (default: all)"""
 import os, sys
 from PIL import Image, ImageDraw, ImageChops
@@ -15,17 +15,20 @@ def _logo():
     return im.resize((WIDTH, round(im.height * WIDTH / im.width)), Image.LANCZOS)
 
 def stamp(img, plate, top=MARGIN):
-    img = img.convert("RGB"); lg = _logo()
+    """Logo on a transparent background. On photos it gets a soft shadow (no plate) so it stays readable."""
+    base = img.convert("RGBA"); lg = _logo()
     if plate:
-        pad = 22; box = (MARGIN - pad, top - pad, MARGIN + lg.width + pad, top + lg.height + pad)
-        layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
-        ImageDraw.Draw(layer).rounded_rectangle(box, radius=18, fill=PAPER + (225,))
-        img = Image.alpha_composite(img.convert("RGBA"), layer).convert("RGB")
-    base = img.convert("RGBA"); base.alpha_composite(lg, (MARGIN, top)); return base.convert("RGB")
+        from PIL import ImageFilter
+        sh = Image.new("RGBA", base.size, (0, 0, 0, 0))
+        mask = Image.new("L", lg.size, 0); mask.paste(lg.getchannel("A"))
+        dark = Image.new("RGBA", lg.size, (0, 0, 0, 255)); dark.putalpha(mask.point(lambda v: v * 0.55))
+        sh.alpha_composite(dark, (MARGIN, top + 3))
+        base.alpha_composite(sh.filter(ImageFilter.GaussianBlur(5)))
+    base.alpha_composite(lg, (MARGIN, top)); return base.convert("RGB")
 
 def stamp_folder(d):
     if os.path.exists(os.path.join(d, ".logo")): return False
-    for f, plate, top in (("slide1.jpg", False, MARGIN), ("slide2.jpg", True, MARGIN), ("story.jpg", True, 230)):
+    for f, plate, top in (("slide1.jpg", False, MARGIN), ("slide2.jpg", True, MARGIN), ("story.jpg", True, 110)):
         p = os.path.join(d, f)
         if os.path.exists(p):
             stamp(Image.open(p), plate, top).save(p, quality=88, optimize=True, progressive=True)
