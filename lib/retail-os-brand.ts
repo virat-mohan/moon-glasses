@@ -34,7 +34,7 @@ export type BrandProfile = {
 // share one in-repo source. Values unchanged.
 export const DEFAULT_BRAND_PROFILE: BrandProfile = {
   brandName: "Moonglasses",
-  tagline: "Light tints, good vibe",
+  tagline: "Light tints, good vibes",
   voice:
     "Fashion-forward, editorial, confident — dark/nightlife imagery paired with restrained, minimal copy. Short lines, no hard sell. Built for a young, style-conscious Indian audience.",
   productNoun: "sunglasses",

@@ -22,7 +22,7 @@ export function Hero() {
 
       <div className="relative flex flex-col items-center px-6 text-center">
         <p className="font-sans text-body-s uppercase tracking-[0.15em] text-white/70">
-          Light tints, good vibe.
+          Light tints, good vibes.
         </p>
 
         <div className="mt-10">

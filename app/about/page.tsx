@@ -11,7 +11,7 @@ export default function AboutPage() {
             Two Founders and Only The Pairs We Would Actually Wear
           </p>
           <h1 className="mt-3 font-display text-heading-xl uppercase leading-[0.95] text-ink md:text-display-m">
-            Light tints, good vibe.
+            Light tints, good vibes.
           </h1>
 
           <div className="mt-8 space-y-6 text-body text-ink">

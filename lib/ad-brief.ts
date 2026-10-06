@@ -122,9 +122,9 @@ Return ONLY a JSON object, no commentary, in this exact shape:
         : `"imagePrompts": "an array of detailed visual scene descriptions for an image generator, one per carousel card — YOU decide how many cards this ad actually needs (Meta allows 2 to 10; most ads work best with 3-6), each a distinct angle/setting/moment (never near-identical shots), together telling a small visual story or showing the product from different real-world contexts. Do not pad to a round number — stop once the story is told. Describe setting, lighting, mood and how the product should be worn/used in each. Do not describe any on-image text, headline or logo — clean lifestyle photos with no text baked in."`
       : `"imagePrompt": "a detailed visual scene description for an image generator — describe the setting, lighting, mood and how the product should be worn/used. Do not describe any on-image text, headline or logo — the image should be a clean lifestyle photo with no text baked in.",
   "creativeStyle": "one of: ai_photo, real_photo_text_overlay — YOU decide which creative approach actually fits this specific ad, don't default to one. Pick real_photo_text_overlay for announcement-driven angles (a new drop, back in stock) — real product photography with a short on-image label. Never a scarcity or urgency angle. Pick ai_photo for aspirational/editorial/brand-story angles where a clean, text-free lifestyle photo feels more premium and sits more naturally in an Instagram feed.",
-  "overlayText": "ONLY meaningful when creativeStyle is real_photo_text_overlay: a short, bold line of on-image text, under 6 words (e.g. 'THE DROP' or 'BACK IN STOCK' or 'LIGHT TINTS, GOOD VIBE.'; a label, never a command or urgency) to render directly on top of the photo. Leave as an empty string when creativeStyle is ai_photo."`
+  "overlayText": "ONLY meaningful when creativeStyle is real_photo_text_overlay: a short, bold line of on-image text, under 6 words (e.g. 'THE DROP' or 'BACK IN STOCK' or 'LIGHT TINTS, GOOD VIBES.'; a label, never a command or urgency) to render directly on top of the photo. Leave as an empty string when creativeStyle is ai_photo."`
   },
-  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, ALWAYS including MoonGlasses and LightTintsGoodVibe, mixing broad reach tags (e.g. streetwear, travel) with niche/branded ones (e.g. the brand name, product name) — ready to prefix with # and post"]
+  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, ALWAYS including MoonGlasses and LightTintsGoodVibes, mixing broad reach tags (e.g. streetwear, travel) with niche/branded ones (e.g. the brand name, product name) — ready to prefix with # and post"]
 }`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -210,7 +210,7 @@ Apply that instruction. Keep everything else about the brief's voice and intent 
   "primaryText": "string, 1-3 sentences, the actual ad body copy",
   "cta": "LEARN_MORE (the brand default; SIGN_UP only when the ad is about signing up). Never SHOP_NOW.",
   "targetAudience": "one line describing who this ad should target (interests/demographics), for setting up Meta ad targeting",
-  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, ALWAYS including MoonGlasses and LightTintsGoodVibe"]
+  "hashtags": ["array of 8-15 relevant Instagram hashtags as plain strings without the # symbol, ALWAYS including MoonGlasses and LightTintsGoodVibes"]
 }`;
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {

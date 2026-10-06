@@ -15,7 +15,7 @@ test("tall image crops to 4:5, wide to 1.91:1, never enlarging", () => {
 test("caption has credit, hashtags, fits and passes voice", () => {
   const c = buildGridCaption("@Some.Fan_1", (x) => (hasBlock(checkVoice(x, "social")) ? "blocked" : null));
   assert.ok(c.startsWith("📸 @Some.Fan_1"));
-  assert.ok(c.includes("#MoonGlasses") && c.includes("#LightTintsGoodVibe"));
+  assert.ok(c.includes("#MoonGlasses") && c.includes("#LightTintsGoodVibes"));
   assert.ok(c.length <= CAPTION_MAX);
   assert.throws(() => buildGridCaption("!!!"));
 });

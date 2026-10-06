@@ -19,7 +19,7 @@ export function decideFit(width: number, height: number): FitDecision {
 export function buildGridCaption(username: string, voiceBlock?: (caption: string) => string | null): string {
   const clean = username.replace(/^@/, "").replace(/[^A-Za-z0-9._]/g, "");
   if (!clean) throw new Error("No username to credit");
-  const caption = `📸 @${clean}\n\nlight tints, good vibe.\n\n#MoonGlasses #LightTintsGoodVibe`;
+  const caption = `📸 @${clean}\n\nlight tints, good vibes.\n\n#MoonGlasses #LightTintsGoodVibes`;
   if (caption.length > CAPTION_MAX) throw new Error("Caption too long");
   const blocked = voiceBlock?.(caption);
   if (blocked) throw new Error(`Caption fails brand voice: ${blocked}`);

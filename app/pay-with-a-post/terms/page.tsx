@@ -34,7 +34,7 @@ export default async function PayWithAPostTermsPage() {
           <p className="font-bold uppercase tracking-[0.05em]">In short</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Pick a pair and choose Pay With A Post at checkout. You pay nothing.</li>
-            <li>We make your own code and post the moment you order. There&apos;s nothing to enter.</li>
+            <li>We make your own custom image and code the moment you order. There&apos;s nothing to enter.</li>
             <li>
               Post it. When <strong>{r.salesToShip}</strong> people buy with your code, your pair ships free.
             </li>

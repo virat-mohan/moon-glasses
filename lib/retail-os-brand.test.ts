@@ -17,7 +17,7 @@ test("active brand is Moon-glasses and config is valid", () => {
 
 test("identity fields preserve the previous hardcoded values", () => {
   assert.equal(brand.profile.brandName, "Moonglasses");
-  assert.equal(brand.profile.tagline, "Light tints, good vibe");
+  assert.equal(brand.profile.tagline, "Light tints, good vibes");
   assert.equal(brand.profile.siteUrl, "https://moon-glasses.store");
   assert.equal(brand.profile.productNoun, "sunglasses");
   assert.equal(brand.profile.instagramHandle, "@moonglassesonline");
@@ -30,7 +30,7 @@ test("metadata surface values are unchanged", () => {
     "Moonglasses™ — fashion eyewear for after dark. The Collection from ₹1,499, the Limited Series from ₹1,999. Ships across India.",
   );
   assert.deepEqual(brand.keywords, ["fashion sunglasses India", "MOON GLASSES", "eyewear", "aviator sunglasses"]);
-  assert.equal(`${titleBrandName()} — ${brand.profile.tagline}`, "Moonglasses™ — Light tints, good vibe");
+  assert.equal(`${titleBrandName()} — ${brand.profile.tagline}`, "Moonglasses™ — Light tints, good vibes");
   assert.equal(`%s — ${titleBrandName()}`, "%s — Moonglasses™");
   assert.equal(brand.assets.ogImagePath, "/images/brand/moon-glasses-logo.png");
   assert.equal(`${brand.profile.siteUrl}${brand.assets.orgLogoPath}`, "https://moon-glasses.store/images/brand/moon-glasses-logo.png");

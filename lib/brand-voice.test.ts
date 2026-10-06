@@ -16,7 +16,7 @@ test("the brand guide's own sample copy passes clean", () => {
   ];
   for (const s of samples) {
     for (const kind of ["site", "whatsapp", "ad"] as const) assert.deepEqual(checkVoice(s, kind), [], `${kind}: ${s}`);
-    assert.deepEqual(checkVoice(`${s}\n\n#MoonGlasses #LightTintsGoodVibe`, "social"), [], `social: ${s}`);
+    assert.deepEqual(checkVoice(`${s}\n\n#MoonGlasses #LightTintsGoodVibes`, "social"), [], `social: ${s}`);
     assert.deepEqual(checkVoice(`${s}\n\n${BRAND_VOICE.emailSignOff}`, "email"), [], `email: ${s}`);
   }
 });
@@ -118,8 +118,10 @@ test("Virat's answers, 2 Oct 2026", () => {
   assert.ok(rules("Welcome to Moon Glasses.").includes("warn:brand-name"));
   assert.ok(!rules("Welcome to Moonglasses. #MoonGlasses").includes("warn:brand-name"));
   // Stale taglines.
-  for (const t of ["See A Brighter You", "Light Tints Big Mood", "Light tints, big vibe"]) assert.ok(rules(t).includes("warn:stale-tagline"), t);
+  for (const t of ["See A Brighter You", "Light Tints Big Mood", "Light tints, big vibe", "Light tints, good vibe", "#LightTintsGoodVibe"]) assert.ok(rules(t).includes("warn:stale-tagline"), t);
   assert.ok(!rules(BRAND_VOICE.tagline).includes("warn:stale-tagline"));
+  assert.ok(!rules("Light tints, good vibes.").includes("warn:stale-tagline"));
+  assert.ok(!rules("#LightTintsGoodVibes").includes("warn:stale-tagline"));
   // Weekly mix: block for ai/social/email, warn elsewhere.
   for (const kind of ["ai", "social", "email"] as const) assert.ok(hasBlock(checkVoice("A new mix every Friday.", kind)), kind);
   assert.ok(rules("Weekly mix drops soon", "site").includes("warn:weekly-mix-not-live"));
@@ -127,7 +129,7 @@ test("Virat's answers, 2 Oct 2026", () => {
   // Hashtags and caption length.
   assert.ok(rules("Somewhere the night looks better.", "social").includes("warn:missing-hashtag"));
   assert.ok(!rules("Somewhere the night looks better. #MoonGlasses", "social").includes("warn:missing-hashtag"));
-  const tags = " #MoonGlasses #LightTintsGoodVibe";
+  const tags = " #MoonGlasses #LightTintsGoodVibes";
   assert.ok(rules("a".repeat(301) + tags, "social").includes("warn:caption-length"));
   assert.ok(!rules("Somewhere the night looks better." + tags, "social").includes("warn:caption-length"));
   assert.ok(checkVoice("b".repeat(140) + tags, "social", { format: "reel" }).some((f) => f.rule === "caption-length"));
@@ -140,7 +142,7 @@ test("Virat's answers, 2 Oct 2026", () => {
   assert.deepEqual(rules(BRAND_VOICE.heroCta, "site"), []);
   assert.ok(rules("Shop the collection", "site").includes("warn:push-imperative"));
   const p = brandVoicePrompt("social");
-  for (const s of ["Moonglasses", "Light tints, good vibe", "#MoonGlasses", "#LightTintsGoodVibe", "two founders", "Bodoni Moda", "300"]) assert.ok(p.includes(s), s);
+  for (const s of ["Moonglasses", "Light tints, good vibes", "#MoonGlasses", "#LightTintsGoodVibes", "two founders", "Bodoni Moda", "300"]) assert.ok(p.includes(s), s);
   assert.ok(brandVoicePrompt("email").includes("— Moonglasses"));
   assert.ok(brandVoicePrompt("ad").includes("LEARN_MORE"));
 });

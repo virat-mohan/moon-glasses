@@ -21,7 +21,7 @@
  *
  * 6. Virat's answers to the open questions (Virat, 2 Oct 2026): two founders,
  *    gold #E7C77A, Bodoni Moda serif, "Moonglasses" in running copy, tagline
- *    "Light tints, good vibe", non-imperative hero CTA, email sign-off, hashtags,
+ *    "Light tints, good vibes", non-imperative hero CTA, email sign-off, hashtags,
  *    caption limits, LEARN_MORE ad button, no weekly mix yet, sender stays
  *    orders@moon-glasses.store, "Ted Smith" alone blocked.
  *
@@ -45,15 +45,16 @@ export const BRAND_VOICE = {
   brand: "Moonglasses",
   logoName: "MOON GLASSES™",
   /** Virat, 2 Oct 2026. */
-  tagline: "Light tints, good vibe",
+  /** Virat, 3 Oct 2026: plural, "good vibes" (was "good vibe" on 2 Oct). Hashtag #LightTintsGoodVibes. */
+  tagline: "Light tints, good vibes",
   /** Virat, 2 Oct 2026: two founders (the pdf's "three" is wrong). */
   founders: 2,
   /** Virat, 2 Oct 2026. */
   heroCta: "See the edit",
   /** Virat, 2 Oct 2026. */
-  emailSignOff: "Light tints, good vibe.\n— Moonglasses",
+  emailSignOff: "Light tints, good vibes.\n— Moonglasses",
   /** Virat, 2 Oct 2026. */
-  hashtags: ["#MoonGlasses", "#LightTintsGoodVibe"],
+  hashtags: ["#MoonGlasses", "#LightTintsGoodVibes"],
   /** Virat, 2 Oct 2026: Instagram caption limits (characters). */
   captionMax: { post: 300, reel: 150 },
   /** Virat, 2 Oct 2026: default Meta ad button. */
@@ -169,7 +170,7 @@ export const BRAND_VOICE = {
     /** Paused / retired claims. */
     stale: ["Gift First", "5,000 followers", "5000 followers", "we ship first"],
     /** Retired taglines (Virat, 2 Oct 2026). */
-    staleTaglines: ["Light tints, big vibe", "See A Brighter You", "Light Tints Big Mood", "Light Tints. Big Mood", "Light tints, big mood"],
+    staleTaglines: ["Light tints, good vibe", "#LightTintsGoodVibe", "Light tints, big vibe", "See A Brighter You", "Light Tints Big Mood", "Light Tints. Big Mood", "Light tints, big mood"],
   },
   ownModelNames: ["Eclipse", "Voltage", "Blackout", "Halo", "Luna", "Vinyl", "Encore", "Neon", "Velvet", "Midnight", "Nightrider", "Disco", "Glitch", "Siren", "Echo"],
   /** Supplier (Ted Smith) model names: never in customer-facing copy. */
@@ -259,7 +260,8 @@ export function checkVoice(text: string, kind: VoiceKind, opts: VoiceOptions = {
 
   // Retired taglines.
   for (const tag of BRAND_VOICE.facts.staleTaglines) {
-    const m = t.match(new RegExp(esc(tag).replace(/\\\.|,/g, "[.,]?").replace(/ /g, "\\s*"), "i"));
+    // End boundary matters: the retired "good vibe" must not match the current "good vibes".
+    const m = t.match(new RegExp(esc(tag).replace(/\\\.|,/g, "[.,]?").replace(/ /g, "\\s*") + "(?![\\p{L}\\p{N}])", "iu"));
     if (m) { add("warn", "stale-tagline", m[0], `The tagline is now "${BRAND_VOICE.tagline}".`); break; }
   }
 
@@ -326,7 +328,7 @@ export function checkVoice(text: string, kind: VoiceKind, opts: VoiceOptions = {
     const max = opts.format === "reel" ? BRAND_VOICE.captionMax.reel : BRAND_VOICE.captionMax.post;
     if (raw.trim().length > max) add("warn", "caption-length", `${raw.trim().length} chars`, `Keep ${opts.format === "reel" ? "reel" : "post"} captions to ${max} characters.`);
   }
-  if (kind === "email" && !/light tints, good vibe\.?\s*\n?\s*[—-]\s*moonglasses/i.test(raw))
+  if (kind === "email" && !/light tints, good vibes\.?\s*\n?\s*[—-]\s*moonglasses/i.test(raw))
     add("warn", "missing-sign-off", "", `Sign off "${BRAND_VOICE.emailSignOff.replace("\n", " ")}".`);
   if (kind === "site" || kind === "ad" || kind === "social") {
     for (const [label, alts] of [["Add to Cart", BRAND_VOICE.labels["Add to Cart"]], ["Add to Bag", BRAND_VOICE.labels["Add to Cart"]]] as const) {
