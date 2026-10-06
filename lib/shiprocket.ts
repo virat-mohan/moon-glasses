@@ -150,21 +150,68 @@ export type ReturnPickupInput = {
  * adjust field names here if it errors or the pickup doesn't show up
  * correctly on their side.
  */
+interface ShiprocketPickupAddress {
+  id?: number;
+  pickup_location: string;
+  name: string;
+  email?: string;
+  phone: string;
+  address: string;
+  address_2?: string;
+  city: string;
+  state: string;
+  country: string;
+  pin_code: string;
+}
+
+async function getWarehouseShippingAddress(pickupLocation: string): Promise<ShiprocketPickupAddress> {
+  try {
+    const res = await shiprocketFetch("/settings/company/pickup");
+    const addresses: ShiprocketPickupAddress[] = res?.data?.shipping_address || [];
+    const match = addresses.find(
+      (a) => a.pickup_location?.toLowerCase() === pickupLocation.toLowerCase()
+    );
+    if (match) return match;
+    if (addresses.length > 0) return addresses[0];
+  } catch (err) {
+    console.warn("Failed to fetch warehouse pickup address from Shiprocket, falling back", err);
+  }
+
+  return {
+    pickup_location: pickupLocation,
+    name: "Subhash",
+    address: "A-90, Central Market, Block A, Lajpat Nagar II",
+    address_2: "Near Central Market",
+    city: "South Delhi",
+    state: "Delhi",
+    country: "India",
+    pin_code: "110024",
+    email: "tech@viratmohan.com",
+    phone: "7531814707",
+  };
+}
+
 export async function createShiprocketReturnPickup(input: ReturnPickupInput) {
   const pickupLocation = await getSetting("SHIPROCKET_PICKUP_LOCATION");
   if (!pickupLocation) {
     throw new Error("SHIPROCKET_PICKUP_LOCATION is not set — add it in /admin/settings");
   }
 
+  const warehouse = await getWarehouseShippingAddress(pickupLocation);
+
   const [firstName, ...rest] = input.customerName.trim().split(/\s+/);
   const lastName = rest.join(" ") || firstName;
   const totalWeight = Math.max(0.1, input.items.reduce((sum, i) => sum + i.quantity, 0) * UNIT_WEIGHT_KG);
+
+  const [whFirstName, ...whRest] = (warehouse.name || pickupLocation).trim().split(/\s+/);
+  const whLastName = whRest.join(" ") || "Warehouse";
 
   const data = await shiprocketFetch("/orders/create/return", {
     method: "POST",
     body: JSON.stringify({
       order_id: `RET-${input.orderId}`,
       order_date: new Date().toISOString().slice(0, 16).replace("T", " "),
+      // 1. Pickup details = Customer location (where courier collects the parcel)
       pickup_customer_name: firstName,
       pickup_last_name: lastName,
       pickup_address: input.addressLine,
@@ -172,11 +219,24 @@ export async function createShiprocketReturnPickup(input: ReturnPickupInput) {
       pickup_state: input.state,
       pickup_country: "India",
       pickup_pincode: input.pincode,
-      pickup_email: input.customerEmail,
+      pickup_email: input.customerEmail || "noreply@shiprocket.com",
       pickup_phone: input.customerPhone.replace(/\D/g, "").slice(-10),
       pickup_isd_code: "91",
-      shipping_customer_name: pickupLocation,
       pickup_location: pickupLocation,
+
+      // 2. Shipping details = Warehouse destination (where courier delivers returned parcel)
+      shipping_customer_name: whFirstName,
+      shipping_last_name: whLastName,
+      shipping_address: warehouse.address,
+      shipping_address_2: warehouse.address_2 || "",
+      shipping_city: warehouse.city,
+      shipping_state: warehouse.state,
+      shipping_country: warehouse.country || "India",
+      shipping_pincode: warehouse.pin_code,
+      shipping_email: warehouse.email || "tech@viratmohan.com",
+      shipping_phone: warehouse.phone.replace(/\D/g, "").slice(-10),
+      shipping_isd_code: "91",
+
       order_items: input.items.map((item) => ({
         name: item.name,
         sku: item.sku,
