@@ -122,7 +122,7 @@ export async function shipOrder(orderId: string) {
         // together on the same sheet. Falls back to the plain single label
         // if the duplicate-sheet build fails for any reason, so the email
         // still goes out with something printable.
-        const duplicatedLabelUrl = await buildAndUploadDuplicatedLabel(shipmentId, orderId);
+        const duplicatedLabelUrl = await buildAndUploadDuplicatedLabel(shipmentId, orderId, labelUrl);
         await sendWarehouseNotificationEmail(
           { ...order, shiprocket_awb_code: awbCode, courier_name: courierName },
           warehouseItems,

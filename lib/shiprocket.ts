@@ -309,18 +309,45 @@ export async function generateShiprocketLabel(shipmentId: string): Promise<strin
  * label_url for closely-timed separate calls — which is exactly why a
  * "2 labels per A4" print built by calling this once per order came out as
  * the same label twice. Always batch the ids you actually want together.
+ *
+ * Courier backends (Delhivery, Blue Dart) generate the label PDF asynchronously,
+ * which often takes 3-10 seconds right after AWB assignment. We retry up to
+ * 3 times with a short backoff (2.5s, 3.5s) to guarantee the PDF is ready
+ * rather than giving up immediately with null.
  */
-export async function generateShiprocketLabelsBatch(shipmentIds: string[]): Promise<string | null> {
-  try {
-    const data = await shiprocketFetch("/courier/generate/label", {
-      method: "POST",
-      body: JSON.stringify({ shipment_id: shipmentIds.map(Number) }),
-    });
-    return data?.label_url ?? null;
-  } catch (err) {
-    console.error("Shiprocket batch label generation failed", shipmentIds, err);
-    return null;
+export async function generateShiprocketLabelsBatch(
+  shipmentIds: string[],
+  maxRetries = 3
+): Promise<string | null> {
+  if (shipmentIds.length === 0) return null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const data = await shiprocketFetch("/courier/generate/label", {
+        method: "POST",
+        body: JSON.stringify({ shipment_id: shipmentIds.map(Number) }),
+      });
+      if (data?.label_url) {
+        return data.label_url;
+      }
+      console.warn(
+        `Shiprocket label not ready on attempt ${attempt}/${maxRetries} for shipments: ${shipmentIds.join(", ")}`,
+        data?.message ?? data
+      );
+    } catch (err) {
+      console.error(
+        `Shiprocket label generation error on attempt ${attempt}/${maxRetries} for shipments: ${shipmentIds.join(", ")}`,
+        err
+      );
+    }
+
+    if (attempt < maxRetries) {
+      const delayMs = attempt * 1500 + 1000;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
   }
+
+  return null;
 }
 
 export async function trackShiprocketShipment(shipmentId: string) {
