@@ -54,7 +54,7 @@ async function getCurrentVibe<T extends { slug: string }>(collection: T[]): Prom
 function buildPillars(shapeCount: number, colourwayCount: number) {
   return [
     { title: "UV400 Protected", copy: "Real lens protection on every pair, not just a tint." },
-    { title: "Plastic Or Metal", copy: "The Collection from ₹1,499, the Limited Series from ₹1,999. Inclusive of taxes and shipping." },
+    { title: "Plastic Or Metal", copy: "The Collection from ₹1,499, the Limited Series from ₹1,999." },
     { title: "Fashion-First", copy: "Shapes and lens colours built to be seen, not just worn." },
     {
       title: "Core Collection",
