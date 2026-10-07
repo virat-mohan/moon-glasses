@@ -104,13 +104,16 @@ export default async function PayPage({ params }: { params: Promise<{ orderId: s
     `/checkout/confirmed?order=${order.id}&upi=1&amount=${order.total}&upiId=${encodeURIComponent(config.upiId)}` +
     `&qr=${encodeURIComponent(config.qrImageUrl ?? "")}&link=${encodeURIComponent(upiLink)}`;
 
-  // If a social media crawler (WhatsApp, Facebook, Twitter, etc.) is fetching preview,
-  // do NOT issue a 307 redirect — render the page with full OpenGraph meta tags so the preview image generates cleanly.
+  // On mobile devices, render PayClient which automatically triggers the direct UPI app
+  // intent (Google Pay, PhonePe, Paytm) with prefilled amount in 1-tap.
+  // On social crawlers, render with full OpenGraph tags.
+  // On desktop browsers, redirect to the dynamic UPI QR scan screen.
   const headerList = await headers();
   const userAgent = headerList.get("user-agent") || "";
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
   const isCrawler = /facebookexternalhit|whatsapp|bot|spider|crawl|slurp|twitterbot|pinterest|discord/i.test(userAgent);
 
-  if (isCrawler) {
+  if (isMobile || isCrawler) {
     return (
       <PayClient
         orderRef={order.id.slice(0, 8).toUpperCase()}

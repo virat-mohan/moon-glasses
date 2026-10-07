@@ -185,11 +185,11 @@ test("code replies pass voice; free order has no pay link", () => {
   const applied = buildCodeAppliedReply({ subtotal: 2499, discount: 500, total: 1999 });
   assert.ok(applied.includes("−₹500") && applied.includes("₹1,999"));
   const pay = buildPayReply({ cart, name: "A", address: "12 Park Street", pincode: "700091", payLink: "https://www.moon-glasses.store/pay/x", money: { subtotal: 2499, discount: 500, total: 1999 } });
-  assert.ok(pay.includes("−₹500") && pay.includes("total ₹1,999"));
+  assert.ok(pay.includes("−₹500") && pay.toLowerCase().includes("total: ₹1,999"));
   const free = buildFreeOrderReply({ cart, name: "A", address: "12 Park Street", pincode: "700091" });
-  assert.ok(!free.includes("/pay/") && free.includes("no payment needed, we'll message you when it ships."));
+  assert.ok(!free.includes("/pay/") && free.toLowerCase().includes("no payment needed, we'll message you when it ships."));
   for (const t of [applied, buildCodeInvalidReply(), pay, free, buildOrderReply(cart)]) assert.equal(hasBlock(checkVoice(t, "whatsapp")), false, t);
-  assert.ok(buildOrderReply(cart).includes("have a code? send it with your details."));
+  assert.ok(buildOrderReply(cart).toLowerCase().includes("code? send it"));
 });
 test("stacked codes: one best discount, never below the floor", () => {
   const best = pickBestDiscount({ referral: 200, coupon: 500 });

@@ -128,14 +128,14 @@ export function parseWhatsAppOrder(payload: unknown): ParsedWaOrder | null {
 
 export const MAX_WA_QTY = 50;
 
-export type CartLine = { slug: string; name: string; price: number; qty: number };
+export type CartLine = { slug: string; name: string; price: number; qty: number; imageUrl?: string };
 export type DroppedLine = { retailerId: string; name?: string; reason: "unknown" | "not-live" | "out-of-stock" | "bad-quantity" | "not-enough-stock" };
 export type ValidatedCart = { lines: CartLine[]; total: number; dropped: DroppedLine[] };
 
 /** Pure: catalogue = live items, inventory = slug -> stock (missing slug = no stock tracking = available). */
 export function validateWaCart(
   items: WaOrderItem[],
-  catalogue: Pick<CatalogueItem, "slug" | "name" | "price">[],
+  catalogue: (Pick<CatalogueItem, "slug" | "name" | "price"> & { folder?: string })[],
   inventory: Record<string, number>,
   /** slugs that exist but are not live (to give the right reason) */
   allSlugs: string[] = []
@@ -170,7 +170,8 @@ export function validateWaCart(
       dropped.push({ retailerId: slug, name: c.name, reason: "bad-quantity" });
       continue;
     }
-    lines.push({ slug, name: c.name, price: c.price, qty });
+    const imageUrl = c.folder ? `${SITE}/images/chapters/${encodeURIComponent(c.folder)}/angle_no_bg.png` : undefined;
+    lines.push({ slug, name: c.name, price: c.price, qty, imageUrl });
   }
   return { lines, total: lines.reduce((s, l) => s + l.price * l.qty, 0), dropped };
 }
@@ -189,7 +190,14 @@ export function syntheticOrderMessageId(phone: string, items: WaOrderItem[], now
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const SITE = "https://www.moon-glasses.store";
 export const orderLinesText = (cart: ValidatedCart) =>
-  cart.lines.map((l) => `${l.qty}× ${l.name}  ${rupees(l.price * l.qty)}\npreview: ${SITE}/chapter/${l.slug}`).join("\n\n");
+  cart.lines
+    .map(
+      (l) =>
+        `${l.qty}× ${l.name} (${rupees(l.price * l.qty)})${
+          l.imageUrl ? `\n📷 View photo: ${l.imageUrl}` : ""
+        }`
+    )
+    .join("\n\n");
 
 const droppedText = (cart: ValidatedCart) =>
   cart.dropped.length
@@ -201,31 +209,36 @@ export type OrderOffer = { discount: number; ruleName?: string | null };
 /** First reply to a cart: summary, total (with active offer applied if eligible), and the direct checkout link. */
 export function buildOrderReply(cart: ValidatedCart, link?: string | null, offer?: OrderOffer | null): string {
   if (!cart.lines.length) {
-    return `thanks for the cart 🌙\n\nthe pairs in it aren't available right now. the full catalogue is here whenever you want a look: ${SITE}/catalogue`;
+    return [
+      "*Cart Update* 🕶️",
+      "Thanks for your cart!",
+      "The selected pairs aren't available right now.",
+      `Explore live styles from the edit here:\n${SITE}/catalogue`,
+    ].join("\n\n");
   }
 
   const hasOffer = offer && offer.discount > 0;
   const finalTotal = hasOffer ? Math.max(0, cart.total - offer.discount) : cart.total;
   const totalBlock = hasOffer
-    ? `subtotal ${rupees(cart.total)}\n${offer.ruleName ? `${offer.ruleName}, ` : "offer applied, "}−${rupees(offer.discount)}\ntotal ${rupees(finalTotal)}, shipping free.`
-    : `total ${rupees(cart.total)}, shipping free.`;
+    ? `*Total:* ${rupees(finalTotal)} (was ${rupees(cart.total)}, ${offer.ruleName ? `${offer.ruleName}, ` : "offer applied, "}−${rupees(offer.discount)}) · Free Express Shipping 📦`
+    : `*Total:* ${rupees(cart.total)} · Free Express Shipping 📦`;
 
   if (link) {
     return [
-      "got your cart 🌙",
+      "*Got Your Cart* 🕶️ ✨",
       orderLinesText(cart),
       totalBlock,
       droppedText(cart),
-      `tap below to complete your order on our secure checkout:\n${link}`,
+      `Tap below to complete your order on our secure checkout:\n${link}`,
     ].filter(Boolean).join("\n\n");
   }
   return [
-    "got your cart 🌙",
+    "*Got Your Cart* 🕶️ ✨",
     orderLinesText(cart),
     totalBlock,
     droppedText(cart),
-    "kindly share delivery details in chat (Name, Address, Pincode, Email)",
-    "have a code? send it with your details.",
+    "Please share your delivery details in chat:\n✦ Name\n✦ Full Address & Pincode\n✦ Email",
+    "Have a promo code? Send it along with your details.",
   ].filter(Boolean).join("\n\n");
 }
 
@@ -233,15 +246,18 @@ export function buildOrderReply(cart: ValidatedCart, link?: string | null, offer
 export function buildPayReply(input: { cart: ValidatedCart; name: string; address: string; pincode: string; payLink: string; money?: Money }): string {
   const short = input.address.length > 60 ? `${input.address.slice(0, 57)}...` : input.address;
   const qrLink = input.payLink.replace("/pay/", "/api/qr/") + ".png";
+  const finalTotal = input.money?.total ?? input.cart.total;
+  const totalLine = input.money && input.money.discount > 0
+    ? `${discountLine(input.money)}*Total: ${rupees(finalTotal)}* · Free Shipping 📦`
+    : `*Total: ${rupees(finalTotal)}* · Free Shipping 📦`;
+
   return [
-    "order placed 🌙",
+    "*Order Placed* 🕶️ ✨",
     orderLinesText(input.cart),
-    input.money && input.money.discount > 0
-      ? `${discountLine(input.money)}total ${rupees(input.money.total)}, shipping free.`
-      : `total ${rupees(input.money?.total ?? input.cart.total)}, shipping free.`,
-    `delivering to ${input.name}, ${short}, ${input.pincode}`,
-    `pay by UPI in one tap: ${input.payLink}`,
-    `or scan dynamic UPI QR code: ${qrLink}`,
+    totalLine,
+    `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
+    `⚡ *Pay by UPI in 1-tap:*\n${input.payLink}`,
+    `📲 *Or scan dynamic UPI QR code:*\n${qrLink}`,
     "wrong address? reply here before it ships.",
   ].join("\n\n");
 }
@@ -249,23 +265,23 @@ export function buildPayReply(input: { cart: ValidatedCart; name: string; addres
 export type Money = { subtotal: number; discount: number; total: number };
 const discountLine = (m: Money) => (m.discount > 0 ? `code applied, −${rupees(m.discount)}\n` : "");
 
-export const buildCodeAppliedReply = (m: Money) => `code applied 🌙 −${rupees(m.discount)}, total ${rupees(m.total)}`;
-export const buildCodeInvalidReply = () => "that code isn't valid right now, carrying on without it.";
+export const buildCodeAppliedReply = (m: Money) => `*Promo Code Applied* ✨ −${rupees(m.discount)}, Total ${rupees(m.total)}`;
+export const buildCodeInvalidReply = () => "That promo code isn't active right now, carrying on without it.";
 
 /** Order created with nothing to pay (a free-pair or 100% code): no pay link. */
 export function buildFreeOrderReply(input: { cart: ValidatedCart; name: string; address: string; pincode: string }): string {
   const short = input.address.length > 60 ? `${input.address.slice(0, 57)}...` : input.address;
   return [
-    "order placed 🌙",
+    "*Order Placed* 🕶️ ✨",
     orderLinesText(input.cart),
-    "total ₹0, shipping free. no payment needed, we'll message you when it ships.",
-    `delivering to ${input.name}, ${short}, ${input.pincode}`,
+    "*Total: ₹0* · Free Shipping 📦\nNo payment needed, we'll message you when it ships.",
+    `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
     "wrong address? reply here before it ships.",
   ].join("\n\n");
 }
 
 export const buildAskAgainReply = (example: string) =>
-  `couldn't read that one. could you send your name, full address and pincode in one message, like this:\n\n${example}`;
+  `*Delivery Details Needed* 📍\n\nCouldn't read that one. Could you send your name, full address and pincode in one message, like this:\n\n${example}`;
 
 export const buildFallbackReply = (link: string) =>
   `let's do this one on the site instead, your cart is already in it: ${link}\n\nyou can add your address and pay by UPI there.`;
