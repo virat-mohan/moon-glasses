@@ -135,7 +135,7 @@ export type ValidatedCart = { lines: CartLine[]; total: number; dropped: Dropped
 /** Pure: catalogue = live items, inventory = slug -> stock (missing slug = no stock tracking = available). */
 export function validateWaCart(
   items: WaOrderItem[],
-  catalogue: (Pick<CatalogueItem, "slug" | "name" | "price"> & { folder?: string })[],
+  catalogue: (Pick<CatalogueItem, "slug" | "name" | "price"> & { folder?: string; sideImage?: string })[],
   inventory: Record<string, number>,
   /** slugs that exist but are not live (to give the right reason) */
   allSlugs: string[] = []
@@ -170,7 +170,12 @@ export function validateWaCart(
       dropped.push({ retailerId: slug, name: c.name, reason: "bad-quantity" });
       continue;
     }
-    const imageUrl = c.folder ? `${SITE}/images/chapters/${encodeURIComponent(c.folder)}/angle_no_bg.png` : undefined;
+    let imageUrl: string | undefined;
+    if (c.sideImage && /^https?:\/\//.test(c.sideImage)) {
+      imageUrl = c.sideImage;
+    } else if (c.folder) {
+      imageUrl = `${SITE}/images/chapters/${encodeURIComponent(c.folder)}/angle_no_bg.png`;
+    }
     lines.push({ slug, name: c.name, price: c.price, qty, imageUrl });
   }
   return { lines, total: lines.reduce((s, l) => s + l.price * l.qty, 0), dropped };
@@ -257,7 +262,8 @@ export function buildPayReply(input: { cart: ValidatedCart; name: string; addres
     totalLine,
     `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
     `⚡ *Pay by UPI in 1-tap:*\n${input.payLink}`,
-    `📲 *Or scan dynamic UPI QR code:*\n${qrLink}`,
+    `📲 *Or Scan Dynamic UPI QR Code:*\n${qrLink}`,
+    `✦ *Important:* Please pay the exact amount (${rupees(finalTotal)}) so your order is placed and confirmed automatically. Orders with incorrect amounts cannot be processed.`,
     "wrong address? reply here before it ships.",
   ].join("\n\n");
 }
