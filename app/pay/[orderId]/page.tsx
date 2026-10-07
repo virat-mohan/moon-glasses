@@ -10,23 +10,32 @@ import { PayClient } from "./PayClient";
 export const dynamic = "force-dynamic";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SHORT_ID = /^[0-9a-f]{8}$/i;
 const SITE_URL = "https://www.moon-glasses.store";
 
 export async function generateMetadata({ params }: { params: Promise<{ orderId: string }> }): Promise<Metadata> {
   const { orderId } = await params;
-  const orderRef = orderId.slice(0, 8).toUpperCase();
+  const cleanId = orderId.replace(/\.png$/i, "").trim();
+  const orderRef = cleanId.slice(0, 8).toUpperCase();
 
   let itemsSummary = "";
-  if (UUID.test(orderId)) {
+  if (UUID.test(cleanId) || SHORT_ID.test(cleanId)) {
     try {
       const supabase = getSupabaseServerClient();
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("chapter_name, quantity")
-        .eq("order_id", orderId);
+      let q = supabase.from("orders").select("id");
+      if (SHORT_ID.test(cleanId)) q = q.ilike("id", `${cleanId}%`);
+      else q = q.eq("id", cleanId);
+      const { data: matched } = await q.maybeSingle();
 
-      if (items && items.length > 0) {
-        itemsSummary = items.map((i) => `${i.quantity}× ${i.chapter_name}`).join(", ");
+      if (matched) {
+        const { data: items } = await supabase
+          .from("order_items")
+          .select("chapter_name, quantity")
+          .eq("order_id", matched.id);
+
+        if (items && items.length > 0) {
+          itemsSummary = items.map((i) => `${i.quantity}× ${i.chapter_name}`).join(", ");
+        }
       }
     } catch {}
   }
@@ -35,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ orderId: 
   const description = itemsSummary
     ? `Complete payment for ${itemsSummary}. Free Express Delivery across India.`
     : `Your Moonglasses order #${orderRef} is ready. Tap to pay securely via UPI.`;
-  const ogImageUrl = `${SITE_URL}/api/og/pay?orderId=${orderId}&v=hd`;
+  const ogImageUrl = `${SITE_URL}/api/og/pay?orderId=${orderRef}&v=hd`;
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -70,13 +79,20 @@ export async function generateMetadata({ params }: { params: Promise<{ orderId: 
 /** Tap-to-pay for a WhatsApp order. The amount and link come from the order row, never from the URL. */
 export default async function PayPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
-  const { data: order } = UUID.test(orderId)
-    ? await getSupabaseServerClient()
-        .from("orders")
-        .select("id, total, payment_type, payment_status, upi_amount_paise, is_test")
-        .eq("id", orderId)
-        .maybeSingle()
+  const cleanId = orderId.replace(/\.png$/i, "").trim();
+  const isShort = SHORT_ID.test(cleanId);
+  const isUuid = UUID.test(cleanId);
+
+  let query = getSupabaseServerClient()
+    .from("orders")
+    .select("id, total, payment_type, payment_status, upi_amount_paise, is_test");
+
+  const { data: order } = isShort
+    ? await query.ilike("id", `${cleanId}%`).maybeSingle()
+    : isUuid
+    ? await query.eq("id", cleanId).maybeSingle()
     : { data: null };
+
   const config = order ? await getUpiPaymentConfig() : null;
 
   if (order && (order.payment_status === "paid" || Number(order.total) <= 0)) {

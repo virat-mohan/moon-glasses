@@ -170,12 +170,7 @@ export function validateWaCart(
       dropped.push({ retailerId: slug, name: c.name, reason: "bad-quantity" });
       continue;
     }
-    let imageUrl: string | undefined;
-    if (c.sideImage && /^https?:\/\//.test(c.sideImage)) {
-      imageUrl = c.sideImage;
-    } else if (c.folder) {
-      imageUrl = `${SITE}/images/chapters/${encodeURIComponent(c.folder)}/angle_no_bg.png`;
-    }
+    const imageUrl = `${SITE}/photo/${encodeURIComponent(slug)}`;
     lines.push({ slug, name: c.name, price: c.price, qty, imageUrl });
   }
   return { lines, total: lines.reduce((s, l) => s + l.price * l.qty, 0), dropped };
@@ -194,12 +189,12 @@ export function syntheticOrderMessageId(phone: string, items: WaOrderItem[], now
 
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const SITE = "https://www.moon-glasses.store";
-export const orderLinesText = (cart: ValidatedCart) =>
+export const orderLinesText = (cart: ValidatedCart, includePhoto = true) =>
   cart.lines
     .map(
       (l) =>
         `${l.qty}× ${l.name} (${rupees(l.price * l.qty)})${
-          l.imageUrl ? `\n📷 View photo: ${l.imageUrl}` : ""
+          includePhoto && l.imageUrl ? `\n📷 View photo: ${l.imageUrl}` : ""
         }`
     )
     .join("\n\n");
@@ -258,7 +253,7 @@ export function buildPayReply(input: { cart: ValidatedCart; name: string; addres
 
   return [
     "*Order Placed* 🕶️ ✨",
-    orderLinesText(input.cart),
+    orderLinesText(input.cart, false),
     totalLine,
     `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
     `⚡ *Pay by UPI in 1-tap:*\n${input.payLink}`,
@@ -279,7 +274,7 @@ export function buildFreeOrderReply(input: { cart: ValidatedCart; name: string; 
   const short = input.address.length > 60 ? `${input.address.slice(0, 57)}...` : input.address;
   return [
     "*Order Placed* 🕶️ ✨",
-    orderLinesText(input.cart),
+    orderLinesText(input.cart, false),
     "*Total: ₹0* · Free Shipping 📦\nNo payment needed, we'll message you when it ships.",
     `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
     "wrong address? reply here before it ships.",
