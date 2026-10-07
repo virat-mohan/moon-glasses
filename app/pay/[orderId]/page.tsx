@@ -18,61 +18,17 @@ export async function generateMetadata({ params }: { params: Promise<{ orderId: 
   const cleanId = orderId.replace(/\.png$/i, "").trim();
   const orderRef = cleanId.slice(0, 8).toUpperCase();
 
-  let itemsSummary = "";
-  if (UUID.test(cleanId) || SHORT_ID.test(cleanId)) {
-    try {
-      const supabase = getSupabaseServerClient();
-      let q = supabase.from("orders").select("id");
-      if (SHORT_ID.test(cleanId)) q = q.ilike("id", `${cleanId}%`);
-      else q = q.eq("id", cleanId);
-      const { data: matched } = await q.maybeSingle();
-
-      if (matched) {
-        const { data: items } = await supabase
-          .from("order_items")
-          .select("chapter_name, quantity")
-          .eq("order_id", matched.id);
-
-        if (items && items.length > 0) {
-          itemsSummary = items.map((i) => `${i.quantity}× ${i.chapter_name}`).join(", ");
-        }
-      }
-    } catch {}
-  }
-
-  const title = `Your Order #${orderRef} is Ready — Moonglasses`;
-  const description = itemsSummary
-    ? `Complete payment for ${itemsSummary}. Free Express Delivery across India.`
-    : `Your Moonglasses order #${orderRef} is ready. Tap to pay securely via UPI.`;
-  const ogImageUrl = `${SITE_URL}/api/og/pay?orderId=${orderRef}&v=hd`;
-
   return {
-    metadataBase: new URL(SITE_URL),
-    title,
-    description,
-    openGraph: {
-      type: "website",
-      siteName: "Moonglasses",
-      title,
-      description,
-      url: `${SITE_URL}/pay/${orderId}`,
-      images: [
-        {
-          url: ogImageUrl,
-          width: 600,
-          height: 600,
-          alt: `Moonglasses Order #${orderRef}`,
-          type: "image/png",
-        },
-      ],
+    title: `Payment #${orderRef} | Moonglasses`,
+    description: null,
+    openGraph: null,
+    twitter: null,
+    robots: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      nocache: true,
     },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-      images: [ogImageUrl],
-    },
-    robots: { index: false, follow: false },
   };
 }
 
@@ -120,16 +76,18 @@ export default async function PayPage({ params }: { params: Promise<{ orderId: s
     `/checkout/confirmed?order=${order.id}&upi=1&amount=${order.total}&upiId=${encodeURIComponent(config.upiId)}` +
     `&qr=${encodeURIComponent(config.qrImageUrl ?? "")}&link=${encodeURIComponent(upiLink)}`;
 
-  // On mobile devices, render PayClient which automatically triggers the direct UPI app
-  // intent (Google Pay, PhonePe, Paytm) with prefilled amount in 1-tap.
-  // On social crawlers, render with full OpenGraph tags.
-  // On desktop browsers, redirect to the dynamic UPI QR scan screen.
+  // Return empty content for social crawlers (WhatsApp, Facebook) so no preview card is generated.
   const headerList = await headers();
   const userAgent = headerList.get("user-agent") || "";
-  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
   const isCrawler = /facebookexternalhit|whatsapp|bot|spider|crawl|slurp|twitterbot|pinterest|discord/i.test(userAgent);
+  if (isCrawler) {
+    return <main />;
+  }
 
-  if (isMobile || isCrawler) {
+  // On mobile devices, render PayClient which automatically triggers the direct UPI app intent
+  // On desktop browsers, redirect to the dynamic UPI QR scan screen.
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
+  if (isMobile) {
     return (
       <PayClient
         orderRef={order.id.slice(0, 8).toUpperCase()}
