@@ -59,10 +59,14 @@ export function PayClient({ orderRef, amount, upiId, upiLink, confirmedHref }: {
       )}
 
       <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-caption text-secondary-text">
-        <span className="break-all">UPI ID: {upiId}</span>
+        <span className="break-all font-mono font-medium text-ink">UPI ID: {upiId}</span>
         <button type="button" onClick={() => copy("id", upiId)} className="min-h-[44px] border border-divider px-3 text-micro uppercase tracking-[0.05em] text-ink">{copied === "id" ? "Copied" : "Copy UPI ID"}</button>
         <button type="button" onClick={() => copy("amt", amount.toFixed(2))} className="min-h-[44px] border border-divider px-3 text-micro uppercase tracking-[0.05em] text-ink">{copied === "amt" ? "Copied" : "Copy amount"}</button>
       </div>
+
+      <p className="mt-4 text-micro text-secondary-text">
+        If your UPI app blocks auto-fill due to bank security policy: Copy the UPI ID &amp; exact amount above, open your UPI app and pay directly.
+      </p>
 
       <a href={confirmedHref} className="mt-8 inline-flex min-h-[44px] items-center text-caption text-secondary-text underline">Already paid? Check your payment</a>
       <p className="mt-6"><WhatsAppHelp topic="paying for my order" lines={[`order #${orderRef}`, "page: /pay"]} /></p>
