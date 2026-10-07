@@ -69,7 +69,9 @@ export default async function PayWithAPostTermsPage() {
 
           <Section title="3. How your pair is earned">
             You get a personal code and a post image. Post it on Instagram (feed or story) with your code. Your
-            pair ships free once <strong>{r.salesToShip}</strong> qualifying orders are placed with your code.
+            pair ships free once <strong>{r.salesToShip}</strong> qualifying orders are placed with your code. You
+            can make up to <strong>{r.maxPostsPerOrder}</strong> posts per order, each with its own code; friends
+            who order with any of them count toward the same pair, once per friend order.
             {r.friendDiscountRupees > 0
               ? ` Friends get ${rupees(r.friendDiscountRupees)} off with your code.`
               : " Friends pay the normal price; the code tracks that they came from you."}

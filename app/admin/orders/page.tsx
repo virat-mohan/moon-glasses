@@ -68,6 +68,17 @@ export default async function AdminOrdersPage() {
       byOrder.set(i.order_id, list);
     }
 
+    const barterIds = orders.filter((o) => (o as { is_post_barter?: boolean }).is_post_barter).map((o) => o.id);
+    const kitsByOrder = new Map<string, { code: string; sales: number }[]>();
+    if (barterIds.length) {
+      const { data: kitRows } = await supabase.from("pwap_post_kits").select("order_id, code, sales_count, created_at").in("order_id", barterIds).order("created_at", { ascending: true });
+      for (const k of kitRows ?? []) {
+        const list = kitsByOrder.get(k.order_id as string) ?? [];
+        list.push({ code: String(k.code), sales: Number(k.sales_count ?? 0) });
+        kitsByOrder.set(k.order_id as string, list);
+      }
+    }
+
     const num = (v: unknown) => Number(v ?? 0) || 0;
     const str = (v: unknown) => (typeof v === "string" && v ? v : null);
     rows = orders.map((o) => ({
@@ -109,6 +120,7 @@ export default async function AdminOrdersPage() {
       barter_coupon_code: str(o.barter_coupon_code),
       barter_required_orders: o.barter_required_orders == null ? null : num(o.barter_required_orders),
       barter_qualified_at: str(o.barter_qualified_at),
+      pwap_kits: kitsByOrder.get(o.id) ?? [],
       is_test: o.is_test == null ? null : !!o.is_test,
       upi_utr: str(o.upi_utr),
       order_source: str(o.order_source),

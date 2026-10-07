@@ -166,6 +166,10 @@ export default function CheckoutPage() {
       setBarterError("Pay With A Post covers one item per order — adjust your cart to a single item.");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setBarterError("Add your email above: we send your private link there.");
+      return;
+    }
     if (barterPreview?.tier === "gift_first" && ownershipVerified && !giftFirstTermsAccepted) {
       setBarterError("Please accept the terms above to ship now.");
       return;
@@ -908,17 +912,21 @@ export default function CheckoutPage() {
 
               <div>
                 <label htmlFor="checkout-email" className="block font-sans text-micro uppercase tracking-[0.1em] text-secondary-text">
-                  Email (Optional)
+                  {paymentType === "post_barter" ? "Email" : "Email (Optional)"}
                 </label>
                 <input
                   type="email"
                   id="checkout-email"
                   name="email"
+                  required={paymentType === "post_barter"}
                   autoComplete="email"
                   value={form.email}
                   onChange={update("email")}
                   className="mt-1 w-full border border-ink/30 bg-surface px-3 py-2.5 font-sans text-body-s text-ink outline-none focus:border-ink"
                 />
+                {paymentType === "post_barter" && (
+                  <p className="mt-1 text-caption text-secondary-text">we send your private link here</p>
+                )}
               </div>
 
               <div>

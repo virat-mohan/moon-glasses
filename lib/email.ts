@@ -5,6 +5,8 @@ import { helpLink, shortOrderId } from "@/lib/whatsapp-help";
 import { buildStockShortAlert } from "@/lib/checkout-rules";
 import { renderInvoiceHtml } from "@/lib/invoice";
 import { getBrandProfile } from "@/lib/brand";
+import { orderNotificationRecipients, pwapTeamRecipients, pwapTeamSubject } from "@/lib/pwap-email-rules";
+import { buildPwapConfirmationEmail, buildPwapTeamEmailBody } from "@/lib/pwap-email-copy";
 import { BRAND_VOICE, stripHtml, voiceGate } from "@/lib/brand-voice";
 
 type InvoiceOrder = Parameters<typeof renderInvoiceHtml>[0] & { is_test?: boolean | null };
@@ -165,7 +167,13 @@ export async function sendOrderNotificationEmail(order: InvoiceOrder, items: Inv
     .map((e) => e.trim())
     .filter(Boolean);
   // founder@viratmohan.com gets every order (UPI confirm, PWAP, Razorpay, manual) until the WhatsApp alert is live.
-  const recipients = [...new Map([...ORDER_NOTIFICATION_RECIPIENTS, FOUNDER_ORDER_EMAIL, ...warehouse].map((e) => [e.toLowerCase(), e])).values()];
+  // A Pay With A Post order that has not qualified is not shippable: never the warehouse.
+  const recipients = orderNotificationRecipients(
+    order as { payment_status?: string | null; barter_qualified_at?: string | null; is_test?: boolean | null },
+    ORDER_NOTIFICATION_RECIPIENTS,
+    FOUNDER_ORDER_EMAIL,
+    warehouse
+  );
   await Promise.all(recipients.map((to) => sendEmail(to, testSubject(`New order confirmed — #${orderNumber}`, order), invoiceHtml, undefined, { internal: true })));
 }
 
@@ -752,7 +760,7 @@ export async function sendCreatorRejectedEmail(toEmail: string, name: string) {
   return sendEmail(toEmail, `Update on your ${brand.brandName} creator application`, html);
 }
 
-/** Sent the moment a "Pay With A Post" order is placed — hands over the shareable code and explains what has to happen before it ships. */
+/** Sent the moment a "Pay With A Post" order is placed: what happens next, the code(s), the post image and the private-page button. */
 export async function sendPostBarterOrderConfirmationEmail(
   toEmail: string,
   name: string,
@@ -763,45 +771,53 @@ export async function sendPostBarterOrderConfirmationEmail(
   isTest = false
 ) {
   const brand = await getBrandProfile();
-  const logoUrl = `${brand.siteUrl.replace(/\/$/, "")}/images/brand/moon-glasses-logo.png`;
-  const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
-  const trackingUrl = `${brand.siteUrl.replace(/\/$/, "")}/barter/${orderId}`;
-  // Their own post (made when the order was placed): name-based code on it.
-  const cardUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/ad-creatives/pwap-share/${orderId}.png`;
+  const { email } = await buildPwapConfirmationForOrder(orderId, name, [couponCode], requiredOrders, tier, brand);
+  return sendEmail(toEmail, testSubject(email.subject, { is_test: isTest }), email.html);
+}
 
-  const steps =
-    tier === "gift_first"
-      ? `
-        <li>It's on its way — no need to wait for anything.</li>
-        <li>Once it arrives, wear it and take a photo or Reel.</li>
-        <li>Post it on Instagram and add <a href="${instagramProfileUrl}" style="color:#101820;">${brand.instagramHandle}</a> as a collaborator (or tag us if collaborator invites aren't available to you).</li>
-      `
-      : `
-        <li>Share it your way — feed post or Story, whichever you're confident can get you ${requiredOrders} buyers. Add <a href="${instagramProfileUrl}" style="color:#101820;">${brand.instagramHandle}</a> as a collaborator or tag us.</li>
-        <li>Share your code below with your followers — anyone who checks out with it counts toward your goal.</li>
-        <li>Once <strong>${requiredOrders}</strong> people check out with it, we ship your order automatically — free.</li>
-      `;
-  const intro =
-    tier === "gift_first"
-      ? "Your order is confirmed and shipping now — here's what happens next:"
-      : "Your order is confirmed. Here's what happens next:";
+async function buildPwapConfirmationForOrder(
+  orderId: string,
+  name: string,
+  codes: string[],
+  salesToShip: number,
+  tier: "gift_first" | "sell_first",
+  brand: Awaited<ReturnType<typeof getBrandProfile>>
+) {
+  return {
+    email: buildPwapConfirmationEmail({
+      name,
+      brandName: brand.brandName,
+      siteUrl: brand.siteUrl,
+      instagramHandle: brand.instagramHandle.startsWith("@") ? brand.instagramHandle : `@${brand.instagramHandle}`,
+      orderId,
+      codes,
+      salesToShip,
+      cardUrl: tier === "sell_first" ? `${process.env.SUPABASE_URL}/storage/v1/object/public/ad-creatives/pwap-share/${orderId}.png` : null,
+      tier,
+    }),
+  };
+}
 
-  const html = `
-    <div style="max-width:480px;margin:0 auto;background-color:#ffffff;font-family:Helvetica,Arial,sans-serif;color:#1a1a1a;padding:0 24px;">
-      <div style="background-color:#ffffff;padding:16px 0;text-align:center;">
-        <img src="${logoUrl}" alt="${brand.brandName}" width="100" height="50" style="display:inline-block;" />
-      </div>
-      <p style="font-size:16px;">Hi ${name},</p>
-      <p style="font-size:14px;color:#444;line-height:1.6;">${intro}</p>
-      <ol style="font-size:14px;color:#444;line-height:1.8;padding-left:20px;">${steps}</ol>
-      <p style="margin:16px 0;padding:12px 20px;background:#f0eee4;border:1px dashed #101820;display:inline-block;font-size:18px;font-weight:bold;letter-spacing:0.08em;">${couponCode}</p>
-      ${tier === "sell_first" ? `<a href="${trackingUrl}"><img src="${cardUrl}" alt="Your post" width="432" style="display:block;width:100%;max-width:432px;height:auto;margin:8px 0;" /></a>` : ""}
-      <a href="${trackingUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#101820;color:#f0eee4;text-decoration:none;text-transform:uppercase;letter-spacing:0.05em;font-size:13px;">${tier === "gift_first" ? "View Details" : "Get your post &amp; share"}</a>
-      <p style="margin-top:16px;font-size:12px;color:#666;line-height:1.5;">This is your private page. Share the photo, not this email.</p>
-      <p style="margin-top:32px;font-size:12px;color:#999;">${brand.brandName} · ${brand.siteUrl}</p>
-    </div>
-  `;
-  return sendEmail(toEmail, testSubject(`Your Pay With A Post™ order is confirmed — your ${brand.brandName} code inside`, { is_test: isTest }), html);
+/** Internal email for a new Pay With A Post order: team + founder only, never the warehouse (nothing to ship yet). */
+export async function sendPwapTeamOrderEmail(
+  order: { id: string; customer_name: string; is_test?: boolean | null },
+  items: { chapter_name: string; quantity: number }[],
+  code: string,
+  salesToShip: number,
+  tier: "gift_first" | "sell_first" = "sell_first"
+) {
+  const orderNumber = order.id.slice(0, 8).toUpperCase();
+  const html = buildPwapTeamEmailBody({
+    orderNumber,
+    customerFirstName: (order.customer_name ?? "").trim().split(/\s+/)[0] || "Customer",
+    items: items.map((i) => ({ name: i.chapter_name, quantity: i.quantity })),
+    code,
+    salesToShip,
+    adminUrl: "https://www.moon-glasses.store/admin/orders",
+    isTier: tier,
+  });
+  const subject = testSubject(pwapTeamSubject(orderNumber, salesToShip), order);
+  await Promise.all(pwapTeamRecipients(ORDER_NOTIFICATION_RECIPIENTS, FOUNDER_ORDER_EMAIL).map((to) => sendEmail(to, subject, html, undefined, { internal: true })));
 }
 
 /** Sent the moment a "Pay With A Post" order clears its required-orders line and actually ships. */

@@ -32,6 +32,8 @@ export type PwapRules = {
   shipFirstMinLikesPct: number;
   /** Our cost to ship one pair (courier + packaging), for the money view. */
   shipCostRupees: number;
+  /** Most post images (each with its own code) one order can make. */
+  maxPostsPerOrder: number;
   /** When the rules were last saved (ISO); shown as the terms' "last updated". */
   updatedAt?: string;
 };
@@ -50,6 +52,7 @@ export const DEFAULT_PWAP_RULES: PwapRules = {
   shipFirstMinMedianLikes: 20,
   shipFirstMinLikesPct: 0.5,
   shipCostRupees: 90,
+  maxPostsPerOrder: 5,
 };
 
 export async function getPwapRules(): Promise<PwapRules> {
@@ -82,6 +85,7 @@ export async function savePwapRules(input: Record<string, unknown>): Promise<Pwa
   }
   next.salesToShip = Math.max(1, Math.round(next.salesToShip));
   next.salesPerFreeCode = Math.max(1, Math.round(next.salesPerFreeCode));
+  next.maxPostsPerOrder = Math.max(1, Math.min(20, Math.round(next.maxPostsPerOrder)));
   next.updatedAt = new Date().toISOString();
   const { error } = await getSupabaseServerClient()
     .from("app_settings")

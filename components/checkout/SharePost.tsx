@@ -6,16 +6,14 @@ import { useEffect, useRef, useState } from "react";
  * Pay With A Post share, fast: the post image is the server-rendered card
  * (made when the order was placed), so it shows instantly. Gold button →
  * phone share sheet with the image (Instagram is one tap); the caption is on
- * the clipboard to paste. After every share the next look loads, so the same
- * customer never posts the same photo twice. WhatsApp gets image + caption.
+ * the clipboard to paste. Each kit is its own image with its own code. WhatsApp gets image + caption.
  */
-export function SharePost({ orderId, cardUrl, caption }: { orderId: string; cardUrl: string; caption: string }) {
+export function SharePost({ orderId, kitId, cardUrl, caption }: { orderId: string; kitId: string; cardUrl: string; caption: string }) {
   const [state, setState] = useState<"idle" | "busy" | "shared" | "saved">("idle");
   const [copied, setCopied] = useState(false);
   const [url, setUrl] = useState(cardUrl);
   const [loaded, setLoaded] = useState(false);
   const [making, setMaking] = useState(false);
-  const variant = useRef(0);
   // The image is fetched as soon as it's shown: iOS only opens the share
   // sheet if share() runs straight from the tap, with nothing awaited first.
   const fileRef = useRef<File | null>(null);
@@ -31,14 +29,6 @@ export function SharePost({ orderId, cardUrl, caption }: { orderId: string; card
       await navigator.clipboard.writeText(caption);
       setCopied(true);
     } catch {}
-  }
-
-  function nextLook() {
-    variant.current += 1;
-    fetch(`/api/barter/${orderId}/card?n=${variant.current}`)
-      .then((r) => r.json())
-      .then((d) => d.url && setUrl(d.url))
-      .catch(() => {});
   }
 
   async function share(withText: boolean) {
@@ -60,7 +50,6 @@ export function SharePost({ orderId, cardUrl, caption }: { orderId: string; card
         // WhatsApp and others take it with the image.
         await navigator.share(withText ? { files: [file], text: caption } : { files: [file] });
         setState("shared");
-        nextLook();
         return;
       } catch (e) {
         if ((e as Error)?.name === "AbortError") {
@@ -76,7 +65,6 @@ export function SharePost({ orderId, cardUrl, caption }: { orderId: string; card
     a.click();
     setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     setState("saved");
-    nextLook();
   }
 
   return (
@@ -95,7 +83,7 @@ export function SharePost({ orderId, cardUrl, caption }: { orderId: string; card
             // ask the server to make it, then show it.
             if (making) return;
             setMaking(true);
-            fetch(`/api/barter/${orderId}/card?n=0`)
+            fetch(`/api/barter/${orderId}/card?kit=${kitId}`)
               .then((r) => r.json())
               .then((d) => d.url && setUrl(`${d.url}?t=${Date.now()}`))
               .catch(() => {})

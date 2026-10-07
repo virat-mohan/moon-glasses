@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 import { getBrandProfile } from "@/lib/brand";
 import { getSupabaseServerClient } from "@/lib/supabase";
-import { pickShareCardForOrder } from "@/lib/share-card-pool";
+import { pickShareCardForOrder, type ShareCardProduct } from "@/lib/share-card-pool";
+import { CARD_BOX_WIDTH, codeFontSize, codeLetterSpacing } from "@/lib/pwap-card-fit";
 
 const W = 1080;
 const H = 1350;
@@ -18,17 +19,36 @@ async function asDataUri(url: string): Promise<string | null> {
   }
 }
 
+/** A kit's recorded model photo, so re-rendering a card never changes its look. */
+async function resolveKitPick(code: string): Promise<ShareCardProduct | null> {
+  try {
+    const { data } = await getSupabaseServerClient().from("pwap_post_kits").select("product_slug").eq("code", code).maybeSingle();
+    if (!data?.product_slug || data.product_slug === "legacy") return null;
+    const { getShareCardPoolItems } = await import("@/lib/share-card-pool");
+    const hit = (await getShareCardPoolItems()).find((p) => p.slug === data.product_slug);
+    return hit ? { imageUrl: hit.imageUrl, productName: hit.productName } : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Server-rendered twin of the share card drawn in ShareToInstagramButton, so
  * it can go out as a WhatsApp image the shopper forwards straight to Instagram.
  * Photo is picked per order from the brand's model-photo pool.
  */
-export async function renderPwapShareCardPng(orderId: string, couponCode: string, variant = 0): Promise<ArrayBuffer | null> {
+export async function renderPwapShareCardPng(
+  orderId: string,
+  couponCode: string,
+  variant = 0,
+  opts: { pick?: ShareCardProduct } = {}
+): Promise<ArrayBuffer | null> {
   const brand = await getBrandProfile();
   const site = brand.siteUrl.replace(/\/$/, "").replace(/^https:\/\/(?!www\.)/, "https://www.");
   const domain = site.replace(/^https?:\/\/(www\.)?/, "").toUpperCase();
-  const pick = await pickShareCardForOrder(orderId, variant);
+  const pick = opts.pick ?? (await resolveKitPick(couponCode)) ?? (await pickShareCardForOrder(orderId, variant));
   if (!pick) return null;
+  const codeSize = codeFontSize(couponCode.length);
 
   const [hero, logo] = await Promise.all([
     asDataUri(pick.imageUrl.startsWith("http") ? pick.imageUrl : `${site}${pick.imageUrl}`),
@@ -77,15 +97,16 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
               flexDirection: "column",
               alignItems: "center",
               marginTop: 22,
-              width: 640,
+              width: CARD_BOX_WIDTH,
               height: 132,
+              overflow: "hidden",
               border: "2px solid #e7c77a",
               borderRadius: 6,
               paddingTop: 18,
             }}
           >
             <div style={{ display: "flex", color: "#e7c77a", fontSize: 22, fontWeight: 700, letterSpacing: 5 }}>YOUR CODE</div>
-            <div style={{ display: "flex", marginTop: 8, color: "#f7f7f4", fontSize: 56, fontWeight: 700, letterSpacing: 9 }}>
+            <div style={{ display: "flex", marginTop: 8, color: "#f7f7f4", fontSize: codeSize, fontWeight: 700, letterSpacing: codeLetterSpacing(codeSize), whiteSpace: "nowrap" }}>
               {couponCode}
             </div>
           </div>
@@ -105,13 +126,18 @@ export async function renderPwapShareCardPng(orderId: string, couponCode: string
  * .png name so every existing link (emails, WhatsApp, share variants) still
  * works; the content type says JPEG, which is what browsers and apps follow.
  */
-export async function generateAndUploadPwapShareCard(orderId: string, couponCode: string, variant = 0): Promise<string | null> {
-  const png = await renderPwapShareCardPng(orderId, couponCode, variant);
+export async function generateAndUploadPwapShareCard(
+  orderId: string,
+  couponCode: string,
+  variant = 0,
+  opts: { pick?: ShareCardProduct; path?: string } = {}
+): Promise<string | null> {
+  const png = await renderPwapShareCardPng(orderId, couponCode, variant, { pick: opts.pick });
   if (!png) return null;
   const sharp = (await import("sharp")).default;
   const jpeg = await sharp(Buffer.from(png)).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
   const supabase = getSupabaseServerClient();
-  const path = variant ? `pwap-share/${orderId}-${variant}.png` : `pwap-share/${orderId}.png`;
+  const path = opts.path ?? (variant ? `pwap-share/${orderId}-${variant}.png` : `pwap-share/${orderId}.png`);
   const { error } = await supabase.storage
     .from("ad-creatives")
     .upload(path, jpeg, { contentType: "image/jpeg", upsert: true, cacheControl: "86400" });

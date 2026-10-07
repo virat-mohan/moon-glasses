@@ -11,6 +11,7 @@ const MAIN: Field[] = [
   { key: "salesPerFreeCode", label: "Sales per free code", hint: "After their pair ships, every this many more sales sends them a free-pair code." },
   { key: "freeCodeValueRupees", label: "Free code value", hint: "Flat discount on the free code. Keep it at or above the dearest pair.", suffix: "₹" },
   { key: "freeCodeValidDays", label: "Free code valid for", hint: "Days before an unused free code expires.", suffix: "days" },
+  { key: "maxPostsPerOrder", label: "Max posts per order", hint: "Post images (each with its own code) one customer can make. Friends on any of them count toward the same pair." },
   { key: "friendDiscountRupees", label: "Friend discount", hint: "Off for a friend who buys with the code. 0 = full price.", suffix: "₹" },
   { key: "shipCostRupees", label: "Our cost to ship a pair", hint: "Courier + packaging, for the money view below. Use the Shiprocket rate card.", suffix: "₹" },
 ];

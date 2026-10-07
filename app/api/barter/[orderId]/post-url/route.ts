@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { resolveBarterAccess } from "@/lib/pwap-kits";
 
 /** Lets the customer register their post link on their own barter order page — the same unguessable-UUID-as-capability-link pattern /return/[orderId] and /review/[orderId] already use, no login needed. */
 export async function PATCH(request: Request, { params }: { params: Promise<{ orderId: string }> }) {
@@ -9,6 +10,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
   if (!/^https?:\/\/(www\.)?instagram\.com\//i.test(postUrl)) {
     return NextResponse.json({ error: "Enter a valid Instagram post link" }, { status: 400 });
   }
+
+  const found = await resolveBarterAccess(orderId);
+  if (found && found.access === "needs_login") return NextResponse.json({ error: "Sign in first" }, { status: 401 });
 
   try {
     const supabase = getSupabaseServerClient();

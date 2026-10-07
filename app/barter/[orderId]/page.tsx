@@ -7,7 +7,11 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import { getBrandProfile } from "@/lib/brand";
 import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { getPwapRules } from "@/lib/pwap-rules";
-import { SharePost } from "@/components/checkout/SharePost";
+import { BarterKits } from "@/components/barter/BarterKits";
+import { BarterSignIn } from "@/components/barter/BarterSignIn";
+import { getOrderKits, kitImageUrl, resolveBarterAccess } from "@/lib/pwap-kits";
+import { BARTER_PAGE_COPY as COPY } from "@/lib/pwap-email-copy";
+import { canAddKit } from "@/lib/pwap-sales";
 import { PayWithAPostMark } from "@/components/ui/PayWithAPostMark";
 import { OpenOnPhoneQr } from "@/components/checkout/OpenOnPhoneQr";
 
@@ -16,15 +20,36 @@ export const dynamic = "force-dynamic";
 export default async function BarterOrderPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
   const supabase = getSupabaseServerClient();
-  const { data: order } = await supabase
-    .from("orders")
-    .select(
-      "id, customer_name, barter_tier, barter_coupon_code, barter_required_orders, barter_post_url, barter_qualified_at, shiprocket_awb_code, barter_sales_count"
-    )
-    .eq("id", orderId)
-    .eq("is_post_barter", true)
-    .maybeSingle();
-  if (!order) notFound();
+  const found = await resolveBarterAccess(orderId);
+  if (!found) notFound();
+  const { access } = found;
+  const order = found.order as unknown as {
+    id: string;
+    customer_name: string;
+    customer_email: string | null;
+    customer_phone: string;
+    barter_tier: string | null;
+    barter_coupon_code: string | null;
+    barter_required_orders: number | null;
+    barter_post_url: string | null;
+    barter_qualified_at: string | null;
+    shiprocket_awb_code: string | null;
+    barter_sales_count: number | null;
+    barter_instagram_handle: string | null;
+  };
+
+  if (access === "needs_login") {
+    return (
+      <main className="mx-auto w-full max-w-[480px] px-5 pt-6 pb-20 md:pt-12">
+        <p className="text-caption uppercase tracking-[0.15em]">
+          <PayWithAPostMark />
+        </p>
+        <h1 className="mt-1 font-display text-heading-l uppercase text-ink">{COPY.signInTitle}</h1>
+        <BarterSignIn orderId={orderId} />
+        <p className="mt-8 text-caption text-secondary-text">{COPY.tagline}</p>
+      </main>
+    );
+  }
 
   const brand = await getBrandProfile();
   const instagramProfileUrl = `https://instagram.com/${brand.instagramHandle.replace(/^@/, "")}`;
@@ -36,7 +61,8 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
   const sales = order.barter_sales_count ?? 0;
   const firstPairDone = isGiftFirst || !!order.barter_qualified_at;
   // After the first pair, every `salesPerFreeCode` more sales = a free code.
-  const { salesPerFreeCode } = await getPwapRules();
+  const rules = await getPwapRules();
+  const { salesPerFreeCode } = rules;
   const shipAt = isGiftFirst ? 0 : required;
   const towardNext = firstPairDone ? (sales - shipAt) % salesPerFreeCode : sales;
   const barTarget = firstPairDone ? salesPerFreeCode : required;
@@ -54,14 +80,12 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
     return { code, used: (c?.times_used ?? 0) > 0, expires: c?.expires_at ?? null };
   });
 
-  // The post image is made right after the order is placed. Link it straight
-  // away (no storage check before render); if it isn't ready yet, SharePost
-  // shows "making your post" and asks /api/barter/[id]/card to finish it.
-  const supabaseUrl = process.env.SUPABASE_URL ?? "";
-  const cardUrl = `${supabaseUrl}/storage/v1/object/public/ad-creatives/pwap-share/${order.id}.png`;
+  // Each kit's image is made when it is created; if one isn't in storage yet,
+  // SharePost asks /api/barter/[id]/card?kit=<id> to finish it.
+  const allKits = await getOrderKits(order);
+  const kits = access === "ok" ? allKits : allKits.slice(0, 1);
   const siteDomain = brand.siteUrl.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
   const handle = brand.instagramHandle.startsWith("@") ? brand.instagramHandle : `@${brand.instagramHandle}`;
-  const caption = `Shop ${siteDomain} and use my code ${order.barter_coupon_code} at checkout 🌙 ${handle}\n\nPowered by Pay With A Post™`;
   const shipped = isGiftFirst || !!order.barter_qualified_at;
 
   return (
@@ -71,9 +95,16 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
       </p>
       <h1 className="mt-1 font-display text-heading-l uppercase text-ink">Your post is ready</h1>
 
-      {cardUrl && order.barter_coupon_code ? (
+      {kits.length > 0 ? (
         <div className="mt-5">
-          <SharePost orderId={order.id} cardUrl={cardUrl} caption={caption} />
+          <BarterKits
+            orderId={order.id}
+            initialKits={kits.map((k) => ({ id: k.id, code: k.code, sales: k.sales_count, url: kitImageUrl(k.image_path) }))}
+            maxPosts={rules.maxPostsPerOrder}
+            canAddMore={access === "ok" && canAddKit(allKits.length, rules.maxPostsPerOrder)}
+            siteDomain={siteDomain}
+            handle={handle}
+          />
           <OpenOnPhoneQr />
         </div>
       ) : (
@@ -85,7 +116,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           <p className="text-body-s font-bold text-ink">
             {shipped ? `${towardNext} / ${barTarget} to your next free pair` : `${sales} / ${required} sales`}
           </p>
-          <code className="text-caption tracking-[0.1em] text-tan-gold">{order.barter_coupon_code}</code>
+          <span className="text-caption text-secondary-text">all your codes count</span>
         </div>
         <div className="mt-2 h-2 w-full bg-surface-alt">
           <div className="h-2 bg-[var(--moon-gold)]" style={{ width: `${Math.min(100, (towardNext / barTarget) * 100)}%` }} />
@@ -121,6 +152,8 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
         </div>
       )}
 
+      {access === "open_legacy" && <p className="mt-4 text-caption text-secondary-text">{COPY.legacyNote}</p>}
+
       <details className="mt-6 border-t border-divider pt-4 text-caption text-secondary-text">
         <summary className="cursor-pointer font-bold uppercase tracking-[0.08em] text-ink">How it works</summary>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5">
@@ -132,7 +165,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
             </a>
             .
           </li>
-          <li>Friends buy with your code at full price. Your own orders don&apos;t count.</li>
+          <li>Friends buy with any of your codes at full price. Your own orders don&apos;t count, and each friend&apos;s order counts once.</li>
           <li>Add #gifted where required by Instagram&apos;s disclosure rules.</li>
         </ol>
         <Link href="/pay-with-a-post/terms" className="mt-3 inline-block underline underline-offset-4">
@@ -146,7 +179,8 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           </>
         )}
       </details>
-      <p className="mt-6">
+      <p className="mt-6 text-caption text-secondary-text">{COPY.tagline}</p>
+      <p className="mt-2">
         <WhatsAppHelp
           label="code not working? whatsapp us"
           topic="pay with a post code"

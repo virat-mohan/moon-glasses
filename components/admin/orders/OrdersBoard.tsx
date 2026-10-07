@@ -198,6 +198,14 @@ export function OrderDetail({ o }: { o: AdminOrderRow }) {
             {o.upi_utr && <Row label="UTR" value={o.upi_utr} />}
             {o.payment_type === "cod_advance" && <Row label="Still to collect" value={inr(o.balance_due ?? 0)} />}
             {o.is_post_barter && o.barter_coupon_code && <Row label="Pay With A Post code" value={o.barter_coupon_code} />}
+            {o.is_post_barter && (o.pwap_kits?.length ?? 0) > 0 && (
+              <>
+                <Row label="Post kits" value={String(o.pwap_kits!.length)} />
+                {o.pwap_kits!.map((k) => (
+                  <Row key={k.code} label={`Sales on ${k.code}`} value={String(k.sales)} />
+                ))}
+              </>
+            )}
           </dl>
         </Section>
 

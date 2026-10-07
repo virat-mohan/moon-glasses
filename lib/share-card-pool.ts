@@ -104,3 +104,40 @@ export async function pickShareCardForOrder(orderId: string, variant = 0): Promi
   const pick = ordered[((count ?? 0) + variant) % ordered.length];
   return { imageUrl: pick.modelImage!, productName: pick.name };
 }
+
+export type PoolItem = ShareCardProduct & { slug: string };
+
+/** Every live product with a model photo, in a fixed order (slug). */
+export async function getShareCardPoolItems(): Promise<PoolItem[]> {
+  const { getCoreCollectionChapters, getLimitedSeriesChapters } = await import("@/lib/chapters-dynamic");
+  const live = [...(await getLimitedSeriesChapters()), ...(await getCoreCollectionChapters())].filter((c) => !!c.modelImage);
+  return live
+    .map((c) => ({ slug: c.slug, imageUrl: c.modelImage!, productName: c.name }))
+    .sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+/**
+ * Photo for a new post kit: least recently used across ALL kits (never-used
+ * first), skipping products this customer (same email or phone) already used
+ * unless the pool is exhausted. See lib/pwap-image-pick.ts.
+ */
+export async function pickShareCardForNewKit(who: { email?: string | null; phone?: string | null }): Promise<PoolItem | null> {
+  const { pickLeastRecentlyUsed } = await import("@/lib/pwap-image-pick");
+  const pool = await getShareCardPoolItems();
+  if (pool.length === 0) return null;
+  const supabase = getSupabaseServerClient();
+  const { data: kits } = await supabase.from("pwap_post_kits").select("product_slug, created_at, order_id").neq("product_slug", "legacy");
+  const lastUsed = new Map<string, number>();
+  for (const k of kits ?? []) {
+    const t = new Date(k.created_at as string).getTime();
+    if (t > (lastUsed.get(k.product_slug as string) ?? -1)) lastUsed.set(k.product_slug as string, t);
+  }
+  const mine = new Set<string>();
+  const ors = [who.email ? `customer_email.ilike.${who.email.replace(/[,()]/g, "")}` : "", who.phone ? `customer_phone.eq.${who.phone.replace(/[,()]/g, "")}` : ""].filter(Boolean);
+  if (ors.length) {
+    const { data: orders } = await supabase.from("orders").select("id").eq("is_post_barter", true).or(ors.join(","));
+    const ids = new Set((orders ?? []).map((o) => o.id as string));
+    for (const k of kits ?? []) if (ids.has(k.order_id as string)) mine.add(k.product_slug as string);
+  }
+  return pickLeastRecentlyUsed(pool, lastUsed, mine);
+}

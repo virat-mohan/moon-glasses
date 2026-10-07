@@ -53,6 +53,8 @@ export type AdminOrderRow = {
   barter_coupon_code: string | null;
   barter_required_orders: number | null;
   barter_qualified_at: string | null;
+  /** Pay With A Post: every post kit (code) and the sales on it. */
+  pwap_kits?: { code: string; sales: number }[];
   is_test: boolean | null;
   upi_utr: string | null;
   order_source: string | null;

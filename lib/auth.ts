@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { sendOtpViaMsg91 } from "@/lib/msg91";
 import { sendOtpEmail } from "@/lib/email";
+import { decideOtp } from "@/lib/otp-attempts";
 
 export const SESSION_COOKIE_NAME = "moonglasses_session";
 const OTP_TTL_MINUTES = 10;
@@ -75,12 +76,22 @@ export async function verifyOtp(rawPhone: string | null, rawEmail: string | null
 
   const supabase = getSupabaseServerClient();
 
-  let query = supabase.from("otp_codes").select("id, phone, email, expires_at, consumed").eq("code", code);
+  // Only the newest code for this phone/email counts, and it gets a few tries.
+  let query = supabase.from("otp_codes").select("id, phone, email, code, expires_at, consumed, attempts");
   query = phone ? query.eq("phone", phone) : query.eq("email", email as string);
 
   const { data: otp } = await query.order("created_at", { ascending: false }).limit(1).maybeSingle();
 
-  if (!otp || otp.consumed || new Date(otp.expires_at) < new Date()) return null;
+  const decision = decideOtp(otp, code);
+  if (decision === "locked" && otp) {
+    await supabase.from("otp_codes").update({ consumed: true }).eq("id", otp.id);
+    return null;
+  }
+  if (decision === "wrong" && otp) {
+    await supabase.from("otp_codes").update({ attempts: (otp.attempts ?? 0) + 1 }).eq("id", otp.id);
+    return null;
+  }
+  if (decision !== "ok" || !otp) return null;
 
   await supabase.from("otp_codes").update({ consumed: true }).eq("id", otp.id);
 

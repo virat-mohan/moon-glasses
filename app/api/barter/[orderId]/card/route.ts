@@ -1,30 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { generateAndUploadPwapShareCard } from "@/lib/pwap-share-card";
+import { getOrderKits, resolveBarterAccess } from "@/lib/pwap-kits";
 
 /**
- * The next look for a Pay With A Post share: variant n of the order's card
- * (variant 0 is made when the order is placed). Each "Share again" asks for
- * the next variant, so the same customer never posts the same photo twice.
- * Cached in storage, so a variant is only rendered once.
+ * The image for one post kit (?kit=<id>; default the order's first kit). Needs
+ * the signed-in customer whose email matches the order (401 otherwise); legacy
+ * orders without an email keep the open link for their first kit only.
+ * Made on first request if it isn't in storage yet.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
-  const variant = Math.max(0, Math.min(50, Number(req.nextUrl.searchParams.get("n")) || 0));
-  const supabase = getSupabaseServerClient();
-  const { data: order } = await supabase
-    .from("orders")
-    .select("id, is_post_barter, barter_coupon_code")
-    .eq("id", orderId)
-    .maybeSingle();
-  if (!order?.is_post_barter || !order.barter_coupon_code) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
+  const found = await resolveBarterAccess(orderId);
+  if (!found) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (found.access === "needs_login") return NextResponse.json({ error: "Sign in to see your post" }, { status: 401 });
 
-  const path = variant ? `pwap-share/${orderId}-${variant}.png` : `pwap-share/${orderId}.png`;
-  const existing = supabase.storage.from("ad-creatives").getPublicUrl(path).data.publicUrl;
+  const kits = await getOrderKits(found.order);
+  const kitId = req.nextUrl.searchParams.get("kit");
+  const kit = kitId ? kits.find((k) => k.id === kitId) : kits[0];
+  if (!kit) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (found.access === "open_legacy" && kit.id !== kits[0].id) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const supabase = getSupabaseServerClient();
+  const existing = supabase.storage.from("ad-creatives").getPublicUrl(kit.image_path).data.publicUrl;
   const head = await fetch(existing, { method: "HEAD" }).catch(() => null);
-  const url = head?.ok ? existing : await generateAndUploadPwapShareCard(orderId, order.barter_coupon_code, variant);
+  const url = head?.ok ? existing : await generateAndUploadPwapShareCard(orderId, kit.code, 0, { path: kit.image_path }).catch(() => null);
   if (!url) return NextResponse.json({ error: "Could not make the post" }, { status: 500 });
   return NextResponse.json({ url });
 }

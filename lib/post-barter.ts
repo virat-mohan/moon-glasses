@@ -13,12 +13,15 @@ import { assertPwapStock, assertValidOrderQuantities } from "@/lib/checkout-rule
 import { shipOrder } from "@/lib/order-shipping";
 import { isTestOrder } from "@/lib/test-order";
 import { pwapDedupeOrFilter } from "@/lib/pwap-dedupe";
+import { mintBarterCouponCode } from "@/lib/pwap-kits";
+import { pickShareCardForNewKit } from "@/lib/share-card-pool";
+import { countFriendSales } from "@/lib/pwap-sales";
 import { after } from "next/server";
 import {
   sendPostBarterOrderConfirmationEmail,
   sendPostBarterQualifiedEmail,
   sendPostBarterProgressEmail,
-  sendOrderNotificationEmail,
+  sendPwapTeamOrderEmail,
   sendPwapFreePairEmail,
   sendPwapNextPairProgressEmail,
 } from "@/lib/email";
@@ -198,46 +201,6 @@ function randomSuffix() {
   return Math.random().toString(36).slice(2, 6).toUpperCase();
 }
 
-// Rotated onto the sharer's first name (e.g. "ANUN" -> "ANUNAFTERGLOW") so
-// the code reads like something worth sharing rather than a random string —
-// echoes the brand's night-out positioning instead of being purely
-// functional. Picked randomly per mint (not hashed) since a nicer-sounding
-// code is worth more than the same person always landing on the same word.
-const THEME_WORDS = [
-  "AFTERGLOW",
-  "MIDNIGHT",
-  "MOONLIT",
-  "NIGHTFALL",
-  "STARLIT",
-  "NEONNIGHTS",
-  "AFTERDARK",
-  "DUSKFALL",
-  "GLOWUP",
-  "NIGHTOWL",
-];
-
-/** Mints a shareable coupon code for this barter order — same shape as a creator's coupon (lib/creators.ts), reusing the exact checkout coupon engine so a friend's redemption is a completely ordinary coupon redemption. Full price for the friend — see discount_value below — this is attribution, not a discount mechanic. */
-async function createBarterCouponCode(customerName: string, instagramHandle: string, friendDiscountRupees: number): Promise<string> {
-  const supabase = getSupabaseServerClient();
-  const firstName = customerName.trim().split(/\s+/)[0]?.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  const base =
-    firstName ||
-    parseInstagramHandle(instagramHandle).replace(/[^a-zA-Z0-9]/g, "").slice(0, 10).toUpperCase() ||
-    "CREATOR";
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const theme = THEME_WORDS[Math.floor(Math.random() * THEME_WORDS.length)];
-    const code = `${base}${theme}${attempt === 0 ? "" : randomSuffix()}`;
-    const { error } = await supabase.from("coupon_codes").insert({
-      code,
-      discount_type: "flat",
-      discount_value: friendDiscountRupees,
-    });
-    if (!error) return code;
-  }
-  throw new Error("Could not generate a unique barter coupon code");
-}
-
 /** Shared by both ship paths: the moment a barter order is either created (gift_first) or qualifies (sell_first), decrement inventory and ship exactly like a normal paid order does. */
 async function decrementInventoryAndShip(orderId: string) {
   const supabase = getSupabaseServerClient();
@@ -297,6 +260,11 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   if (totalQuantity !== 1) {
     throw new Error("Pay With A Post covers one item per order — adjust your cart to a single item.");
   }
+
+  // Email is required for Pay With A Post: the private link is sent there.
+  const emailOk = typeof payload.customer.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.customer.email.trim());
+  if (!emailOk) throw new Error("Please add your email: we send your private link there.");
+  payload.customer.email = payload.customer.email.trim();
 
   const supabase = getSupabaseServerClient();
   const handle = payload.instagramHandle ? parseInstagramHandle(payload.instagramHandle) : "";
@@ -363,7 +331,7 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
 
   const isTest = payload.testOrder === true;
   const guestCustomer = isTest ? null : await findOrCreateCustomerForGuest(payload.customer.phone, payload.customer.email, payload.customer.name);
-  const couponCode = await createBarterCouponCode(payload.customer.name, handle, friendDiscountRupees);
+  const couponCode = await mintBarterCouponCode(payload.customer.name, handle, friendDiscountRupees);
   const isGiftFirst = tier === "gift_first";
 
   const { data: savedOrder, error: orderError } = await supabase
@@ -426,6 +394,14 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   // session's channel (the checkout page only fires it for paid flows).
   if (!isTest) await logTrackingEvent("Purchase", { sessionKey: payload.sessionKey, value: pricing.total });
 
+  // The order's first post kit: its own code + a least-recently-used model photo.
+  const kitPick = await pickShareCardForNewKit({ email: payload.customer.email, phone: payload.customer.phone }).catch(() => null);
+  const firstKitPath = `pwap-share/${savedOrder.id}.png`;
+  await supabase
+    .from("pwap_post_kits")
+    .insert({ order_id: savedOrder.id, code: couponCode, product_slug: kitPick?.slug ?? "legacy", image_path: firstKitPath })
+    .then(({ error }) => error && console.error("First kit insert failed", savedOrder.id, error));
+
   // Test orders never take stock or ship (decrementInventoryAndShip also guards).
   if (isGiftFirst && !isTest) {
     await decrementInventoryAndShip(savedOrder.id);
@@ -437,12 +413,12 @@ export async function createPostBarterOrder(payload: PostBarterOrderPayload) {
   after(async () => {
   if (!isGiftFirst) {
     const { generateAndUploadPwapShareCard } = await import("@/lib/pwap-share-card");
-    await generateAndUploadPwapShareCard(savedOrder.id, couponCode).catch(() => null);
+    await generateAndUploadPwapShareCard(savedOrder.id, couponCode, 0, { pick: kitPick ?? undefined, path: firstKitPath }).catch(() => null);
   }
 
   await Promise.allSettled([
     sendPostBarterOrderConfirmationEmail(savedOrder.customer_email, savedOrder.customer_name, savedOrder.id, couponCode, requiredOrders, tier, isTest),
-    sendOrderNotificationEmail(savedOrder, orderItems),
+    sendPwapTeamOrderEmail(savedOrder, orderItems, couponCode, requiredOrders, tier),
     isTest ? Promise.resolve(false) : sendOrderAlertWhatsApp(savedOrder, "created", orderItems.reduce((sum, i) => sum + i.quantity, 0)),
     // Post First shoppers need their code and target on WhatsApp; Gift First
     // ships now, so it gets the ordinary order confirmation.
@@ -481,30 +457,54 @@ export async function maybeQualifyBarterOrderForCoupon(
   if (!couponCode) return;
   const supabase = getSupabaseServerClient();
 
-  const { data: order } = await supabase
+  const code = couponCode.toUpperCase();
+  const cols = "id, customer_name, customer_phone, customer_email, barter_required_orders, barter_qualified_at, barter_tier, barter_rewards_issued";
+  let { data: order } = await supabase
     .from("orders")
-    .select("id, customer_name, customer_phone, customer_email, barter_required_orders, barter_qualified_at, barter_tier, barter_rewards_issued")
+    .select(cols)
     .eq("is_post_barter", true)
-    .eq("barter_coupon_code", couponCode.toUpperCase())
+    .eq("barter_coupon_code", code)
     .neq("status", "cancelled")
     .eq("is_test", false)
     .maybeSingle();
+  if (!order) {
+    // An extra post kit's code: find the order it belongs to.
+    const { data: kit } = await supabase.from("pwap_post_kits").select("order_id").eq("code", code).maybeSingle();
+    if (kit) {
+      const res = await supabase
+        .from("orders")
+        .select(cols)
+        .eq("id", kit.order_id)
+        .eq("is_post_barter", true)
+        .neq("status", "cancelled")
+        .eq("is_test", false)
+        .maybeSingle();
+      order = res.data;
+    }
+  }
   if (!order) return;
 
+  const lc = (v?: string | null) => (v ?? "").trim().toLowerCase();
   const buyerIsBarterer =
     (buyerPhone && order.customer_phone && buyerPhone === order.customer_phone) ||
-    (buyerEmail && order.customer_email && buyerEmail === order.customer_email);
+    (buyerEmail && order.customer_email && lc(buyerEmail) === lc(order.customer_email));
   if (buyerIsBarterer) return;
 
-  const { data: coupon } = await supabase.from("coupon_codes").select("id").eq("code", couponCode.toUpperCase()).maybeSingle();
-  if (!coupon) return;
+  // Every code this order has made: the main one plus each extra post kit.
+  const { data: kitRows } = await supabase.from("pwap_post_kits").select("code").eq("order_id", order.id);
+  const allCodes = [...new Set([code, ...(kitRows ?? []).map((k) => String(k.code).toUpperCase())])];
+  const { data: orderCode } = await supabase.from("orders").select("barter_coupon_code").eq("id", order.id).maybeSingle();
+  if (orderCode?.barter_coupon_code) allCodes.push(String(orderCode.barter_coupon_code).toUpperCase());
+  const { data: coupons } = await supabase.from("coupon_codes").select("id, code").in("code", [...new Set(allCodes)]);
+  if (!coupons?.length) return;
+  const codeById = new Map(coupons.map((c) => [c.id as string, String(c.code).toUpperCase()]));
 
   const { data: redemptions } = await supabase
     .from("coupon_redemptions")
-    .select("customer_phone, customer_email, order_id")
-    .eq("coupon_id", coupon.id);
+    .select("coupon_id, customer_phone, customer_email, order_id")
+    .in("coupon_id", [...codeById.keys()]);
 
-  const redemptionOrderIds = (redemptions ?? []).map((r) => r.order_id).filter(Boolean) as string[];
+  const redemptionOrderIds = [...new Set((redemptions ?? []).map((r) => r.order_id).filter(Boolean) as string[])];
   let paidOrderIds = new Set<string>();
   if (redemptionOrderIds.length > 0) {
     const { data: paidOrders } = await supabase
@@ -520,14 +520,23 @@ export async function maybeQualifyBarterOrderForCoupon(
     paidOrderIds = new Set((paidOrders ?? []).map((o) => o.id as string));
   }
 
-  const qualifyingCount = (redemptions ?? []).filter((r) => {
-    if (!r.order_id || !paidOrderIds.has(r.order_id)) return false;
-    const samePhone = r.customer_phone && order.customer_phone && r.customer_phone === order.customer_phone;
-    const sameEmail = r.customer_email && order.customer_email && r.customer_email === order.customer_email;
-    return !samePhone && !sameEmail;
-  }).length;
+  // Friends on ANY of the order's codes count toward the one target, each
+  // friend order once, never the customer's own phone/email.
+  const { total: qualifyingCount, byCode } = countFriendSales(
+    (redemptions ?? []).map((r) => ({
+      code: codeById.get(r.coupon_id as string) ?? "",
+      order_id: r.order_id as string | null,
+      customer_phone: r.customer_phone as string | null,
+      customer_email: r.customer_email as string | null,
+    })),
+    paidOrderIds,
+    { phone: order.customer_phone, email: order.customer_email }
+  );
 
   await supabase.from("orders").update({ barter_sales_count: qualifyingCount }).eq("id", order.id);
+  for (const c of allCodes) {
+    await supabase.from("pwap_post_kits").update({ sales_count: byCode[c] ?? 0 }).eq("code", c);
+  }
 
   if (!order.barter_qualified_at) {
     if (qualifyingCount < order.barter_required_orders) {
