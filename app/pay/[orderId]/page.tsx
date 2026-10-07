@@ -5,7 +5,6 @@ import { headers } from "next/headers";
 import { getSupabaseServerClient } from "@/lib/supabase";
 import { getUpiPaymentConfig } from "@/lib/upi-payment";
 import { buildUpiLink } from "@/lib/upi-links";
-import { PayClient } from "./PayClient";
 
 export const dynamic = "force-dynamic";
 
@@ -84,20 +83,6 @@ export default async function PayPage({ params }: { params: Promise<{ orderId: s
     return <main />;
   }
 
-  // On mobile devices, render PayClient which automatically triggers the direct UPI app intent
-  // On desktop browsers, redirect to the dynamic UPI QR scan screen.
-  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
-  if (isMobile) {
-    return (
-      <PayClient
-        orderRef={order.id.slice(0, 8).toUpperCase()}
-        amount={amount}
-        upiId={config.upiId}
-        upiLink={upiLink}
-        confirmedHref={confirmedHref}
-      />
-    );
-  }
-
+  // Redirect to the website's order confirmed page where the dynamic UPI QR code is displayed to scan and pay.
   redirect(confirmedHref);
 }

@@ -256,9 +256,7 @@ export function buildPayReply(input: { cart: ValidatedCart; name: string; addres
     orderLinesText(input.cart, false),
     totalLine,
     `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
-    `⚡ *Pay by UPI in 1-tap:*\n${input.payLink}`,
-    `📲 *Or Scan Dynamic UPI QR Code:*\n${qrLink}`,
-    `✦ *Important:* Please pay the exact amount (${rupees(finalTotal)}) so your order is placed and confirmed automatically. Orders with incorrect amounts cannot be processed.`,
+    `📲 *Scan Dynamic UPI QR Code to Pay:*\n${input.payLink}`,
     "wrong address? reply here before it ships.",
   ].join("\n\n");
 }
