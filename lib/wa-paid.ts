@@ -4,7 +4,7 @@ import { canReplyFreeForm } from "@/lib/whatsapp-window";
 import { logOutboundWhatsAppMessage } from "@/lib/whatsapp-inbox";
 
 export const paidMessageText = (orderId: string) =>
-  `paid ✓ order #${orderId.slice(0, 8).toUpperCase()} is confirmed, we'll message you when it ships.`;
+  `*Payment Confirmed* ✓ ✨\n\nOrder #${orderId.slice(0, 8).toUpperCase()} is confirmed. We'll message you when it ships! 📦`;
 
 /**
  * For orders that came from a WhatsApp cart: a short session message once payment
