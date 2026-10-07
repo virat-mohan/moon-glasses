@@ -246,18 +246,17 @@ export async function handleWaPendingText(input: { phone: string; text: string; 
     await logTrackingEvent("InitiateCheckout", { sessionKey: `wa-${orderId}`, value: result.total });
     const money = { subtotal: cart.total, total: result.total, discount: Math.max(0, cart.total - result.total) };
     const isFree = "free" in result && result.free === true;
-    const shortId = orderId.slice(0, 8);
     const text =
       invalidNote +
       (isFree
         ? buildFreeOrderReply({ cart, name: parsed.name, address: parsed.address, pincode: parsed.pincode })
-        : buildPayReply({ cart, name: parsed.name, address: parsed.address, pincode: parsed.pincode, payLink: `${SITE}/pay/${shortId}`, money }));
+        : buildPayReply({ cart, name: parsed.name, address: parsed.address, pincode: parsed.pincode, payLink: `${SITE}/pay/${orderId}`, money }));
     const sent = await reply(input.phone, text, input.conversationId, isFree ? "free order" : "pay link");
     if (isFree) await sendWaPaidMessage({ id: orderId, customer_phone: key, order_source: "whatsapp" }).catch(() => {});
     await sendCustomerIssueAlert(`WhatsApp order: ${firstName(parsed.name)}, ${units} pairs, ${rupees(result.total)}`, [
       `WhatsApp order: ${firstName(parsed.name)}, ${units} pairs, ${rupees(result.total)}`,
       sent ? (isFree ? "Free order confirmed, no pay link needed." : "Pay link sent in chat.") : "The reply was NOT delivered (see the other email).",
-      ...(isFree ? [] : [`Pay link: ${SITE}/pay/${shortId}`]),
+      ...(isFree ? [] : [`Pay link: ${SITE}/pay/${orderId}`]),
     ], orderId).catch(() => {});
   } catch (err) {
     console.error("WhatsApp order creation failed", err);
