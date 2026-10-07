@@ -65,16 +65,26 @@ export async function getOrderKits(order: OrderForKits): Promise<PwapKit[]> {
   let kits = await read();
   if (!kits.some((k) => k.code === order.barter_coupon_code) && order.barter_coupon_code) {
     const { data: o } = await supabase.from("orders").select("barter_sales_count, created_at").eq("id", order.id).maybeSingle();
-    // created_at is set just before the first card so it sorts first.
-    await supabase.from("pwap_post_kits").insert({
-      order_id: order.id,
-      code: order.barter_coupon_code,
-      product_slug: "legacy",
-      image_path: `pwap-share/${order.id}.png`,
-      sales_count: o?.barter_sales_count ?? 0,
-      created_at: o?.created_at ?? new Date().toISOString(),
-    });
-    kits = await read();
+    // created_at is set just before the first card so it sorts first. Upsert, ignoring a
+    // duplicate: two requests can arrive together (sign-in, then the page refresh) and
+    // both would try to create the first post; one must not fail the other.
+    await supabase.from("pwap_post_kits").upsert(
+      {
+        order_id: order.id,
+        code: order.barter_coupon_code,
+        product_slug: "legacy",
+        image_path: `pwap-share/${order.id}.png`,
+        sales_count: o?.barter_sales_count ?? 0,
+        created_at: o?.created_at ?? new Date().toISOString(),
+      },
+      { onConflict: "code", ignoreDuplicates: true }
+    );
+    // The other request's row may still be committing: look again a few times.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      kits = await read();
+      if (kits.some((k) => k.code === order.barter_coupon_code)) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
   }
   return kits;
 }

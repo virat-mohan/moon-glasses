@@ -9,6 +9,7 @@ import { BarterPostUrlForm } from "@/components/checkout/BarterPostUrlForm";
 import { getPwapRules } from "@/lib/pwap-rules";
 import { BarterKits } from "@/components/barter/BarterKits";
 import { BarterSignIn } from "@/components/barter/BarterSignIn";
+import { AutoRefresh } from "@/components/barter/AutoRefresh";
 import { getOrderKits, kitImageUrl, resolveBarterAccess } from "@/lib/pwap-kits";
 import { BARTER_PAGE_COPY as COPY } from "@/lib/pwap-email-copy";
 import { canAddKit } from "@/lib/pwap-sales";
@@ -108,7 +109,7 @@ export default async function BarterOrderPage({ params }: { params: Promise<{ or
           <OpenOnPhoneQr />
         </div>
       ) : (
-        <p className="mt-5 text-body-s text-secondary-text">Preparing your post… refresh in a moment.</p>
+        <AutoRefresh message="making your post… takes a few seconds." />
       )}
 
       <div className="mt-6 border border-divider p-4">
