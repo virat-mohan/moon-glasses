@@ -102,6 +102,7 @@ export default async function Home() {
           <DiscountPromoBanner />
         </div>
 
+        <p className="pb-6 text-center font-sans text-caption text-secondary-text">All prices are inclusive of taxes and shipping.</p>
         {limitedChapters.length > 0 && (
           <section className="border-b border-divider pb-16 pt-8">
             <p className="mb-3 text-caption uppercase tracking-[0.12em] text-secondary-text">

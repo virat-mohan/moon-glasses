@@ -8,7 +8,6 @@ import type { Chapter } from "@/types/chapter";
 import { chapterImageSrc, shortProductName } from "@/lib/chapters";
 import { BuyNowButton } from "@/components/chapter/BuyNowButton";
 import type { StockLabel } from "@/lib/inventory";
-import { PRICE_NOTE_SHORT } from "@/lib/price-copy";
 
 export type CatalogueItem = { chapter: Chapter; stockLabel: StockLabel; startModel?: boolean };
 
@@ -109,7 +108,6 @@ export function CatalogueCard({ chapter, stockLabel, startModel = true, sizes = 
             </p>
           </Link>
           <p className="mt-0.5 font-sans text-body text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
-          <p className="font-sans text-micro text-secondary-text">{PRICE_NOTE_SHORT}</p>
         </div>
         <div className="flex shrink-0 flex-col items-end whitespace-nowrap">
           <Link

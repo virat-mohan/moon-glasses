@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { CatalogueCard, PRODUCT_BG, PRODUCT_SHOT_CLASS, type CatalogueItem } from "@/components/collection/CatalogueCard";
 import { chapterImageSrc, shortProductName } from "@/lib/chapters";
-import { PRICE_NOTE_SHORT } from "@/lib/price-copy";
 
 /**
  * Mobile-only catalogue: one big photo per product, tap to switch model/product, swipe for the next pair.
@@ -143,7 +142,6 @@ function MobileGridTile({ chapter, stockLabel, startModel = false }: CatalogueIt
           {shortProductName(chapter.name)}
         </p>
         <p className="mt-0.5 font-sans text-caption text-ink">₹{chapter.price.toLocaleString("en-IN")}</p>
-        <p className="font-sans text-micro text-secondary-text">{PRICE_NOTE_SHORT}</p>
       </Link>
     </div>
   );
