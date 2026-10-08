@@ -29,6 +29,8 @@ import { ShipmentCell } from "@/components/admin/ShipmentCell";
 import { RefundActions } from "@/components/admin/RefundActions";
 import { MarkUpiPaidButton } from "@/components/admin/MarkUpiPaidButton";
 import { SendPaymentLinkButton } from "@/components/admin/SendPaymentLinkButton";
+import { ActionTile } from "@/components/admin/ActionTile";
+import { DeleteOrderButton } from "./DeleteOrderButton";
 
 function useIsDesktop() {
   return useSyncExternalStore(
@@ -152,6 +154,15 @@ export function OrderDetail({ o }: { o: AdminOrderRow }) {
             status={o.status}
             shipmentStatus={o.shipment_status ?? "not_shipped"}
           />
+          {(cancelled || o.is_test) && (
+            <ActionTile hint={`Permanently deletes this ${cancelled ? "cancelled" : "test"} order. Cannot be undone.`}>
+              <DeleteOrderButton
+                orderId={o.id}
+                orderShortId={shortId(o.id)}
+                customerName={o.customer_name}
+              />
+            </ActionTile>
+          )}
         </div>
       </div>
 
@@ -271,28 +282,17 @@ export function OrderDetail({ o }: { o: AdminOrderRow }) {
         </div>
       </details>
 
-      <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid var(--ord-divider, #eee)", display: "flex", justifyContent: "flex-end" }}>
-        <button
-          type="button"
-          className="ord-btn"
-          style={{ color: "#dc2626", borderColor: "#dc2626" }}
-          onClick={async () => {
-            if (!window.confirm(`Are you sure you want to permanently delete order #${shortId(o.id)} (${o.customer_name})?`)) return;
-            try {
-              const res = await fetch(`/api/admin/orders/${o.id}`, { method: "DELETE" });
-              if (res.ok) {
-                window.location.reload();
-              } else {
-                const err = await res.json().catch(() => ({}));
-                alert(err.error || "Failed to delete order");
-              }
-            } catch {
-              alert("Error deleting order");
-            }
-          }}
-        >
-          Delete this order
-        </button>
+      <div style={{ marginTop: "1.25rem", paddingTop: "0.85rem", borderTop: "1px solid var(--ord-divider, var(--adm-hair-2, #eee))", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+        <div>
+          <p className="ord-label" style={{ color: "var(--adm-danger)", marginBottom: "0.15rem" }}>Danger Zone</p>
+          <p className="ord-muted" style={{ margin: 0 }}>Permanently remove order #{shortId(o.id)}.</p>
+        </div>
+        <DeleteOrderButton
+          orderId={o.id}
+          orderShortId={shortId(o.id)}
+          customerName={o.customer_name}
+          label="Delete this order"
+        />
       </div>
     </div>
   );

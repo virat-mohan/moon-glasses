@@ -62,15 +62,6 @@ export default function CheckoutPage() {
   const [isGift, setIsGift] = useState(false);
   const [giftNote, setGiftNote] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(true);
-  // Test order mode: only offered when this browser has an admin session
-  // (/api/admin/me 200). The server re-checks the session; the flag alone does nothing.
-  const [canTestOrder, setCanTestOrder] = useState(false);
-  const [testOrder, setTestOrder] = useState(false);
-  useEffect(() => {
-    fetch("/api/admin/me", { cache: "no-store" })
-      .then((res) => setCanTestOrder(res.ok))
-      .catch(() => setCanTestOrder(false));
-  }, []);
   const [razorpay, setRazorpay] = useState<{ enabled: boolean; keyId: string | null; codAdvanceRupees: number; codEnabled: boolean }>({
     enabled: false,
     keyId: null,
@@ -190,7 +181,6 @@ export default function CheckoutPage() {
           giftNote: isGift ? giftNote : null,
           sessionKey: getSessionKey(),
           newsletterOptIn,
-          testOrder: canTestOrder && testOrder,
         }),
       });
       const data = await res.json();
@@ -223,7 +213,6 @@ export default function CheckoutPage() {
           newsletterOptIn,
           referralCode: referralCodeInput.trim().toUpperCase() || null,
           couponCode: couponCodeInput.trim().toUpperCase() || null,
-          testOrder: canTestOrder && testOrder,
         }),
       });
       const data = await res.json();
@@ -1251,20 +1240,6 @@ export default function CheckoutPage() {
                         number={supportWhatsapp}
                       />
                     </p>
-
-                    {canTestOrder && (
-                      <label className="mt-4 flex min-h-[44px] cursor-pointer items-center gap-3 border border-dashed border-paint-orange px-3 py-2">
-                        <input
-                          type="checkbox"
-                          checked={testOrder}
-                          onChange={(e) => setTestOrder(e.target.checked)}
-                          className="h-5 w-5 shrink-0 accent-[var(--moon-gold)]"
-                        />
-                        <span className="text-caption text-ink">
-                          <strong className="uppercase tracking-[0.05em]">Test order (admin only):</strong> nothing ships, no stock used
-                        </span>
-                      </label>
-                    )}
 
                     <div className="mt-4 sticky bottom-0 -mx-5 border-t border-divider bg-[var(--moon-black)] px-5 pb-[max(env(safe-area-inset-bottom),12px)] pt-2 md:static md:mx-0 md:border-0 md:p-0">
               <button
