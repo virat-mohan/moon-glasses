@@ -253,7 +253,6 @@ export async function sendWhatsAppSessionMessage(phone: string, text: string) {
         content_type: "text",
         text: text,
         recipient_number: toMobile(phone),
-        preview_url: false,
       }),
     });
     const data = await res.json().catch(() => null);
