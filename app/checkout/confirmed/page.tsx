@@ -60,6 +60,9 @@ function OrderConfirmedContent() {
     const amount = Number(params.get("amount") ?? 0);
     const upiId = params.get("upiId") || "viratmohan-1@okhdfcbank";
     let upiLink = params.get("link") ?? "";
+    if (upiLink) {
+      upiLink = upiLink.replace(/pn=Moonglasses/gi, "pn=" + encodeURIComponent("Virat Mohan"));
+    }
     if (!upiLink && upiId && orderId) {
       upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent("Virat Mohan")}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Order ${orderId.slice(0, 8).toUpperCase()}`)}`;
     }

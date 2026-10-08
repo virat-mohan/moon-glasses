@@ -42,7 +42,7 @@ export async function getUpiPaymentConfig() {
   // The QR shown to the shopper is generated per order (exact amount baked in),
   // so a static QR image is optional now — only the UPI ID is required.
   const resolvedUpiId = upiId || "viratmohan-1@okhdfcbank";
-  const payeeName = payeeNameSetting || "Virat Mohan";
+  const payeeName = payeeNameSetting && payeeNameSetting !== "Moonglasses" ? payeeNameSetting : "Virat Mohan";
   return { upiId: resolvedUpiId, qrImageUrl, payeeName };
 }
 
