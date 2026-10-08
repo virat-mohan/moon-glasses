@@ -43,12 +43,46 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const { data: order } = await supabase.from("orders").select("id, customer_name").eq("id", id).maybeSingle();
     if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-    await supabase.from("whatsapp_messages").delete().eq("order_id", id);
-    await supabase.from("shipping_labels").delete().eq("order_id", id);
-    await supabase.from("shipments").delete().eq("order_id", id);
-    await supabase.from("order_side_effects").delete().eq("order_id", id);
-    await supabase.from("order_history").delete().eq("order_id", id);
-    await supabase.from("order_items").delete().eq("order_id", id);
+    // Helper to safely delete child rows from a table without aborting on empty/missing relations
+    const safeDelete = async (table: string, column = "order_id") => {
+      try {
+        const { error } = await supabase.from(table).delete().eq(column, id);
+        if (error) console.warn(`Notice deleting from ${table}:`, error.message);
+      } catch (e) {
+        console.warn(`Error deleting from ${table}:`, e);
+      }
+    };
+
+    // Helper to safely nullify optional references
+    const safeUnlink = async (table: string, column: string) => {
+      try {
+        const { error } = await supabase.from(table).update({ [column]: null }).eq(column, id);
+        if (error) console.warn(`Notice unlinking ${table}.${column}:`, error.message);
+      } catch (e) {
+        console.warn(`Error unlinking ${table}.${column}:`, e);
+      }
+    };
+
+    // Delete child records that reference this order
+    await safeDelete("whatsapp_messages");
+    await safeDelete("shipping_labels");
+    await safeDelete("shipments");
+    await safeDelete("order_side_effects");
+    await safeDelete("order_history");
+    await safeDelete("order_events");
+    await safeDelete("return_requests");
+    await safeDelete("order_items");
+    await safeDelete("pwap_post_kits");
+    await safeDelete("pwap_rewards", "barter_order_id");
+    await safeDelete("loyalty_ledger");
+    await safeDelete("referrals", "referred_order_id");
+    await safeDelete("reviews");
+    await safeDelete("coupon_redemptions");
+    await safeDelete("discount_rule_redemptions");
+
+    // Unlink any optional foreign keys that reference this order
+    await safeUnlink("legacy_customers", "converted_order_id");
+    await safeUnlink("preorders", "converted_order_id");
 
     const { error } = await supabase.from("orders").delete().eq("id", id);
     if (error) throw error;
