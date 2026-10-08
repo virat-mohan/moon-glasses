@@ -281,19 +281,6 @@ export function OrderDetail({ o }: { o: AdminOrderRow }) {
           </div>
         </div>
       </details>
-
-      <div style={{ marginTop: "1.25rem", paddingTop: "0.85rem", borderTop: "1px solid var(--ord-divider, var(--adm-hair-2, #eee))", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
-        <div>
-          <p className="ord-label" style={{ color: "var(--adm-danger)", marginBottom: "0.15rem" }}>Danger Zone</p>
-          <p className="ord-muted" style={{ margin: 0 }}>Permanently remove order #{shortId(o.id)}.</p>
-        </div>
-        <DeleteOrderButton
-          orderId={o.id}
-          orderShortId={shortId(o.id)}
-          customerName={o.customer_name}
-          label="Delete this order"
-        />
-      </div>
     </div>
   );
 }
