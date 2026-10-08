@@ -30,7 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
 
     const config = await getUpiPaymentConfig();
     const upiId = config?.upiId || "viratmohan-1@okhdfcbank";
-    const payeeName = config?.payeeName || "Moonglasses";
+    const payeeName = config?.payeeName || "Virat Mohan";
 
     const totalPaise = order.upi_amount_paise ? Number(order.upi_amount_paise) : Math.round(Number(order.total) * 100);
     const amount = (totalPaise / 100).toFixed(2);

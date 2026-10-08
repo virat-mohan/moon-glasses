@@ -57,13 +57,19 @@ function OrderConfirmedContent() {
   const upiPending = useMemo(() => {
     if (params.get("upi") !== "1") return null;
     const qr = params.get("qr");
+    const amount = Number(params.get("amount") ?? 0);
+    const upiId = params.get("upiId") || "viratmohan-1@okhdfcbank";
+    let upiLink = params.get("link") ?? "";
+    if (!upiLink && upiId && orderId) {
+      upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent("Virat Mohan")}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Order ${orderId.slice(0, 8).toUpperCase()}`)}`;
+    }
     return {
-      amount: Number(params.get("amount") ?? 0),
-      upiId: params.get("upiId") ?? "",
+      amount,
+      upiId,
       qrImageUrl: qr && qr !== "null" && qr !== "undefined" ? qr : "",
-      upiLink: params.get("link") ?? "",
+      upiLink,
     };
-  }, [params]);
+  }, [params, orderId]);
   // UPI: the QR is generated from this order's pay link (exact amount, down to
   // the paise tag the bank-SMS matcher relies on), and the page watches the
   // order until the forwarded credit SMS confirms it.
