@@ -319,8 +319,12 @@ body:has(.adm) > div:not(:has(.adm)):has(nav) { display: none; }
 @media (min-width: 768px) { .ord-actions-grid { grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); } }
 .ord-action { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
 .ord-hint { font-size: 0.875rem; color: var(--adm-dim); line-height: 1.35; }
-.ord-grid { display: grid; gap: 0.75rem; grid-template-columns: 1fr; }
-@media (min-width: 768px) { .ord-grid { grid-template-columns: repeat(3, 1fr); } }
+.ord-grid { display: grid; gap: 0.75rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .ord-grid { grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); } }
+.ord-grid > *, .ord-panel > *, .ord-actions-grid > * { min-width: 0; }
+.ord-sec, .ord-actions, .ord-hint, .ord-kv dd, .ord-items li { overflow-wrap: anywhere; }
+.ord-panel { max-width: 100%; box-sizing: border-box; }
+.ord-detail-row td { max-width: 0; width: 100%; }
 .ord-sec { background: var(--adm-surface); border: 1px solid var(--adm-hair); border-radius: 12px; padding: 0.75rem 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; }
 .ord-sec-title { font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--adm-gold); font-weight: 600; margin: 0; }
 .ord-kv { display: flex; justify-content: space-between; gap: 1rem; padding: 0.3rem 0; border-bottom: 1px solid var(--adm-hair); font-size: 1rem; }

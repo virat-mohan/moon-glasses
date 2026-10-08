@@ -23,7 +23,12 @@ export async function warehouseItemNames(items: { chapter_slug: string; chapter_
       const name = row?.supplier_model
         ? `${i.chapter_name} (Ted Smith: ${row.supplier_model}${colour ? ` — ${colour}` : ""}${row.supplier_sku ? ` [${row.supplier_sku}]` : ""})`
         : i.chapter_name;
-      return [i.chapter_slug, { name, sku: (row?.supplier_sku as string | null) ?? i.chapter_slug }];
+      // The label prints the SKU, never shown to customers: our slug plus the
+      // supplier ("Xpert") model/colour and code, so packers can match either.
+      const supplier = row?.supplier_model
+        ? ` | XPERT: ${row.supplier_model}${colour ? ` ${colour}` : ""}${row.supplier_sku ? ` ${row.supplier_sku}` : ""}`
+        : "";
+      return [i.chapter_slug, { name, sku: `${i.chapter_slug}${supplier}`.slice(0, 120) }];
     })
   );
 }
