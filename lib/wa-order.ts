@@ -188,12 +188,18 @@ export function syntheticOrderMessageId(phone: string, items: WaOrderItem[], now
 
 const rupees = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const SITE = "https://www.moon-glasses.store";
-export const orderLinesText = (cart: ValidatedCart) =>
-  cart.lines.map((l) => `${l.qty}× ${l.name}  ${rupees(l.price * l.qty)}\npreview: ${SITE}/chapter/${l.slug}`).join("\n\n");
+export const orderLinesText = (cart: ValidatedCart, includePreview = true) =>
+  cart.lines
+    .map((l) =>
+      includePreview
+        ? `${l.qty}× ${l.name} · ${rupees(l.price * l.qty)}\nPreview: ${SITE}/chapter/${l.slug}`
+        : `${l.qty}× ${l.name} · ${rupees(l.price * l.qty)}`
+    )
+    .join("\n\n");
 
 const droppedText = (cart: ValidatedCart) =>
   cart.dropped.length
-    ? cart.dropped.map((d) => (d.name ? `${d.name} isn't available right now.` : "one pair in your cart isn't available right now.")).join(" ")
+    ? cart.dropped.map((d) => (d.name ? `${d.name} isn't available right now.` : "One pair in your cart isn't available right now.")).join(" ")
     : null;
 
 export type OrderOffer = { discount: number; ruleName?: string | null };
@@ -201,71 +207,72 @@ export type OrderOffer = { discount: number; ruleName?: string | null };
 /** First reply to a cart: summary, total (with active offer applied if eligible), and the direct checkout link. */
 export function buildOrderReply(cart: ValidatedCart, link?: string | null, offer?: OrderOffer | null): string {
   if (!cart.lines.length) {
-    return `thanks for the cart 🌙\n\nthe pairs in it aren't available right now. the full catalogue is here whenever you want a look: ${SITE}/catalogue`;
+    return `*Thanks For Checking In* 🕶️ ✨\n\nThe pairs in your cart aren't available right now. The full catalogue is here whenever you'd like a look: ${SITE}/catalogue`;
   }
 
   const hasOffer = offer && offer.discount > 0;
   const finalTotal = hasOffer ? Math.max(0, cart.total - offer.discount) : cart.total;
   const totalBlock = hasOffer
-    ? `subtotal ${rupees(cart.total)}\n${offer.ruleName ? `${offer.ruleName}, ` : "offer applied, "}−${rupees(offer.discount)}\ntotal ${rupees(finalTotal)}, shipping free.`
-    : `total ${rupees(cart.total)}, shipping free.`;
+    ? `Subtotal ${rupees(cart.total)}\n${offer.ruleName ? `${offer.ruleName}, ` : "Offer applied, "}−${rupees(offer.discount)}\n*Total: ${rupees(finalTotal)}* · Free Shipping 📦`
+    : `*Total: ${rupees(cart.total)}* · Free Shipping 📦`;
 
   if (link) {
     return [
-      "got your cart 🌙",
-      orderLinesText(cart),
+      "*Got Your Cart* 🕶️ ✨",
+      orderLinesText(cart, true),
       totalBlock,
       droppedText(cart),
-      `tap below to complete your order on our secure checkout:\n${link}`,
+      `Tap below to complete your order on our secure checkout:\n${link}`,
     ].filter(Boolean).join("\n\n");
   }
   return [
-    "got your cart 🌙",
-    orderLinesText(cart),
+    "*Got Your Cart* 🕶️ ✨",
+    orderLinesText(cart, true),
     totalBlock,
     droppedText(cart),
-    "kindly share delivery details in chat (Name, Address, Pincode, Email)",
-    "have a code? send it with your details.",
+    "Kindly share delivery details in chat:\n✦ Name\n✦ Full Address & Pincode\n✦ Email",
+    "Have a promo code? Send it along with your details.",
   ].filter(Boolean).join("\n\n");
 }
 
-/** Reply once the order exists: summary + ONE tap-to-pay link + dynamic QR code. */
+/** Reply once the order exists: summary + ONE tap-to-pay link. */
 export function buildPayReply(input: { cart: ValidatedCart; name: string; address: string; pincode: string; payLink: string; money?: Money }): string {
   const short = input.address.length > 60 ? `${input.address.slice(0, 57)}...` : input.address;
-  const qrLink = input.payLink.replace("/pay/", "/api/qr/") + ".png";
+  const finalTotal = input.money?.total ?? input.cart.total;
+  const totalLine = input.money && input.money.discount > 0
+    ? `${discountLine(input.money)}*Total: ${rupees(finalTotal)}* · Free Shipping 📦`
+    : `*Total: ${rupees(finalTotal)}* · Free Shipping 📦`;
+
   return [
-    "order placed 🌙",
-    orderLinesText(input.cart),
-    input.money && input.money.discount > 0
-      ? `${discountLine(input.money)}total ${rupees(input.money.total)}, shipping free.`
-      : `total ${rupees(input.money?.total ?? input.cart.total)}, shipping free.`,
-    `delivering to ${input.name}, ${short}, ${input.pincode}`,
-    `pay by UPI in one tap: ${input.payLink}`,
-    `or scan dynamic UPI QR code: ${qrLink}`,
-    "wrong address? reply here before it ships.",
+    "*Order Placed* 🕶️ ✨",
+    orderLinesText(input.cart, false),
+    totalLine,
+    `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
+    `📲 *Scan the QR here:*\n${input.payLink}`,
+    "Wrong address? Reply here before it ships.",
   ].join("\n\n");
 }
 
 export type Money = { subtotal: number; discount: number; total: number };
-const discountLine = (m: Money) => (m.discount > 0 ? `code applied, −${rupees(m.discount)}\n` : "");
+const discountLine = (m: Money) => (m.discount > 0 ? `Code applied, −${rupees(m.discount)}\n` : "");
 
-export const buildCodeAppliedReply = (m: Money) => `code applied 🌙 −${rupees(m.discount)}, total ${rupees(m.total)}`;
-export const buildCodeInvalidReply = () => "that code isn't valid right now, carrying on without it.";
+export const buildCodeAppliedReply = (m: Money) => `*Promo Code Applied* ✨ −${rupees(m.discount)}, *Total ${rupees(m.total)}*`;
+export const buildCodeInvalidReply = () => "That promo code isn't valid right now, carrying on without it.";
 
 /** Order created with nothing to pay (a free-pair or 100% code): no pay link. */
 export function buildFreeOrderReply(input: { cart: ValidatedCart; name: string; address: string; pincode: string }): string {
   const short = input.address.length > 60 ? `${input.address.slice(0, 57)}...` : input.address;
   return [
-    "order placed 🌙",
-    orderLinesText(input.cart),
-    "total ₹0, shipping free. no payment needed, we'll message you when it ships.",
-    `delivering to ${input.name}, ${short}, ${input.pincode}`,
-    "wrong address? reply here before it ships.",
+    "*Order Placed* 🕶️ ✨",
+    orderLinesText(input.cart, false),
+    "*Total: ₹0* · Free Shipping 📦\nNo payment needed, we'll message you when it ships.",
+    `📍 *Delivering to:*\n${input.name}\n${short}, ${input.pincode}`,
+    "Wrong address? Reply here before it ships.",
   ].join("\n\n");
 }
 
 export const buildAskAgainReply = (example: string) =>
-  `couldn't read that one. could you send your name, full address and pincode in one message, like this:\n\n${example}`;
+  `Couldn't read that delivery format. Could you send your name, full address and pincode in one message, like this:\n\n${example}`;
 
 export const buildFallbackReply = (link: string) =>
-  `let's do this one on the site instead, your cart is already in it: ${link}\n\nyou can add your address and pay by UPI there.`;
+  `Let's complete this on the site instead, your cart is already saved: ${link}\n\nYou can add your address and pay by UPI there.`;
