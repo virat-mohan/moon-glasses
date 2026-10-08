@@ -30,7 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
 
     const config = await getUpiPaymentConfig();
     const upiId = config?.upiId || "viratmohan-1@okhdfcbank";
-    const payeeName = config?.payeeName || "Virat Mohan";
+    const payeeName = config?.payeeName && config.payeeName !== "Moonglasses" ? config.payeeName : "Virat Mohan";
 
     const totalPaise = order.upi_amount_paise ? Number(order.upi_amount_paise) : Math.round(Number(order.total) * 100);
     const amount = (totalPaise / 100).toFixed(2);
@@ -55,7 +55,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
       status: 200,
       headers: {
         "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     });
   } catch (err) {
