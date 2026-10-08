@@ -3,6 +3,8 @@ import { Space_Grotesk, Inter, Bodoni_Moda } from "next/font/google";
 import { Navbar } from "@/components/navigation/Navbar";
 import { ScrollToTop } from "@/components/navigation/ScrollToTop";
 import { MetaPixelTracker } from "@/components/tracking/MetaPixel";
+import { GoogleAnalytics } from "@/components/tracking/GoogleAnalytics";
+import { MicrosoftClarity } from "@/components/tracking/MicrosoftClarity";
 import { WhatsAppFloatButton } from "@/components/contact/WhatsAppFloatButton";
 import { SupportNumberProvider } from "@/components/help/SupportNumberProvider";
 import { setRuntimeSupportNumber } from "@/lib/whatsapp-help";
@@ -71,6 +73,9 @@ export const metadata: Metadata = {
     images: [OG_IMAGE],
   },
   alternates: { canonical: SITE_URL },
+  verification: {
+    google: "google393d29dd633d2458",
+  },
 };
 
 const organizationJsonLd = {
@@ -85,10 +90,12 @@ const organizationJsonLd = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [pixelId, launchSoon, supportWhatsapp] = await Promise.all([
+  const [pixelId, launchSoon, supportWhatsapp, gaId, clarityId] = await Promise.all([
     getSetting("META_PIXEL_ID"),
     isLaunchSoon(),
     getSetting("SUPPORT_WHATSAPP"),
+    getSetting("GA4_MEASUREMENT_ID"),
+    getSetting("CLARITY_PROJECT_ID"),
   ]);
   setRuntimeSupportNumber(supportWhatsapp);
 
@@ -103,6 +110,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <MetaPixelTracker pixelId={pixelId} />
+        <GoogleAnalytics measurementId={gaId || "G-J050RRX35Q"} />
+        <MicrosoftClarity projectId={clarityId || "yuinfh4imy"} />
         <SupportNumberProvider number={supportWhatsapp}>
         <LaunchSoonProvider soon={launchSoon}>
           <CartProvider>

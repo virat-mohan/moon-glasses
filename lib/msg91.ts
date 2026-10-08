@@ -236,8 +236,8 @@ export async function sendWhatsAppSessionMessage(phone: string, text: string) {
   }
 
   const authKey = await getSetting("MSG91_AUTH_KEY");
-  const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
-  if (!authKey || !integratedNumber) {
+  const sessionNumber = (await getSetting("WHATSAPP_SESSION_NUMBER")) || (await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER"));
+  if (!authKey || !sessionNumber) {
     if (metaToken) {
       return sendMetaCloudSessionMessage(phone, text);
     }
@@ -249,7 +249,7 @@ export async function sendWhatsAppSessionMessage(phone: string, text: string) {
       method: "POST",
       headers: { authkey: authKey, "Content-Type": "application/json" },
       body: JSON.stringify({
-        integrated_number: integratedNumber,
+        integrated_number: sessionNumber,
         content_type: "text",
         text: text,
         recipient_number: toMobile(phone),
@@ -303,14 +303,14 @@ export async function sendWhatsAppSessionImage(phone: string, imageUrl: string, 
   }
 
   const authKey = await getSetting("MSG91_AUTH_KEY");
-  const integratedNumber = await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER");
-  if (authKey && integratedNumber) {
+  const sessionNumber = (await getSetting("WHATSAPP_SESSION_NUMBER")) || (await getSetting("MSG91_WHATSAPP_INTEGRATED_NUMBER"));
+  if (authKey && sessionNumber) {
     try {
       const res = await fetch("https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/", {
         method: "POST",
         headers: { authkey: authKey, "Content-Type": "application/json" },
         body: JSON.stringify({
-          integrated_number: integratedNumber,
+          integrated_number: sessionNumber,
           content_type: "image",
           recipient_number: toMobile(phone),
           attachment_url: imageUrl,

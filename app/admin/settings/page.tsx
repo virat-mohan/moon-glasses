@@ -48,6 +48,8 @@ const GROUPS: { label: string; fields: Field[] }[] = [
       { key: "INSTAGRAM_BUSINESS_ACCOUNT_ID", label: "Instagram Business Account ID", hint: "For auto-posting approved Explorer photos as Instagram Stories." },
       { key: "META_WEBHOOK_VERIFY_TOKEN", label: "Meta Webhook Verify Token", hint: "Make up any random string, then paste the same value as the Verify Token in Meta's App Dashboard — both for Instagram/Messenger webhooks and under WhatsApp → Configuration (callback URL https://www.moon-glasses.store/api/webhooks/meta). Required for the DM/comment bot and for receiving WhatsApp messages." },
       { key: "META_PIXEL_ID", label: "Meta Pixel ID", hint: "Enables the Meta pixel + server-side Conversions API mirror on the site." },
+      { key: "GA4_MEASUREMENT_ID", label: "Google Analytics 4 Measurement ID", hint: "e.g. G-J050RRX35Q. Connects live traffic to Google Analytics 4." },
+      { key: "CLARITY_PROJECT_ID", label: "Microsoft Clarity Project ID", hint: "e.g. yuinfh4imy. Records user sessions and heatmaps on the storefront." },
     ],
   },
   {
@@ -63,7 +65,8 @@ const GROUPS: { label: string; fields: Field[] }[] = [
       { key: "MSG91_WINBACK_TEMPLATE_ID", label: "MSG91 Win-Back Flow Slug", hint: "Same as above — the Flow's URL slug, not an ID. Two variables in order: customer name, Good Vibes balance. Optional — win-back always goes by email regardless." },
       { key: "MSG91_RTO_INITIATED_TEMPLATE_ID", label: "MSG91 RTO Initiated Flow Slug", hint: "Same as above — the Flow's URL slug, not an ID. Two variables in order: customer name, order number. Sent when a shipment starts heading back to you, before the refund. Optional — an email always goes out regardless." },
       { key: "MSG91_RTO_REFUNDED_TEMPLATE_ID", label: "MSG91 RTO Refunded Flow Slug", hint: "Same as above — the Flow's URL slug, not an ID. Three variables in order: customer name, order number, refund amount. Sent once the item is back and the refund has gone through. Optional — an email always goes out regardless." },
-      { key: "MSG91_WHATSAPP_INTEGRATED_NUMBER", label: "MSG91 WhatsApp Integrated Number", hint: "The WhatsApp-enabled number shown as \"Active\" under MSG91 → WhatsApp. Required for /admin/whatsapp to send free-text replies (separate from the template Flows above)." },
+      { key: "MSG91_WHATSAPP_INTEGRATED_NUMBER", label: "MSG91 WhatsApp Integrated Number (Group B Templates)", hint: "The WhatsApp-enabled number holding your approved Meta templates (e.g. 15553883089). Used for official outbound notifications (order confirmed, warehouse ready-to-ship, abandoned cart)." },
+      { key: "WHATSAPP_SESSION_NUMBER", label: "WhatsApp Chatbot / Session Number (Group A)", hint: "The dedicated number for in-chat customer cart conversations, QR code links, and direct replies within the 24h window (e.g. 919318311657). Defaults to MSG91 WhatsApp Integrated Number if unset." },
       { key: "MSG91_WHATSAPP_NAMESPACE", label: "MSG91 WhatsApp Namespace", hint: "Shown on any approved template in MSG91 → WhatsApp → Templates (a long ID). Required for every WhatsApp template send." },
       { key: "MSG91_SHIP_NOTIFICATION_TEMPLATE_ID", label: "MSG91 Ready-To-Ship Template Name", hint: "Internal alert to the warehouse with the shipping label attached. Document header, four body variables in order: order number, customer name, customer phone, items and total." },
       { key: "WAREHOUSE_WHATSAPP_NUMBERS", label: "Warehouse WhatsApp Numbers", hint: "Who gets the ready-to-ship alert. Comma-separated, with country code, e.g. 919876543210,919812345678." },
