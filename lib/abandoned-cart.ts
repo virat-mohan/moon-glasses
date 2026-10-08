@@ -130,11 +130,12 @@ export async function sendUnpaidOrderPaymentReminder(order: UnpaidOrderForRemind
     : null;
 
   const text = [
-    `hey ${name}, we saved your order #${orderNum} 🌙`,
+    `*Order Saved* 🕶️ ✨`,
+    `Hey ${name}, we saved your order #${orderNum}.`,
     itemsText,
-    `total ₹${order.total.toLocaleString("en-IN")}, shipping free.`,
-    `you can complete payment via UPI here whenever you're ready:\n${payLink}`,
-    "we'll pack and ship as soon as payment lands.",
+    `*Total: ₹${order.total.toLocaleString("en-IN")}* · Free Shipping 📦`,
+    `📲 *Scan the QR here:*\n${payLink}`,
+    "We'll pack and ship as soon as payment lands.",
   ].filter(Boolean).join("\n\n");
 
   const res = await sendWhatsAppSessionMessage(phone, text).catch(() => ({ sent: false as const }));

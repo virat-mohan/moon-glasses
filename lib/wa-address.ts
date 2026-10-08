@@ -6,8 +6,8 @@ export type ParsedAddress =
 
 const PIN = /(?<![0-9])[1-9][0-9]{5}(?![0-9])/g;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
-const NAME_PREFIX = /^\s*(?:my name is|name\s*[:\-]|naam\s*[:\-]?|mera naam|main|i am|i'm)\s+/i;
-const LABEL = /^\s*(?:address|addr|pincode|pin code|pin|email|e-mail|mail)\s*[:\-]\s*/i;
+const NAME_PREFIX = /^\s*(?:my name is|name\s*[:\-=]|naam\s*[:\-=]?|mera naam|main|i am|i'm)\s*/i;
+const LABEL = /^\s*(?:address|addr|pincode|pin code|pin|email|e-mail|mail)\s*[:\-=]\s*/i;
 
 function cleanName(s: string): string | null {
   let n = s.replace(NAME_PREFIX, "").replace(/\s+(hai|hoon|hu|here)\s*$/i, "").replace(/[.,;:]+$/g, "").trim();
