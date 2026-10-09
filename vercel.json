@@ -39,6 +39,10 @@
     {
       "path": "/api/cron/review-reminder",
       "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/payment-orphans",
+      "schedule": "30 3 * * *"
     }
   ]
 }
